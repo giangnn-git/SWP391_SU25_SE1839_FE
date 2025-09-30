@@ -1,26 +1,45 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const LoginPage = () => {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const fakeUser = {
-    email: "admin@gmail.com",
-    password: "1",
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
 
-    if (email === fakeUser.email && password === fakeUser.password) {
-      localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("userEmail", email);
-      navigate("/");
-    } else {
-      setError("Email hoặc mật khẩu không đúng!");
+    try {
+      const res = await axios.post("/api/auth/token", {
+        user: username,
+        password: password,
+      });
+
+      console.log("Response from backend:", res.data);
+
+      const token = res.data?.data?.token;
+
+      if (token) {
+        localStorage.setItem("token", token);
+        localStorage.setItem("userEmail", username);
+        localStorage.setItem("isLoggedIn", "true");
+
+        navigate("/", { replace: true });
+      } else {
+        setError("Token not received from server!");
+      }
+    } catch (err) {
+      if (err.response) {
+        setError(err.response.data?.message || "Login failed!");
+      } else if (err.request) {
+        setError("Cannot connect to server. Please try again later!");
+      } else {
+        setError("Unexpected error: " + err.message);
+      }
+      console.error("Login error:", err);
     }
   };
 
@@ -32,8 +51,8 @@ const LoginPage = () => {
           <label>Email:</label>
           <input
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             required
           />
         </div>
@@ -50,6 +69,7 @@ const LoginPage = () => {
 
         <button type="submit">Login</button>
       </form>
+
       {error && <p style={{ color: "red" }}>{error}</p>}
     </div>
   );

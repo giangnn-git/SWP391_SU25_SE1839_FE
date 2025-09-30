@@ -1,14 +1,14 @@
-import { useState } from "react";
 import LogoutButton from "./components/LogoutButton";
 
-// import './App.css'
-
 const App = () => {
+  const email = localStorage.getItem("userEmail");
+
   return (
-    <>
+    <div>
       <h1>Home Page</h1>
+      <p>Welcome, {email}</p>
       <LogoutButton />
-    </>
+    </div>
   );
 };
 

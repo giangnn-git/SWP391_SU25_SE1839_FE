@@ -6,6 +6,7 @@ const LogoutButton = () => {
   const handleLogout = () => {
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("userEmail");
+    localStorage.removeItem("token");
     navigate("/login");
   };
 
