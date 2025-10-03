@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { userLoginApi } from "../services/api.service";
 
 const LoginPage = () => {
   const [username, setUsername] = useState("");
@@ -13,20 +13,13 @@ const LoginPage = () => {
     setError("");
 
     try {
-      const res = await axios.post("/api/auth/token", {
-        user: username,
-        password: password,
-      });
-
-      console.log("Response from backend:", res.data);
+      const res = await userLoginApi(username, password);
 
       const token = res.data?.data?.token;
-
       if (token) {
         localStorage.setItem("token", token);
         localStorage.setItem("userEmail", username);
         localStorage.setItem("isLoggedIn", "true");
-
         navigate("/", { replace: true });
       } else {
         setError("Token not received from server!");
