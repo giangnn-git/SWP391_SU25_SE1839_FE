@@ -1,5 +1,7 @@
 import LogoutButton from "./components/LogoutButton";
 import UserForm from "./components/user/user.form";
+import CustomerForm from "./components/customer/customer.form";
+import WarrantyForm from "./components/warranty/warranty.form";
 import './assets/css/App.css';
 
 
@@ -20,8 +22,22 @@ const App = () => {
 
       <div className="app-main">
         <div className="form-section">
-          <h2 className="form-section-title">Create Warranty Claim Form</h2>
+          <h2 className="form-section-title">Create User Form</h2>
           <UserForm />
+        </div>
+      </div>
+
+      <div className="app-main">
+        <div className="form-section">
+          <h2 className="form-section-title">Create Customer Form</h2>
+          <CustomerForm />
+        </div>
+      </div>
+
+      <div className="app-main">
+        <div className="form-section">
+          <h2 className="form-section-title">Create Customer Form</h2>
+          <WarrantyForm />
         </div>
       </div>
     </div>

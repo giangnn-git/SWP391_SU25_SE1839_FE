@@ -3,13 +3,13 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../../assets/css/UserForm.css";
 
-const UserForm = () => {
-    const [email, setEmail] = useState("");
+const CustomerForm = () => {
+
     const [name, setName] = useState("");
-    const [password, setPassword] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
-    const [role, setRole] = useState(""); // ADMIN, TECHNICIAN, MANAGER, STAFF
-    const [serviceCenterId, setServiceCenterId] = useState("");
+    const [email, setEmail] = useState("");
+    const [address, setAddress] = useState("");
+    const [vin, setVIN] = useState("");
     const [error, setError] = useState("");
     const navigate = useNavigate();
 
@@ -17,7 +17,7 @@ const UserForm = () => {
         e.preventDefault();
         setError("");
 
-        if (!email || !name || !password || !phoneNumber || !role || !serviceCenterId) {
+        if (!name || !phoneNumber || !email || !address || !vin) {
             setError("Please fill all fields!");
             return;
         }
@@ -27,14 +27,13 @@ const UserForm = () => {
             const token = localStorage.getItem("token");
 
             const res = await axios.post(
-                "/api/auth/users", // API tạo user
+                "/api/api/customers", // API tạo customer
                 {
-                    email,
                     name,
-                    password,
                     phoneNumber,
-                    role,
-                    serviceCenterId,
+                    email,
+                    address,
+                    vin,
                 },
                 {
                     headers: {
@@ -45,17 +44,16 @@ const UserForm = () => {
 
             console.log("Response from backend:", res.data);
 
-            alert("User created successfully!");
+            alert("Customer created successfully!");
 
             // Reset form
-            setEmail("");
             setName("");
-            setPassword("");
             setPhoneNumber("");
-            setRole("");
-            setServiceCenterId("");
+            setEmail("");
+            setAddress("");
+            setVIN("");
 
-            // Giữ nguyên trang (không navigate)
+            // Giữ nguyên trang (chưa navigate)
             // navigate("/users", { replace: true });
 
         } catch (err) {
@@ -74,24 +72,11 @@ const UserForm = () => {
         <div className="user-page">
             <div className="user-container">
                 <div className="user-header">
-                    <h2>Create User</h2>
-                    <p className="user-subtitle">Fill out the form to create a new user</p>
+                    <h2>Create Customer</h2>
+                    <p className="user-subtitle">Fill out the form to create a new customer</p>
                 </div>
 
                 <form className="user-form" onSubmit={handleSubmit}>
-                    <div className="form-group">
-                        <label htmlFor="email">Email</label>
-                        <input
-                            id="email"
-                            type="email"
-                            className="form-input"
-                            placeholder="Enter email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                        />
-                    </div>
-
                     <div className="form-group">
                         <label htmlFor="name">Name</label>
                         <input
@@ -106,22 +91,9 @@ const UserForm = () => {
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="password">Password</label>
+                        <label htmlFor="phoneNumber">Phone Number</label>
                         <input
-                            id="password"
-                            type="password"
-                            className="form-input"
-                            placeholder="Enter password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="phone">Phone Number</label>
-                        <input
-                            id="phone"
+                            id="phoneNumber"
                             type="text"
                             className="form-input"
                             placeholder="Enter phone number"
@@ -132,27 +104,40 @@ const UserForm = () => {
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="role">Role</label>
+                        <label htmlFor="email">Email</label>
                         <input
-                            id="role"
+                            id="email"
                             type="text"
                             className="form-input"
-                            placeholder="ADMIN / TECHNICIAN / MANAGER / STAFF"
-                            value={role}
-                            onChange={(e) => setRole(e.target.value)}
+                            placeholder="Enter email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             required
                         />
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="serviceCenterId">Service Center ID</label>
+                        <label htmlFor="address">Address</label>
                         <input
-                            id="serviceCenterId"
+                            id="address"
                             type="text"
                             className="form-input"
-                            placeholder="Enter service center ID"
-                            value={serviceCenterId}
-                            onChange={(e) => setServiceCenterId(e.target.value)}
+                            placeholder="Enter address"
+                            value={address}
+                            onChange={(e) => setAddress(e.target.value)}
+                            required
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="vin">VIN</label>
+                        <input
+                            id="vin"
+                            type="text"
+                            className="form-input"
+                            placeholder="Enter vin"
+                            value={vin}
+                            onChange={(e) => setVIN(e.target.value)}
                             required
                         />
                     </div>
@@ -168,4 +153,4 @@ const UserForm = () => {
     );
 };
 
-export default UserForm;
+export default CustomerForm;
