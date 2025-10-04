@@ -1,35 +1,50 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useState } from "react";
 
-const ClaimsContext = createContext(null);
+const ClaimsContext = createContext();
 
-export const useClaims = () => {
-    const context = useContext(ClaimsContext);
-    if (!context) {
-        throw new Error("useClaims must be used within ClaimsProvider");
-    }
-    return context;
-};
+export function ClaimsProvider({ children }) {
+    const [claims, setClaims] = useState([
+        {
+            id: 1,
+            claimNumber: "WC-2025-1",
+            vin: "VIN123456789",
+            vehicleInfo: "EV Model X 2025",
+            problemDescription: "Lỗi động cơ",
+            diagnosticReport: "Phát hiện lỗi mô-tơ",
+            estimatedCost: 5000,
+            status: "submitted",
+            submittedBy: "John Smith",
+            submittedDate: new Date().toLocaleDateString(),
+        },
+    ]);
 
-export const ClaimsProvider = ({ children }) => {
-    const [claims, setClaims] = useState(() => {
-        const saved = localStorage.getItem("warrantyClaims");
-        return saved ? JSON.parse(saved) : [];
-    });
-
-    useEffect(() => {
-        localStorage.setItem("warrantyClaims", JSON.stringify(claims));
-    }, [claims]);
-
-    const addClaim = (claim) => {
+    const addClaim = (newClaim) => {
         setClaims((prev) => [
             ...prev,
-            { id: Date.now().toString(), status: "submitted", ...claim }
+            {
+                id: prev.length + 1,
+                claimNumber: `WC-2025-${prev.length + 1}`,
+                submittedDate: new Date().toLocaleDateString(),
+                status: "submitted",
+                ...newClaim,
+            },
         ]);
     };
 
+    const updateClaimStatus = (id, newStatus) => {
+        setClaims((prev) =>
+            prev.map((claim) =>
+                claim.id === id ? { ...claim, status: newStatus } : claim
+            )
+        );
+    };
+
     return (
-        <ClaimsContext.Provider value={{ claims, addClaim }}>
+        <ClaimsContext.Provider value={{ claims, addClaim, updateClaimStatus }}>
             {children}
         </ClaimsContext.Provider>
     );
-};
+}
+
+// ✅ export chuẩn, tương thích Fast Refresh
+export const useClaims = () => useContext(ClaimsContext);

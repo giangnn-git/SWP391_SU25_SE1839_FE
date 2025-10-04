@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+
+// --- Layout & Pages ---
 import Layout from './components/Layout';
 import Login from './components/pages/Login';
 import Register from './components/pages/Register.jsx';
@@ -13,18 +15,33 @@ import ClaimApproval from './components/pages/ClaimApproval';
 import SupplyChain from './components/pages/SupplyChain';
 import Analytics from './components/pages/Analytics';
 
+// --- Contexts ---
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { ClaimsProvider } from './context/ClaimsContext';   // ✅ Thêm import
+import { ClaimsProvider } from './context/ClaimsContext'; // ✅ Bổ sung provider cho claim
 
+// ------------------
+// App Routes Component
+// ------------------
 function AppRoutes() {
   const { user } = useAuth();
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
-      <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <Register />} />
-      <Route path="/" element={user ? <Navigate to="/dashboard" /> : <Navigate to="/login" />} />
+      {/* Auth routes */}
+      <Route
+        path="/login"
+        element={user ? <Navigate to="/dashboard" /> : <Login />}
+      />
+      <Route
+        path="/register"
+        element={user ? <Navigate to="/dashboard" /> : <Register />}
+      />
+      <Route
+        path="/"
+        element={user ? <Navigate to="/dashboard" /> : <Navigate to="/login" />}
+      />
 
+      {/* Protected routes */}
       {user && (
         <Route path="/*" element={<Layout />}>
           <Route path="dashboard" element={<Dashboard />} />
@@ -39,15 +56,23 @@ function AppRoutes() {
         </Route>
       )}
 
-      <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
+      {/* Catch-all route */}
+      <Route
+        path="*"
+        element={<Navigate to={user ? '/dashboard' : '/login'} />}
+      />
     </Routes>
   );
 }
 
+// ------------------
+// Main App Component
+// ------------------
 function App() {
   return (
     <AuthProvider>
-      <ClaimsProvider> {/* ✅ Bọc ClaimsProvider để WarrantyClaims và ClaimApproval có thể dùng useClaims */}
+      {/* ✅ Bọc ClaimsProvider để WarrantyClaims và ClaimApproval có thể truy cập useClaims */}
+      <ClaimsProvider>
         <Router>
           <div className="min-h-screen bg-background">
             <AppRoutes />

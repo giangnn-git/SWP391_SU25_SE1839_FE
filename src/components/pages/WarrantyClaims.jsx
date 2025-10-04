@@ -7,6 +7,7 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
+  X,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -48,7 +49,7 @@ import { useClaims } from "../../context/ClaimsContext";
 
 const WarrantyClaims = () => {
   const { user } = useAuth();
-  const { claims, addClaim } = useClaims();
+  const { claims, addClaim, updateClaimStatus } = useClaims();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -59,6 +60,10 @@ const WarrantyClaims = () => {
     diagnosticReport: "",
     estimatedCost: "",
   });
+
+  // ✅ state cho dialog chi tiết
+  const [selectedClaim, setSelectedClaim] = useState(null);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
   // Lọc claim
   const filteredClaims = claims.filter((claim) => {
@@ -86,6 +91,18 @@ const WarrantyClaims = () => {
     return config[status] || { variant: "outline", icon: Clock };
   };
 
+  // Text hiển thị trạng thái
+  const getStatusText = (status) => {
+    const statusTexts = {
+      submitted: "Đã gửi",
+      pending: "Chờ xử lý",
+      approved: "Đã phê duyệt",
+      rejected: "Bị từ chối",
+      completed: "Hoàn thành",
+    };
+    return statusTexts[status] || status;
+  };
+
   // SC Staff gửi claim
   const handleSubmitClaim = () => {
     if (!newClaim.vin || !newClaim.problemDescription) {
@@ -95,6 +112,8 @@ const WarrantyClaims = () => {
     addClaim({
       ...newClaim,
       submittedBy: user?.name || "Unknown",
+      status: "submitted",
+      submittedDate: new Date().toLocaleDateString("vi-VN"),
     });
     setIsAddDialogOpen(false);
     setNewClaim({
@@ -105,8 +124,14 @@ const WarrantyClaims = () => {
     });
   };
 
+  // ✅ EVM staff xử lý claim
+  const handleDecision = (claimId, decision) => {
+    updateClaimStatus(claimId, decision);
+  };
+
   const canSubmitClaims =
     user?.role === "sc-staff" || user?.role === "sc-technician";
+  const canApproveClaims = user?.role === "evm-staff" || user?.role === "admin";
 
   return (
     <div className="space-y-6">
@@ -241,8 +266,9 @@ const WarrantyClaims = () => {
           <CardContent>
             <div className="text-2xl font-bold">
               {
-                claims.filter((c) => c.status === "pending" || c.status === "submitted")
-                  .length
+                claims.filter(
+                  (c) => c.status === "pending" || c.status === "submitted"
+                ).length
               }
             </div>
             <p className="text-xs text-muted-foreground">Chờ phê duyệt</p>
@@ -267,7 +293,10 @@ const WarrantyClaims = () => {
             <div className="text-2xl font-bold">
               $
               {claims
-                .reduce((sum, claim) => sum + Number(claim.estimatedCost || 0), 0)
+                .reduce(
+                  (sum, claim) => sum + Number(claim.estimatedCost || 0),
+                  0
+                )
                 .toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">Chi phí ước tính</p>
@@ -336,16 +365,6 @@ const WarrantyClaims = () => {
               <TableBody>
                 {filteredClaims.map((claim) => {
                   const statusConfig = getStatusBadge(claim.status);
-                  const getStatusText = (status) => {
-                    const statusTexts = {
-                      submitted: "Đã gửi",
-                      pending: "Chờ xử lý",
-                      approved: "Đã phê duyệt",
-                      rejected: "Bị từ chối",
-                      completed: "Hoàn thành",
-                    };
-                    return statusTexts[status] || status;
-                  };
 
                   return (
                     <TableRow key={claim.id}>
@@ -394,10 +413,50 @@ const WarrantyClaims = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Button variant="outline" size="sm">
-                          <FileText className="w-4 h-4 mr-1" />
-                          Xem chi tiết
-                        </Button>
+                        <div className="flex space-x-2">
+                          {/* ✅ Xem chi tiết */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedClaim(claim);
+                              setIsDetailDialogOpen(true);
+                            }}
+                          >
+                            <FileText className="w-4 h-4 mr-1" />
+                            Xem chi tiết
+                          </Button>
+
+                          {/* ✅ Approve / Reject cho EVM Staff */}
+                          {canApproveClaims &&
+                            (claim.status === "submitted" ||
+                              claim.status === "pending") && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-green-600"
+                                  onClick={() =>
+                                    handleDecision(claim.id, "approved")
+                                  }
+                                >
+                                  <CheckCircle className="w-4 h-4 mr-1" />
+                                  Duyệt
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-red-600"
+                                  onClick={() =>
+                                    handleDecision(claim.id, "rejected")
+                                  }
+                                >
+                                  <X className="w-4 h-4 mr-1" />
+                                  Từ chối
+                                </Button>
+                              </>
+                            )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -407,6 +466,49 @@ const WarrantyClaims = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* ✅ Dialog hiển thị chi tiết claim */}
+      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              Chi tiết yêu cầu {selectedClaim?.claimNumber}
+            </DialogTitle>
+            <DialogDescription>
+              Thông tin chi tiết về yêu cầu bảo hành
+            </DialogDescription>
+          </DialogHeader>
+          {selectedClaim && (
+            <div className="space-y-3 text-sm">
+              <p>
+                <b>Xe:</b> {selectedClaim.vehicleInfo || "-"}
+              </p>
+              <p>
+                <b>VIN:</b> {selectedClaim.vin}
+              </p>
+              <p>
+                <b>Khách hàng:</b> {selectedClaim.customerName || "-"}
+              </p>
+              <p>
+                <b>Vấn đề:</b> {selectedClaim.problemDescription}
+              </p>
+              <p>
+                <b>Báo cáo:</b> {selectedClaim.diagnosticReport}
+              </p>
+              <p>
+                <b>Chi phí ước tính:</b> ${selectedClaim.estimatedCost}
+              </p>
+              <p>
+                <b>Ngày gửi:</b> {selectedClaim.submittedDate} bởi{" "}
+                {selectedClaim.submittedBy}
+              </p>
+              <p>
+                <b>Trạng thái:</b> {getStatusText(selectedClaim.status)}
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

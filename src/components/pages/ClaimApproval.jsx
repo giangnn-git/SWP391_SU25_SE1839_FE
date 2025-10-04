@@ -9,6 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Label } from '../ui/label';
+import { useClaims } from '../../context/ClaimsContext';
+import { useAuth } from '../../context/AuthContext';
 
 const ClaimApproval = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -18,8 +20,12 @@ const ClaimApproval = () => {
   const [approvalDecision, setApprovalDecision] = useState(null);
   const [approvalNotes, setApprovalNotes] = useState('');
 
-  // Mock data
-  const claimsForApproval = [
+  // ✅ Lấy claims thực tế từ context (được SC Staff gửi)
+  const { claims, updateClaimStatus } = useClaims();
+  const { user } = useAuth();
+
+  // ✅ Kết hợp mock data + real data
+  const mockClaims = [
     {
       id: '1',
       claimNumber: 'WC-2024-001',
@@ -102,14 +108,16 @@ const ClaimApproval = () => {
     }
   ];
 
+  // ✅ Hiển thị claim thực từ SC Staff (có thể duyệt)
+  const claimsForApproval = [...mockClaims, ...claims];
+
   const filteredClaims = claimsForApproval.filter(claim => {
     const matchesSearch =
-      claim.claimNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      claim.vin.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      claim.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      claim.vehicleInfo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      claim.serviceCenter.toLowerCase().includes(searchTerm.toLowerCase());
-
+      claim.claimNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      claim.vin?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      claim.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      claim.vehicleInfo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      claim.serviceCenter?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || claim.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -134,30 +142,39 @@ const ClaimApproval = () => {
     return variants[priority] || 'outline';
   };
 
+  // ✅ Xử lý EVM Staff duyệt / từ chối
   const handleApprovalDecision = () => {
     if (!selectedClaim || !approvalDecision) return;
+
+    // Nếu là claim từ context (SC Staff gửi)
+    if (selectedClaim.id && updateClaimStatus) {
+      updateClaimStatus(selectedClaim.id, approvalDecision, approvalNotes);
+    }
+
     console.log('Approval decision:', {
       claimId: selectedClaim.id,
       decision: approvalDecision,
       notes: approvalNotes
     });
+
     setIsApprovalDialogOpen(false);
     setApprovalDecision(null);
     setApprovalNotes('');
     setSelectedClaim(null);
   };
 
-  const isWarrantyValid = (date) => {
-    return new Date(date) > new Date();
-  };
+  const isWarrantyValid = (date) => new Date(date) > new Date();
 
   return (
     <div className="space-y-6">
       <div>
         <h1>Warranty Claim Approval</h1>
-        <p className="text-muted-foreground">Review and approve warranty claims from service centers</p>
+        <p className="text-muted-foreground">
+          Review and approve warranty claims from service centers
+        </p>
       </div>
 
+      {/* Dashboard Summary */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
@@ -188,7 +205,8 @@ const ClaimApproval = () => {
           <CardContent>
             <div className="text-2xl font-bold">
               ${claimsForApproval.filter(c => c.status === 'pending' || c.status === 'under-review')
-                .reduce((sum, c) => sum + c.estimatedCost, 0).toLocaleString()}
+                .reduce((sum, c) => sum + (c.estimatedCost || 0), 0)
+                .toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">Pending approvals</p>
           </CardContent>
@@ -204,6 +222,7 @@ const ClaimApproval = () => {
         </Card>
       </div>
 
+      {/* Search and Filter */}
       <Card>
         <CardHeader>
           <CardTitle>Search & Filter Claims</CardTitle>
@@ -237,12 +256,11 @@ const ClaimApproval = () => {
         </CardContent>
       </Card>
 
+      {/* Claims Table */}
       <Card>
         <CardHeader>
           <CardTitle>Claims for Approval</CardTitle>
-          <CardDescription>
-            {filteredClaims.length} claims found
-          </CardDescription>
+          <CardDescription>{filteredClaims.length} claims found</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -258,6 +276,7 @@ const ClaimApproval = () => {
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {filteredClaims.map((claim) => {
                 const statusConfig = getStatusBadge(claim.status);
@@ -266,46 +285,34 @@ const ClaimApproval = () => {
                 return (
                   <TableRow key={claim.id}>
                     <TableCell>
-                      <div>
-                        <p className="font-medium">{claim.claimNumber}</p>
-                        <p className="text-sm text-muted-foreground">VIN: {claim.vin}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Submitted: {claim.submittedDate} by {claim.submittedBy}
-                        </p>
-                      </div>
+                      <p className="font-medium">{claim.claimNumber}</p>
+                      <p className="text-sm text-muted-foreground">VIN: {claim.vin}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Submitted: {claim.submittedDate} by {claim.submittedBy}
+                      </p>
                     </TableCell>
                     <TableCell>
-                      <div>
-                        <p className="font-medium">{claim.vehicleInfo}</p>
-                        <p className="text-sm text-muted-foreground">{claim.customerName}</p>
-                        {claim.previousClaims > 0 && (
-                          <p className="text-xs text-orange-600">
-                            {claim.previousClaims} previous claims
-                          </p>
-                        )}
-                      </div>
+                      <p className="font-medium">{claim.vehicleInfo}</p>
+                      <p className="text-sm text-muted-foreground">{claim.customerName}</p>
+                      {claim.previousClaims > 0 && (
+                        <p className="text-xs text-orange-600">{claim.previousClaims} previous claims</p>
+                      )}
                     </TableCell>
                     <TableCell>{claim.serviceCenter}</TableCell>
                     <TableCell>
-                      <div>
-                        <p className="font-medium">${claim.estimatedCost.toLocaleString()}</p>
-                        <p className="text-xs text-muted-foreground">{claim.laborHours}h labor</p>
-                      </div>
+                      <p className="font-medium">${claim.estimatedCost.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">{claim.laborHours}h labor</p>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getPriorityBadge(claim.priority)}>
-                        {claim.priority}
+                      <Badge variant={getPriorityBadge(claim.priority)}>{claim.priority}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={warrantyValid ? 'default' : 'destructive'}>
+                        {warrantyValid ? 'Valid' : 'Expired'}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <Badge variant={warrantyValid ? 'default' : 'destructive'}>
-                          {warrantyValid ? 'Valid' : 'Expired'}
-                        </Badge>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Until: {claim.warrantyValidUntil}
-                        </p>
-                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Until: {claim.warrantyValidUntil}
+                      </p>
                     </TableCell>
                     <TableCell>
                       <Badge variant={statusConfig.variant} className="flex items-center space-x-1 w-fit">
@@ -313,146 +320,96 @@ const ClaimApproval = () => {
                         <span>{claim.status}</span>
                       </Badge>
                     </TableCell>
+
                     <TableCell>
-                      <div className="flex space-x-1">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" onClick={() => setSelectedClaim(claim)}>
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-4xl">
-                            <DialogHeader>
-                              <DialogTitle>Claim Details - {claim.claimNumber}</DialogTitle>
-                              <DialogDescription>
-                                Review claim information and make approval decision
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="grid grid-cols-2 gap-6">
-                              <div className="space-y-4">
-                                <div>
-                                  <h4 className="font-medium mb-2">Vehicle Information</h4>
-                                  <div className="space-y-1 text-sm">
-                                    <p><span className="font-medium">Vehicle:</span> {claim.vehicleInfo}</p>
-                                    <p><span className="font-medium">VIN:</span> {claim.vin}</p>
-                                    <p><span className="font-medium">Customer:</span> {claim.customerName}</p>
-                                    <p><span className="font-medium">Service Center:</span> {claim.serviceCenter}</p>
-                                  </div>
-                                </div>
-                                <div>
-                                  <h4 className="font-medium mb-2">Problem Description</h4>
-                                  <p className="text-sm text-muted-foreground">{claim.problemDescription}</p>
-                                </div>
-                                <div>
-                                  <h4 className="font-medium mb-2">Diagnostic Report</h4>
-                                  <p className="text-sm text-muted-foreground">{claim.diagnosticReport}</p>
-                                </div>
-                              </div>
-                              <div className="space-y-4">
-                                <div>
-                                  <h4 className="font-medium mb-2">Cost Breakdown</h4>
-                                  <div className="space-y-1 text-sm">
-                                    <p><span className="font-medium">Estimated Cost:</span> ${claim.estimatedCost.toLocaleString()}</p>
-                                    <p><span className="font-medium">Labor Hours:</span> {claim.laborHours}h</p>
-                                    <p><span className="font-medium">Parts Required:</span></p>
-                                    <ul className="list-disc list-inside ml-4 text-muted-foreground">
-                                      {claim.partsRequired.map((part, index) => (
-                                        <li key={index}>{part}</li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                </div>
-                                <div>
-                                  <h4 className="font-medium mb-2">Warranty Information</h4>
-                                  <div className="space-y-1 text-sm">
-                                    <p><span className="font-medium">Valid Until:</span> {claim.warrantyValidUntil}</p>
-                                    <p><span className="font-medium">Previous Claims:</span> {claim.previousClaims}</p>
-                                    <p><span className="font-medium">Priority:</span>
-                                      <Badge variant={getPriorityBadge(claim.priority)} className="ml-2">
-                                        {claim.priority}
-                                      </Badge>
-                                    </p>
-                                  </div>
-                                </div>
-                                <div>
-                                  <h4 className="font-medium mb-2">Attachments</h4>
-                                  <div className="flex flex-wrap gap-2">
-                                    {claim.attachments.map((attachment, index) => (
-                                      <Badge key={index} variant="outline" className="cursor-pointer">
-                                        <FileText className="w-3 h-3 mr-1" />
-                                        {attachment}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                </div>
-                                {(claim.status === 'pending' || claim.status === 'under-review') && (
-                                  <div className="pt-4">
-                                    <Dialog open={isApprovalDialogOpen} onOpenChange={setIsApprovalDialogOpen}>
-                                      <DialogTrigger asChild>
-                                        <Button className="w-full">Make Decision</Button>
-                                      </DialogTrigger>
-                                      <DialogContent>
-                                        <DialogHeader>
-                                          <DialogTitle>Approval Decision</DialogTitle>
-                                          <DialogDescription>
-                                            Make your decision for claim {claim.claimNumber}
-                                          </DialogDescription>
-                                        </DialogHeader>
-                                        <div className="space-y-4">
-                                          <div>
-                                            <Label>Decision</Label>
-                                            <div className="flex space-x-2 mt-2">
-                                              <Button
-                                                variant={approvalDecision === 'approve' ? 'default' : 'outline'}
-                                                onClick={() => setApprovalDecision('approve')}
-                                                className="flex items-center space-x-2"
-                                              >
-                                                <CheckCircle className="w-4 h-4" />
-                                                <span>Approve</span>
-                                              </Button>
-                                              <Button
-                                                variant={approvalDecision === 'reject' ? 'destructive' : 'outline'}
-                                                onClick={() => setApprovalDecision('reject')}
-                                                className="flex items-center space-x-2"
-                                              >
-                                                <X className="w-4 h-4" />
-                                                <span>Reject</span>
-                                              </Button>
-                                            </div>
-                                          </div>
-                                          <div>
-                                            <Label htmlFor="notes">Notes</Label>
-                                            <Textarea
-                                              id="notes"
-                                              value={approvalNotes}
-                                              onChange={(e) => setApprovalNotes(e.target.value)}
-                                              placeholder="Add any comments or conditions..."
-                                              rows={3}
-                                            />
-                                          </div>
-                                          <div className="flex justify-end space-x-2">
-                                            <Button variant="outline" onClick={() => setIsApprovalDialogOpen(false)}>
-                                              Cancel
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="sm" onClick={() => setSelectedClaim(claim)}>
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl">
+                          <DialogHeader>
+                            <DialogTitle>Claim Details - {claim.claimNumber}</DialogTitle>
+                            <DialogDescription>
+                              Review claim information and make approval decision
+                            </DialogDescription>
+                          </DialogHeader>
+
+                          {/* Approval Logic */}
+                          <div className="grid grid-cols-2 gap-6">
+                            {/* Info column left */}
+                            <div>
+                              <h4 className="font-medium mb-2">Vehicle Information</h4>
+                              <p>{claim.vehicleInfo}</p>
+                              <p>VIN: {claim.vin}</p>
+                              <p>Customer: {claim.customerName}</p>
+                              <p>Service Center: {claim.serviceCenter}</p>
+                            </div>
+
+                            {/* Approval action */}
+                            {(user?.role === 'evm-staff' || user?.role === 'admin') &&
+                              (claim.status === 'pending' || claim.status === 'under-review') && (
+                                <div className="pt-4">
+                                  <Dialog open={isApprovalDialogOpen} onOpenChange={setIsApprovalDialogOpen}>
+                                    <DialogTrigger asChild>
+                                      <Button className="w-full">Make Decision</Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                      <DialogHeader>
+                                        <DialogTitle>Approval Decision</DialogTitle>
+                                        <DialogDescription>
+                                          Make your decision for claim {claim.claimNumber}
+                                        </DialogDescription>
+                                      </DialogHeader>
+                                      <div className="space-y-4">
+                                        <div>
+                                          <Label>Decision</Label>
+                                          <div className="flex space-x-2 mt-2">
+                                            <Button
+                                              variant={approvalDecision === 'approve' ? 'default' : 'outline'}
+                                              onClick={() => setApprovalDecision('approve')}
+                                              className="flex items-center space-x-2"
+                                            >
+                                              <CheckCircle className="w-4 h-4" />
+                                              <span>Approve</span>
                                             </Button>
-                                            <Button onClick={handleApprovalDecision} disabled={!approvalDecision}>
-                                              Submit Decision
+                                            <Button
+                                              variant={approvalDecision === 'reject' ? 'destructive' : 'outline'}
+                                              onClick={() => setApprovalDecision('reject')}
+                                              className="flex items-center space-x-2"
+                                            >
+                                              <X className="w-4 h-4" />
+                                              <span>Reject</span>
                                             </Button>
                                           </div>
                                         </div>
-                                      </DialogContent>
-                                    </Dialog>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                        {(claim.status === 'pending' || claim.status === 'under-review') && (
-                          <Button variant="outline" size="sm" className="text-green-600">
-                            <CheckCircle className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
+                                        <div>
+                                          <Label htmlFor="notes">Notes</Label>
+                                          <Textarea
+                                            id="notes"
+                                            value={approvalNotes}
+                                            onChange={(e) => setApprovalNotes(e.target.value)}
+                                            placeholder="Add any comments or conditions..."
+                                            rows={3}
+                                          />
+                                        </div>
+                                        <div className="flex justify-end space-x-2">
+                                          <Button variant="outline" onClick={() => setIsApprovalDialogOpen(false)}>
+                                            Cancel
+                                          </Button>
+                                          <Button onClick={handleApprovalDecision} disabled={!approvalDecision}>
+                                            Submit Decision
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </DialogContent>
+                                  </Dialog>
+                                </div>
+                              )}
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </TableCell>
                   </TableRow>
                 );
