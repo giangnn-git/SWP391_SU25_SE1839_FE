@@ -8,6 +8,7 @@ export default defineConfig({
     proxy: {
       "/api": {
         target: "https://junie-preaortic-sina.ngrok-free.dev",
+        // target: "https://orthopterous-unwieldable-kristal.ngrok-free.dev",
         changeOrigin: true,
         secure: false, // bỏ check SSL self-signed
         rewrite: (path) => path.replace(/^\/api/, ""),
