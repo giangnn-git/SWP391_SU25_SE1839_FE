@@ -1,3 +1,4 @@
+import CreateUser from "./components/CreateUserForm";
 import LogoutButton from "./components/LogoutButton";
 
 const App = () => {
@@ -6,8 +7,11 @@ const App = () => {
   return (
     <div>
       <h1>Home Page</h1>
-      <p>Welcome, {email}</p>
-      <LogoutButton />
+      <div>
+        <p>Welcome, {email}</p>
+        <LogoutButton />
+      </div>
+      <CreateUser />
     </div>
   );
 };

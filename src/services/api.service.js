@@ -1,14 +1,17 @@
 import axios from "./axios.customize";
 
-export const createUserApi = () => {
-  const URL_BACKEND = "/auth/token";
-  const data = {
-    fullName: fullName,
-    email: email,
-    password: password,
-    phone: phone,
+export const createUserApi = async (name, password, role) => {
+  const URL_BACKEND = "";
+  const token = localStorage.getItem("token");
+
+  const config = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   };
-  return axios.post(URL_BACKEND, data);
+
+  const data = { name, password, role };
+  return axios.post(URL_BACKEND, data, config);
 };
 
 export const userLoginApi = () => {
