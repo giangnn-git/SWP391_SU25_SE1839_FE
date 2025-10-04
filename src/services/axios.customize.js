@@ -2,7 +2,10 @@ import axios from "axios";
 
 //set config default when creating the instance
 const instance = axios.create({
-  baseURL: "",
+  baseURL: "/",
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 //Alter defaults after instance has been created

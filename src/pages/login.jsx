@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { userLoginApi } from "../services/api.service";
 
 const LoginPage = () => {
-  const [username, setUsername] = useState("");
+  const [user, setUser] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -13,12 +13,12 @@ const LoginPage = () => {
     setError("");
 
     try {
-      const res = await userLoginApi(username, password);
+      const res = await userLoginApi(user, password);
 
       const token = res.data?.data?.token;
       if (token) {
         localStorage.setItem("token", token);
-        localStorage.setItem("userEmail", username);
+        localStorage.setItem("userEmail", user);
         localStorage.setItem("isLoggedIn", "true");
         navigate("/", { replace: true });
       } else {
@@ -44,8 +44,8 @@ const LoginPage = () => {
           <label>Email:</label>
           <input
             type="email"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            value={user}
+            onChange={(e) => setUser(e.target.value)}
             required
           />
         </div>
