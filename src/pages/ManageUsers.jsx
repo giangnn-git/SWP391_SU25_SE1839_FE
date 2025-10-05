@@ -5,12 +5,14 @@ import {
   updateUserApi,
   toggleUserStatusApi,
 } from "../services/api.service";
-import CreateUserForm from "../components/forms/CreateUserForm";
-import UserTable from "../components/users/userTable";
-import EditUserModal from "../components/users/editUserModal";
+import UserTable from "../components/users/UserTable";
+import EditUserModal from "../components/users/EditUserModal";
+import CreateUserModal from "../components/users/CreateUserModal.jsx";
 
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -20,13 +22,19 @@ const ManageUsers = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
 
+  // Create modal state
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+
   // Load users
   const loadUsers = async () => {
     setLoading(true);
     setError("");
     try {
       const response = await getAllUsersApi();
-      setUsers(response.data?.data || response.data || []);
+      const usersData = response.data?.data || [];
+      setUsers(usersData);
+      setFilteredUsers(usersData);
     } catch (err) {
       setError(
         "Failed to load users: " + (err.response?.data?.message || err.message)
@@ -41,37 +49,60 @@ const ManageUsers = () => {
     loadUsers();
   }, []);
 
-  // Create user
+  // Search function
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setFilteredUsers(users);
+    } else {
+      const filtered = users.filter(
+        (user) =>
+          user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredUsers(filtered);
+    }
+  }, [searchTerm, users]);
+
+  // Create user function
   const handleCreateUser = async (userData) => {
+    setCreateLoading(true);
     setError("");
-    setSuccess("");
     try {
-      await createUserApi(userData.name, userData.password, userData.role);
+      await createUserApi(
+        userData.email,
+        userData.name,
+        userData.password,
+        userData.phoneNumber,
+        userData.role
+      );
       setSuccess("User created successfully!");
+      setIsCreateModalOpen(false);
       loadUsers(); // Refresh list
     } catch (err) {
       setError(
         "Failed to create user: " + (err.response?.data?.message || err.message)
       );
-      throw err; // Re-throw để form xử lý
+      throw err;
+    } finally {
+      setCreateLoading(false);
     }
   };
 
-  // Edit user
+  // Edit user functions
   const handleEditUser = (user) => {
     setEditingUser(user);
     setIsEditModalOpen(true);
   };
 
-  const handleSaveEdit = async (userId, userData) => {
+  const handleSaveEdit = async (id, userData) => {
     setEditLoading(true);
     setError("");
     try {
-      await updateUserApi(userId, userData);
+      await updateUserApi(id, userData);
       setSuccess("User updated successfully!");
       setIsEditModalOpen(false);
       setEditingUser(null);
-      loadUsers(); // Refresh list
+      loadUsers();
     } catch (err) {
       setError(
         "Failed to update user: " + (err.response?.data?.message || err.message)
@@ -82,14 +113,14 @@ const ManageUsers = () => {
   };
 
   // Toggle user status
-  const handleToggleStatus = async (userId, isActive) => {
+  const handleToggleStatus = async (id, isActive) => {
     setError("");
     try {
-      await toggleUserStatusApi(userId, isActive);
+      await toggleUserStatusApi(id, isActive);
       setSuccess(
         `User ${isActive ? "activated" : "deactivated"} successfully!`
       );
-      loadUsers(); // Refresh list
+      loadUsers();
     } catch (err) {
       setError(
         "Failed to update user status: " +
@@ -99,7 +130,7 @@ const ManageUsers = () => {
     }
   };
 
-  // Clear messages after 3 seconds
+  // Clear messages
   useEffect(() => {
     if (success || error) {
       const timer = setTimeout(() => {
@@ -111,12 +142,60 @@ const ManageUsers = () => {
   }, [success, error]);
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-        <p className="text-gray-600">Manage system users and permissions</p>
+    <div className="p-6">
+      {/* Header với Create Button và Search */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+          <p className="text-gray-600">Manage system users and permissions</p>
+        </div>
+
+        <div className="flex items-center space-x-4">
+          {/* ✅ SEARCH INPUT */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search by name or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64"
+            />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg
+                className="h-5 w-5 text-gray-400"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+          </div>
+
+          {/* CREATE USER BUTTON */}
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+          >
+            + Create New User
+          </button>
+        </div>
       </div>
 
+      {/* Search Results Info */}
+      {searchTerm && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-700">
+            Showing {filteredUsers.length} of {users.length} users
+            {searchTerm && ` for "${searchTerm}"`}
+          </p>
+        </div>
+      )}
+
+      {/* Messages */}
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-red-700">{error}</p>
@@ -128,36 +207,17 @@ const ManageUsers = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <h2 className="text-lg font-semibold mb-4">Create New User</h2>
-            <CreateUserForm onSubmit={handleCreateUser} />
-          </div>
-        </div>
-
-        <div className="lg:col-span-2">
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">All Users</h2>
-              <button
-                onClick={loadUsers}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                disabled={loading}
-              >
-                {loading ? "Refreshing..." : "Refresh"}
-              </button>
-            </div>
-            <UserTable
-              users={users}
-              onEdit={handleEditUser}
-              onStatusToggle={handleToggleStatus}
-              loading={loading}
-            />
-          </div>
-        </div>
+      {/* Users Table - pass filteredUsers instead of users */}
+      <div className="bg-white rounded-lg shadow-sm border">
+        <UserTable
+          users={filteredUsers}
+          onEdit={handleEditUser}
+          onStatusToggle={handleToggleStatus}
+          loading={loading}
+        />
       </div>
 
+      {/* Edit User Modal */}
       <EditUserModal
         user={editingUser}
         isOpen={isEditModalOpen}
@@ -167,6 +227,14 @@ const ManageUsers = () => {
         }}
         onSave={handleSaveEdit}
         loading={editLoading}
+      />
+
+      {/* CREATE USER MODAL */}
+      <CreateUserModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreateUser}
+        loading={createLoading}
       />
     </div>
   );

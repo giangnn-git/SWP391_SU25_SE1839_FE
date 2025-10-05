@@ -1,32 +1,23 @@
-// App.jsx
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import PrivateRoute from "./components/routes/PrivateRoute";
-import LoginPage from "./pages/login";
-import ManageUsers from "./pages/manageUsers";
+import { Outlet } from "react-router-dom";
+import Sidebar from "./components/layout/SideBar";
+import Header from "./components/layout/Header";
 
 const App = () => {
   return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route
-          path="/"
-          element={
-            <PrivateRoute>
-              <ManageUsers />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/manage-users"
-          element={
-            <PrivateRoute>
-              <ManageUsers />
-            </PrivateRoute>
-          }
-        />
-      </Routes>
-    </Router>
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar */}
+      <Sidebar />
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header />
+
+        {/* Page Content */}
+        <main className="flex-1 overflow-y-auto p-6">
+          <Outlet />
+        </main>
+      </div>
+    </div>
   );
 };
 

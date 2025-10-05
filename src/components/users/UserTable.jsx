@@ -4,10 +4,10 @@ import { storage } from "../../utils/storage";
 const UserTable = ({ users, onEdit, onStatusToggle, loading }) => {
   const [actionLoading, setActionLoading] = useState(null);
 
-  const handleStatusToggle = async (userId, currentStatus) => {
-    setActionLoading(userId);
+  const handleStatusToggle = async (id, currentStatus) => {
+    setActionLoading(id);
     try {
-      await onStatusToggle(userId, !currentStatus);
+      await onStatusToggle(id, currentStatus === "ACTIVE");
     } catch (error) {
       console.error("Failed to toggle user status:", error);
     } finally {
@@ -30,7 +30,7 @@ const UserTable = ({ users, onEdit, onStatusToggle, loading }) => {
   }
 
   return (
-    <div className="overflow-x-auto bg-white rounded-lg shadow">
+    <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
@@ -39,6 +39,9 @@ const UserTable = ({ users, onEdit, onStatusToggle, loading }) => {
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Name
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Email
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Role
@@ -66,16 +69,15 @@ const UserTable = ({ users, onEdit, onStatusToggle, loading }) => {
                 )}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {user.email}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 <span
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                   ${
-                    user.role === "Admin"
+                    user.role === "ADMIN"
                       ? "bg-purple-100 text-purple-800"
-                      : user.role === "SC Staff"
-                      ? "bg-green-100 text-green-800"
-                      : user.role === "Technician"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : "bg-gray-100 text-gray-800"
+                      : "bg-green-100 text-green-800"
                   }`}
                 >
                   {user.role}
@@ -85,12 +87,12 @@ const UserTable = ({ users, onEdit, onStatusToggle, loading }) => {
                 <span
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                   ${
-                    user.isActive
+                    user.status === "ACTIVE"
                       ? "bg-green-100 text-green-800"
                       : "bg-red-100 text-red-800"
                   }`}
                 >
-                  {user.isActive ? "Active" : "Inactive"}
+                  {user.status === "ACTIVE" ? "Active" : "Inactive"}
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -103,20 +105,20 @@ const UserTable = ({ users, onEdit, onStatusToggle, loading }) => {
                     Edit
                   </button>
                   <button
-                    onClick={() => handleStatusToggle(user.id, user.isActive)}
+                    onClick={() => handleStatusToggle(user.id, user.status)}
                     disabled={
                       actionLoading === user.id ||
                       user.email === currentUserEmail
                     }
                     className={`${
-                      user.isActive
+                      user.status === "ACTIVE"
                         ? "text-red-600 hover:text-red-900"
                         : "text-green-600 hover:text-green-900"
                     } disabled:text-gray-400`}
                   >
                     {actionLoading === user.id
                       ? "..."
-                      : user.isActive
+                      : user.status === "ACTIVE"
                       ? "Deactivate"
                       : "Activate"}
                   </button>

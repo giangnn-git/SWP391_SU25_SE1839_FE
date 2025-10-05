@@ -1,17 +1,26 @@
-// components/users/EditUserModal.jsx
 import { useState, useEffect } from "react";
+import { useServiceCenters } from "../../hooks/useServiceCenters";
 
 const EditUserModal = ({ user, isOpen, onClose, onSave, loading }) => {
+  const { serviceCenters, loading: scLoading } = useServiceCenters();
   const [formData, setFormData] = useState({
+    email: "",
     name: "",
+    phoneNumber: "",
     role: "",
+    serviceCenterId: "",
+    status: "ACTIVE",
   });
 
   useEffect(() => {
     if (user) {
       setFormData({
+        email: user.email || "",
         name: user.name || "",
+        phoneNumber: user.phoneNumber || "",
         role: user.role || "",
+        serviceCenterId: user.serviceCenterId || "",
+        status: user.status || "ACTIVE",
       });
     }
   }, [user]);
@@ -29,14 +38,29 @@ const EditUserModal = ({ user, isOpen, onClose, onSave, loading }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
+      <div className="bg-white rounded-lg max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-bold mb-4">Edit User</h2>
 
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
+            {/* Email */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Username
+                Email *
+              </label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleChange("email", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+
+            {/* Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Name *
               </label>
               <input
                 type="text"
@@ -47,9 +71,24 @@ const EditUserModal = ({ user, isOpen, onClose, onSave, loading }) => {
               />
             </div>
 
+            {/* Phone Number */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Role
+                Phone Number *
+              </label>
+              <input
+                type="tel"
+                value={formData.phoneNumber}
+                onChange={(e) => handleChange("phoneNumber", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+
+            {/* Role */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Role *
               </label>
               <select
                 value={formData.role}
@@ -58,10 +97,42 @@ const EditUserModal = ({ user, isOpen, onClose, onSave, loading }) => {
                 required
               >
                 <option value="">Select Role</option>
-                <option value="SC Staff">SC Staff</option>
-                <option value="Technician">Technician</option>
-                <option value="EVM Staff">EVM Staff</option>
+                <option value="STAFF">STAFF</option>
+                <option value="ADMIN">ADMIN</option>
               </select>
+            </div>
+
+            {/* Service Center - UPDATED WITH DROPDOWN */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Service Center *
+              </label>
+              <select
+                value={formData.serviceCenterId || ""}
+                onChange={(e) =>
+                  handleChange("serviceCenterId", parseInt(e.target.value))
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={scLoading}
+                required
+              >
+                <option value="">Select Service Center</option>
+                {serviceCenters.map((sc) => (
+                  <option key={sc.id} value={sc.id}>
+                    {sc.name}
+                  </option>
+                ))}
+              </select>
+              {scLoading && (
+                <p className="mt-1 text-sm text-gray-500">
+                  Loading service centers...
+                </p>
+              )}
+            </div>
+
+            {/* Status */}
+            <div className="hidden">
+              <input type="hidden" value={formData.status} readOnly />
             </div>
           </div>
 

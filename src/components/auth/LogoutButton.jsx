@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { storage } from "../utils/storage";
+import { storage } from "../../utils/storage";
 
 const LogoutButton = () => {
   const navigate = useNavigate();

@@ -10,23 +10,27 @@ export const userLoginApi = (user, password) => {
 };
 
 // Create User API
-export const createUserApi = async (name, password, role) => {
-  const URL_BACKEND = "/api/auth/users";
+export const createUserApi = async (
+  email,
+  name,
+  password,
+  phoneNumber,
+  role
+) => {
+  const URL_BACKEND = "/api/auth/user";
 
-  const token = storage.get("token");
-
-  if (!token) {
-    throw new Error("No authentication token found");
-  }
-
-  const config = {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+  const data = {
+    email: email,
+    name: name,
+    password: password,
+    phoneNumber: phoneNumber,
+    role: role,
+    serviceCenterId: 1,
   };
 
-  return axios.post(URL_BACKEND, { name, password, role }, config);
+  console.log("🎯 Create User Payload:", data);
+
+  return axios.post(URL_BACKEND, data);
 };
 
 // Get all users
@@ -35,23 +39,34 @@ export const getAllUsersApi = () => {
 };
 
 // Update user
-export const updateUserApi = (userId, userData) => {
-  return axios.put(`/api/auth/users/${userId}`, userData);
+export const updateUserApi = (id, userData) => {
+  return axios.put(`/api/auth/users/${id}`, {
+    email: userData.email,
+    name: userData.name,
+    phoneNumber: userData.phoneNumber,
+    role: userData.role,
+    serviceCenterId: parseInt(userData.serviceCenterId),
+    status: userData.status,
+  });
 };
 
 // Inactive/Active user (toggle status)
-export const toggleUserStatusApi = (userId, isActive) => {
-  return axios.patch(`/api/auth/users/${userId}/status`, {
+export const toggleUserStatusApi = (id, isActive) => {
+  return axios.patch(`/api/auth/users/${id}/status`, {
     isActive,
   });
 };
 
 // Delete user
-export const deleteUserApi = (userId) => {
-  return axios.delete(`/api/auth/users/${userId}`);
+export const deleteUserApi = (id) => {
+  return axios.delete(`/api/auth/users/${id}`);
 };
 
 // Get user by ID
-export const getUserByIdApi = (userId) => {
-  return axios.get(`/api/auth/users/${userId}`);
+export const getUserByIdApi = (id) => {
+  return axios.get(`/api/auth/users/${id}`);
+};
+
+export const getServiceCentersApi = () => {
+  return axios.get("/api/servicecenters");
 };
