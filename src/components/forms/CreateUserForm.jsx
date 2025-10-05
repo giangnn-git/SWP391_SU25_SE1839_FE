@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createUserApi } from "../services/api.service";
+import { createUserApi } from "../../services/api.service";
 
 const CreateUser = () => {
   const [name, setName] = useState("");

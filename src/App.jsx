@@ -1,18 +1,32 @@
-import CreateUser from "./components/CreateUserForm";
-import LogoutButton from "./components/LogoutButton";
+// App.jsx
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import PrivateRoute from "./components/routes/PrivateRoute";
+import LoginPage from "./pages/login";
+import ManageUsers from "./pages/manageUsers";
 
 const App = () => {
-  const email = localStorage.getItem("userEmail");
-
   return (
-    <div>
-      <h1>Home Page</h1>
-      <div>
-        <p>Welcome, {email}</p>
-        <LogoutButton />
-      </div>
-      <CreateUser />
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/"
+          element={
+            <PrivateRoute>
+              <ManageUsers />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/manage-users"
+          element={
+            <PrivateRoute>
+              <ManageUsers />
+            </PrivateRoute>
+          }
+        />
+      </Routes>
+    </Router>
   );
 };
 

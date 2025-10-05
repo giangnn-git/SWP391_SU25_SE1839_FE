@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import LoginPage from "./pages/login.jsx";
-import PrivateRoute from "./components/PrivateRoute.jsx";
+import PrivateRoute from "./components/routes/PrivateRoute.jsx";
 
 const router = createBrowserRouter([
   {

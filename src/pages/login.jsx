@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { userLoginApi } from "../services/api.service";
+import { storage } from "../utils/storage";
 
 const LoginPage = () => {
   const [user, setUser] = useState("");
@@ -17,9 +18,9 @@ const LoginPage = () => {
 
       const token = res.data?.data?.token;
       if (token) {
-        localStorage.setItem("token", token);
-        localStorage.setItem("userEmail", user);
-        localStorage.setItem("isLoggedIn", "true");
+        storage.set("token", token);
+        storage.set("userEmail", user);
+        storage.set("isLoggedIn", "true");
         navigate("/", { replace: true });
       } else {
         setError("Token not received from server!");
