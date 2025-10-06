@@ -102,7 +102,7 @@ const EditUserModal = ({ user, isOpen, onClose, onSave, loading }) => {
               </select>
             </div>
 
-            {/* Service Center - UPDATED WITH DROPDOWN */}
+            {/* Service Center */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Service Center *

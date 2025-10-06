@@ -5,7 +5,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import LoginPage from "./pages/login.jsx";
 import PrivateRoute from "./components/routes/PrivateRoute.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
-import ManageUsers from "./pages/ManageUsers.jsx";
+import ManageUsers from "./pages/manageUsers.jsx";
 import "./index.css";
 
 const router = createBrowserRouter([

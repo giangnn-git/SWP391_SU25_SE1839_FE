@@ -5,8 +5,8 @@ import {
   updateUserApi,
   toggleUserStatusApi,
 } from "../services/api.service";
-import UserTable from "../components/users/UserTable";
-import EditUserModal from "../components/users/EditUserModal";
+import UserTable from "../components/users/userTable.jsx";
+import EditUserModal from "../components/users/editUserModal.jsx";
 import CreateUserModal from "../components/users/CreateUserModal.jsx";
 
 const ManageUsers = () => {
@@ -136,7 +136,7 @@ const ManageUsers = () => {
       const timer = setTimeout(() => {
         setSuccess("");
         setError("");
-      }, 3000);
+      }, 6000);
       return () => clearTimeout(timer);
     }
   }, [success, error]);
