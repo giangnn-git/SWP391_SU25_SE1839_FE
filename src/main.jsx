@@ -6,6 +6,7 @@ import LoginPage from "./pages/login.jsx";
 import PrivateRoute from "./components/routes/PrivateRoute.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import ManageUsers from "./pages/manageUsers.jsx";
+import SupplyChain from "./pages/SupplyChain";
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -24,6 +25,10 @@ const router = createBrowserRouter([
       {
         path: "manage-users", // only admin access
         element: <ManageUsers />,
+      },
+      {
+        path: "supply-chain", // supply
+        element: <SupplyChain />,
       },
     ],
   },
