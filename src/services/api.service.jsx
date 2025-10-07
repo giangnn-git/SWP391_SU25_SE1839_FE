@@ -1,5 +1,4 @@
 import axios from "./axios.customize";
-import { storage } from "../utils/storage";
 
 // Login API
 export const userLoginApi = (user, password) => {
@@ -27,8 +26,6 @@ export const createUserApi = async (
     role: role,
     serviceCenterId: 1,
   };
-
-  console.log("🎯 Create User Payload:", data);
 
   return axios.post(URL_BACKEND, data);
 };
@@ -69,4 +66,13 @@ export const getUserByIdApi = (id) => {
 
 export const getServiceCentersApi = () => {
   return axios.get("/api/servicecenters");
+};
+
+export const changePasswordApi = async (id, passwordData) => {
+  const URL_BACKEND = `/api/auth/${id}/change-password`;
+
+  return axios.post(URL_BACKEND, {
+    oldPassword: passwordData.currentPassword,
+    newPassword: passwordData.newPassword,
+  });
 };

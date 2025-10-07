@@ -1,4 +1,3 @@
-// pages/login.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { userLoginApi } from "../services/api.service";
@@ -20,13 +19,31 @@ const LoginPage = () => {
       const res = await userLoginApi(user, password);
 
       const token = res.data?.data?.token;
-      if (token) {
-        storage.set("token", token);
-        storage.set("userEmail", user);
-        storage.set("isLoggedIn", "true");
-        navigate("/", { replace: true });
-      } else {
+      const id = res.data?.data?.id;
+      const name = res.data?.data?.name;
+      const requiresPasswordChange = res.data?.data?.requiresPasswordChange;
+
+      console.log("🔍 LOGIN DEBUG:", {
+        requiresPasswordChange,
+        type: typeof requiresPasswordChange,
+      });
+
+      if (!token) {
         setError("Token not received from server!");
+        return;
+      }
+
+      storage.set("token", token);
+      storage.set("userEmail", user);
+      storage.set("isLoggedIn", true);
+      storage.set("id", id);
+      storage.set("userName", name);
+      storage.set("requiresPasswordChange", requiresPasswordChange);
+
+      if (requiresPasswordChange === true) {
+        navigate("/change-password", { replace: true });
+      } else {
+        navigate("/", { replace: true });
       }
     } catch (err) {
       if (err.response) {
@@ -45,11 +62,6 @@ const LoginPage = () => {
   const handleForgotPassword = () => {
     // TODO: Implement forgot password functionality
     alert("Forgot password feature will be implemented soon!");
-  };
-
-  const handleChangePassword = () => {
-    // TODO: Implement change password functionality
-    alert("Change password feature will be implemented soon!");
   };
 
   return (
@@ -154,14 +166,6 @@ const LoginPage = () => {
                 className="font-medium text-blue-600 hover:text-blue-500 focus:outline-none focus:underline"
               >
                 Forgot password?
-              </button>
-
-              <button
-                type="button"
-                onClick={handleChangePassword}
-                className="font-medium text-gray-600 hover:text-gray-500 focus:outline-none focus:underline"
-              >
-                Change password
               </button>
             </div>
           </form>
