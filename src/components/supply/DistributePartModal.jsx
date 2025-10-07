@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { X, Building2 } from "lucide-react";
 
-const centers = ["Trung tâm HCM", "Trung tâm Hà Nội", "Trung tâm Đà Nẵng"];
+const centers = ["HCM Service Center", "Hanoi Service Center", "Danang Service Center"];
 
 const DistributePartModal = ({ part, onClose }) => {
     const [center, setCenter] = useState("");
@@ -12,7 +12,7 @@ const DistributePartModal = ({ part, onClose }) => {
             <div className="bg-white rounded-xl shadow-lg w-[400px] p-6">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold">Phân bổ phụ tùng</h2>
+                    <h2 className="text-lg font-semibold">Distribute Part</h2>
                     <button onClick={onClose}>
                         <X size={20} className="text-gray-600 hover:text-black" />
                     </button>
@@ -20,7 +20,7 @@ const DistributePartModal = ({ part, onClose }) => {
 
                 {/* Info */}
                 <p className="text-sm text-gray-600 mb-3">
-                    Phụ tùng: <b>{part.name}</b> ({part.code})
+                    Part: <b>{part.name}</b> ({part.code})
                 </p>
 
                 {/* Form */}
@@ -32,7 +32,7 @@ const DistributePartModal = ({ part, onClose }) => {
                             onChange={(e) => setCenter(e.target.value)}
                             className="w-full outline-none text-gray-700"
                         >
-                            <option value="">Chọn trung tâm bảo hành</option>
+                            <option value="">Select Service Center</option>
                             {centers.map((c, i) => (
                                 <option key={i} value={c}>
                                     {c}
@@ -43,7 +43,7 @@ const DistributePartModal = ({ part, onClose }) => {
 
                     <input
                         type="number"
-                        placeholder="Số lượng phân bổ"
+                        placeholder="Distribution Quantity"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
                         className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-gray-400"
@@ -56,10 +56,10 @@ const DistributePartModal = ({ part, onClose }) => {
                         className="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-100 transition"
                         onClick={onClose}
                     >
-                        Hủy
+                        Cancel
                     </button>
                     <button className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition">
-                        Xác nhận
+                        Confirm
                     </button>
                 </div>
             </div>

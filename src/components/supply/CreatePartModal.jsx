@@ -17,7 +17,7 @@ const CreatePartModal = ({ onClose }) => {
             <div className="bg-white rounded-xl shadow-lg w-[420px] p-6">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold">Thêm phụ tùng mới</h2>
+                    <h2 className="text-lg font-semibold">Add New Part</h2>
                     <button onClick={onClose}>
                         <X size={20} className="text-gray-600 hover:text-black" />
                     </button>
@@ -32,14 +32,14 @@ const CreatePartModal = ({ onClose }) => {
                             type={field === "quantity" ? "number" : "text"}
                             placeholder={
                                 field === "code"
-                                    ? "Mã phụ tùng"
+                                    ? "Part Code"
                                     : field === "name"
-                                        ? "Tên phụ tùng"
+                                        ? "Part Name"
                                         : field === "model"
                                             ? "Model"
                                             : field === "quantity"
-                                                ? "Số lượng"
-                                                : "Vị trí kho"
+                                                ? "Quantity"
+                                                : "Storage Location"
                             }
                             value={form[field]}
                             onChange={handleChange}
@@ -54,10 +54,10 @@ const CreatePartModal = ({ onClose }) => {
                         className="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-100 transition"
                         onClick={onClose}
                     >
-                        Hủy
+                        Cancel
                     </button>
                     <button className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition">
-                        Lưu
+                        Save
                     </button>
                 </div>
             </div>
