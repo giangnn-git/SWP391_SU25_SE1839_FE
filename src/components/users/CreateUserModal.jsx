@@ -6,10 +6,6 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
   const [formData, setFormData] = useState({
     email: "",
     name: "",
-<<<<<<< HEAD
-    password: "",
-=======
->>>>>>> origin/dev
     phoneNumber: "",
     role: "",
     serviceCenterId: "",
@@ -19,21 +15,12 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-<<<<<<< HEAD
-    // Validation
-=======
->>>>>>> origin/dev
     const newErrors = {};
     if (!formData.email.trim()) newErrors.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(formData.email))
       newErrors.email = "Email is invalid";
 
     if (!formData.name.trim()) newErrors.name = "Name is required";
-<<<<<<< HEAD
-    if (!formData.password) newErrors.password = "Password is required";
-=======
-
->>>>>>> origin/dev
     if (!formData.phoneNumber.trim())
       newErrors.phoneNumber = "Phone number is required";
     if (!formData.role) newErrors.role = "Please select a role";
@@ -45,9 +32,6 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
       return;
     }
 
-<<<<<<< HEAD
-    onSubmit(formData);
-=======
     const submitData = {
       email: formData.email.trim(),
       name: formData.name.trim(),
@@ -57,7 +41,6 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
     };
 
     onSubmit(submitData);
->>>>>>> origin/dev
   };
 
   const handleChange = (field, value) => {
@@ -72,10 +55,6 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
     setFormData({
       email: "",
       name: "",
-<<<<<<< HEAD
-      password: "",
-=======
->>>>>>> origin/dev
       phoneNumber: "",
       role: "",
       serviceCenterId: "",
@@ -109,9 +88,8 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
               type="email"
               value={formData.email}
               onChange={(e) => handleChange("email", e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.email ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.email ? "border-red-500" : "border-gray-300"
+                }`}
               placeholder="Enter user email"
               disabled={loading}
             />
@@ -129,9 +107,8 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
               type="text"
               value={formData.name}
               onChange={(e) => handleChange("name", e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.name ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.name ? "border-red-500" : "border-gray-300"
+                }`}
               placeholder="Enter user name"
               disabled={loading}
             />
@@ -140,29 +117,6 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
             )}
           </div>
 
-<<<<<<< HEAD
-          {/* Password Field */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password *
-            </label>
-            <input
-              type="password"
-              value={formData.password}
-              onChange={(e) => handleChange("password", e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.password ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder="Enter password"
-              disabled={loading}
-            />
-            {errors.password && (
-              <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-            )}
-          </div>
-
-=======
->>>>>>> origin/dev
           {/* Phone Number Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -172,9 +126,8 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
               type="tel"
               value={formData.phoneNumber}
               onChange={(e) => handleChange("phoneNumber", e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.phoneNumber ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.phoneNumber ? "border-red-500" : "border-gray-300"
+                }`}
               placeholder="Enter phone number"
               disabled={loading}
             />
@@ -183,11 +136,7 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
             )}
           </div>
 
-<<<<<<< HEAD
-          {/* Role Field */}
-=======
           {/* Role Field - ĐÃ SỬA */}
->>>>>>> origin/dev
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Role *
@@ -195,30 +144,20 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
             <select
               value={formData.role}
               onChange={(e) => handleChange("role", e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.role ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.role ? "border-red-500" : "border-gray-300"
+                }`}
               disabled={loading}
             >
               <option value="">Select a role</option>
-<<<<<<< HEAD
-              <option value="STAFF">STAFF</option>
-              <option value="ADMIN">ADMIN</option>
-=======
               <option value="ADMIN">ADMIN</option>
               <option value="TECHNICIAN">TECHNICIAN</option>
               <option value="SC_STAFF">SC_STAFF</option>
               <option value="EVM_STAFF">EVM_STAFF</option>
->>>>>>> origin/dev
             </select>
             {errors.role && (
               <p className="mt-1 text-sm text-red-600">{errors.role}</p>
             )}
           </div>
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/dev
           {/* Service Center Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -229,20 +168,15 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
               onChange={(e) =>
                 handleChange("serviceCenterId", parseInt(e.target.value))
               }
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.serviceCenterId ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.serviceCenterId ? "border-red-500" : "border-gray-300"
+                }`}
               disabled={loading || scLoading}
               required
             >
               <option value="">Select Service Center</option>
               {serviceCenters.map((sc) => (
                 <option key={sc.id} value={sc.id}>
-<<<<<<< HEAD
-                  {sc.name}
-=======
                   {sc.address}
->>>>>>> origin/dev
                 </option>
               ))}
             </select>

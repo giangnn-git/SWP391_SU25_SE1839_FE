@@ -1,10 +1,3 @@
-<<<<<<< HEAD
-import LogoutButton from "../auth/LogoutButton";
-import { storage } from "../../utils/storage";
-
-const Header = () => {
-  const userEmail = storage.get("userEmail");
-=======
 import { useState, useRef, useEffect } from "react";
 import { storage } from "../../utils/storage";
 import { useNavigate } from "react-router-dom";
@@ -43,7 +36,6 @@ const Header = () => {
     navigate("/profile");
     setIsDropdownOpen(false);
   };
->>>>>>> origin/dev
 
   return (
     <header className="bg-white shadow-sm border-b">
@@ -53,13 +45,6 @@ const Header = () => {
             EV Warranty Management System
           </h1>
         </div>
-<<<<<<< HEAD
-        <div className="flex items-center space-x-4">
-          <div className="text-right">
-            <p className="text-sm font-medium text-gray-900">{userEmail}</p>
-          </div>
-          <LogoutButton />
-=======
 
         <div className="flex items-center space-x-4">
           {/* User Info & Dropdown */}
@@ -91,9 +76,8 @@ const Header = () => {
 
               {/* Chevron Icon */}
               <svg
-                className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${
-                  isDropdownOpen ? "rotate-180" : ""
-                }`}
+                className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""
+                  }`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -154,7 +138,6 @@ const Header = () => {
               </div>
             )}
           </div>
->>>>>>> origin/dev
         </div>
       </div>
     </header>
