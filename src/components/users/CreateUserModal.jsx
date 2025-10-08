@@ -6,7 +6,6 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
   const [formData, setFormData] = useState({
     email: "",
     name: "",
-    password: "",
     phoneNumber: "",
     role: "",
     serviceCenterId: "",
@@ -16,14 +15,13 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Validation
     const newErrors = {};
     if (!formData.email.trim()) newErrors.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(formData.email))
       newErrors.email = "Email is invalid";
 
     if (!formData.name.trim()) newErrors.name = "Name is required";
-    if (!formData.password) newErrors.password = "Password is required";
+
     if (!formData.phoneNumber.trim())
       newErrors.phoneNumber = "Phone number is required";
     if (!formData.role) newErrors.role = "Please select a role";
@@ -35,7 +33,15 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
       return;
     }
 
-    onSubmit(formData);
+    const submitData = {
+      email: formData.email.trim(),
+      name: formData.name.trim(),
+      phoneNumber: formData.phoneNumber.trim(),
+      role: formData.role,
+      serviceCenterId: parseInt(formData.serviceCenterId),
+    };
+
+    onSubmit(submitData);
   };
 
   const handleChange = (field, value) => {
@@ -50,7 +56,6 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
     setFormData({
       email: "",
       name: "",
-      password: "",
       phoneNumber: "",
       role: "",
       serviceCenterId: "",
@@ -115,26 +120,6 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
             )}
           </div>
 
-          {/* Password Field */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password *
-            </label>
-            <input
-              type="password"
-              value={formData.password}
-              onChange={(e) => handleChange("password", e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.password ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder="Enter password"
-              disabled={loading}
-            />
-            {errors.password && (
-              <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-            )}
-          </div>
-
           {/* Phone Number Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -155,7 +140,7 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
             )}
           </div>
 
-          {/* Role Field */}
+          {/* Role Field - ĐÃ SỬA */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Role *
@@ -169,13 +154,16 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
               disabled={loading}
             >
               <option value="">Select a role</option>
-              <option value="STAFF">STAFF</option>
               <option value="ADMIN">ADMIN</option>
+              <option value="TECHNICIAN">TECHNICIAN</option>
+              <option value="SC_STAFF">SC_STAFF</option>
+              <option value="EVM_STAFF">EVM_STAFF</option>
             </select>
             {errors.role && (
               <p className="mt-1 text-sm text-red-600">{errors.role}</p>
             )}
           </div>
+
           {/* Service Center Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -195,7 +183,7 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
               <option value="">Select Service Center</option>
               {serviceCenters.map((sc) => (
                 <option key={sc.id} value={sc.id}>
-                  {sc.name}
+                  {sc.address}
                 </option>
               ))}
             </select>

@@ -99,6 +99,8 @@ const EditUserModal = ({ user, isOpen, onClose, onSave, loading }) => {
                 <option value="">Select Role</option>
                 <option value="STAFF">STAFF</option>
                 <option value="ADMIN">ADMIN</option>
+                <option value="SC_STAFF">SC_STAFF</option>
+                <option value="EVM_STAFF">EVM_STAFF</option>
               </select>
             </div>
 
@@ -119,7 +121,7 @@ const EditUserModal = ({ user, isOpen, onClose, onSave, loading }) => {
                 <option value="">Select Service Center</option>
                 {serviceCenters.map((sc) => (
                   <option key={sc.id} value={sc.id}>
-                    {sc.name}
+                    {sc.address}
                   </option>
                 ))}
               </select>
