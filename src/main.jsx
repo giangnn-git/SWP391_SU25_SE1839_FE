@@ -6,6 +6,7 @@ import LoginPage from "./pages/login.jsx";
 import PrivateRoute from "./components/routes/PrivateRoute.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import ManageUsers from "./pages/manageUsers.jsx";
+import WarrantyClaims from "./pages/WarrantyClaims.jsx";
 import ProfilePage from "./pages/Profiles.jsx";
 import ChangePasswordPage from "./pages/ChangePassword.jsx";
 import "./index.css";
@@ -23,6 +24,11 @@ const router = createBrowserRouter([
         index: true, //  Home page
         element: <Dashboard />,
       },
+      {
+        path: "/warranty-claims", // only admin access
+        element: <WarrantyClaims />,
+      },
+
       {
         path: "manage-users", // only admin access
         element: <ManageUsers />,

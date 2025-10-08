@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-// pages/login.jsx
-=======
->>>>>>> origin/dev
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { userLoginApi } from "../services/api.service";
@@ -23,15 +19,6 @@ const LoginPage = () => {
       const res = await userLoginApi(user, password);
 
       const token = res.data?.data?.token;
-<<<<<<< HEAD
-      if (token) {
-        storage.set("token", token);
-        storage.set("userEmail", user);
-        storage.set("isLoggedIn", "true");
-        navigate("/", { replace: true });
-      } else {
-        setError("Token not received from server!");
-=======
       const id = res.data?.data?.id;
       const name = res.data?.data?.name;
       const requiresPasswordChange = res.data?.data?.requiresPasswordChange;
@@ -57,7 +44,6 @@ const LoginPage = () => {
         navigate("/change-password", { replace: true });
       } else {
         navigate("/", { replace: true });
->>>>>>> origin/dev
       }
     } catch (err) {
       if (err.response) {
@@ -78,14 +64,6 @@ const LoginPage = () => {
     alert("Forgot password feature will be implemented soon!");
   };
 
-<<<<<<< HEAD
-  const handleChangePassword = () => {
-    // TODO: Implement change password functionality
-    alert("Change password feature will be implemented soon!");
-  };
-
-=======
->>>>>>> origin/dev
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -189,17 +167,6 @@ const LoginPage = () => {
               >
                 Forgot password?
               </button>
-<<<<<<< HEAD
-
-              <button
-                type="button"
-                onClick={handleChangePassword}
-                className="font-medium text-gray-600 hover:text-gray-500 focus:outline-none focus:underline"
-              >
-                Change password
-              </button>
-=======
->>>>>>> origin/dev
             </div>
           </form>
         </div>

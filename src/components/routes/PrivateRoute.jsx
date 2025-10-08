@@ -1,12 +1,3 @@
-<<<<<<< HEAD
-import { Navigate } from "react-router-dom";
-import { storage } from "../../utils/storage";
-
-const PrivateRoute = ({ children }) => {
-  const isLoggedIn = storage.get("isLoggedIn");
-
-  return isLoggedIn ? children : <Navigate to="/login" replace />;
-=======
 import { Navigate, useLocation } from "react-router-dom";
 import { storage } from "../../utils/storage";
 
@@ -35,7 +26,6 @@ const PrivateRoute = ({ children }) => {
   }
 
   return children;
->>>>>>> origin/dev
 };
 
 export default PrivateRoute;
