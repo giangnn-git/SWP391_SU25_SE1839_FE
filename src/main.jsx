@@ -9,6 +9,8 @@ import Dashboard from "./pages/Dashboard.jsx";
 import ManageUsers from "./pages/manageUsers.jsx";
 import SupplyChain from "./pages/SupplyChain";
 import PartPolicyManagement from "./pages/PartPolicyManagement.jsx";
+import ProfilePage from "./pages/Profiles.jsx";
+import ChangePasswordPage from "./pages/ChangePassword.jsx";
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -29,6 +31,7 @@ const router = createBrowserRouter([
         element: <ManageUsers />,
       },
       {
+
         path: "supply-chain", //  chỉ admin + evm staff mới truy cập được
         element: (
           <RoleProtectedRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
@@ -45,7 +48,20 @@ const router = createBrowserRouter([
         ),
       },
 
+
+        path: "profile",
+        element: <ProfilePage />,
+      },
+
     ],
+  },
+  {
+    path: "/change-password",
+    element: (
+      <PrivateRoute>
+        <ChangePasswordPage />
+      </PrivateRoute>
+    ),
   },
   {
     path: "/login",
