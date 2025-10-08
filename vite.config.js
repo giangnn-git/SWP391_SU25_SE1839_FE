@@ -9,6 +9,7 @@ export default defineConfig({
       "/api": {
         // target: "https://orthopterous-unwieldable-kristal.ngrok-free.dev", // tam
         target: "https://junie-preaortic-sina.ngrok-free.dev/admin/user", // QA
+
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, ""),
