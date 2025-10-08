@@ -75,20 +75,20 @@ export const getServiceCentersApi = () => {
 
 // ✅ CREATE (Tạo claim)
 export const createClaimApi = async (
-  description,
-  mileage,
   vin,
+  mileage,
   priority,
   partClaims,
+  description,
   attachments
 ) => {
   const data = {
-    description,
-    mileage,
     vin,
+    mileage,
     priority,
     partClaims,
-    attachments,
+    description,
+    attachments
   };
 
   console.log("Create Claim Payload:", data);

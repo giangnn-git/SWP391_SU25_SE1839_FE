@@ -156,7 +156,7 @@ const WarrantyClaims = () => {
 
                 <div className="flex items-center space-x-4">
                     {/* ✅ SEARCH INPUT */}
-                    <div className="relative">
+                    {/* <div className="relative">
                         <input
                             type="text"
                             placeholder="Search by name or email..."
@@ -177,7 +177,7 @@ const WarrantyClaims = () => {
                                 />
                             </svg>
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* CREATE USER BUTTON */}
                     <button
@@ -190,14 +190,14 @@ const WarrantyClaims = () => {
             </div>
 
             {/* Search Results Info */}
-            {searchTerm && (
+            {/* {searchTerm && (
                 <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-sm text-blue-700">
                         Showing {filteredUsers.length} of {users.length} users
                         {searchTerm && ` for "${searchTerm}"`}
                     </p>
                 </div>
-            )}
+            )} */}
 
             {/* Messages */}
             {error && (

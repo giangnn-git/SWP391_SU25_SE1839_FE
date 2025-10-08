@@ -93,7 +93,6 @@ const CreateClaimModal = ({ isOpen, onClose, onSubmit, loading }) => {
                         onClick={handleClose}
                         className="text-gray-400 hover:text-gray-600 text-2xl"
                     >
-                        ×
                     </button>
                 </div>
 
@@ -199,7 +198,7 @@ const CreateClaimModal = ({ isOpen, onClose, onSubmit, loading }) => {
                                     onChange={(e) =>
                                         handlePartChange(index, "quantity", e.target.value)
                                     }
-                                    placeholder="Qty"
+                                    placeholder="Quantity"
                                     className="w-24 px-3 py-2 border rounded-lg"
                                     disabled={loading}
                                 />
