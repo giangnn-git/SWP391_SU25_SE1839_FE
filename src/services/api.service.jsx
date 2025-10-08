@@ -65,7 +65,7 @@ export const getUserByIdApi = (id) => {
 };
 
 export const getServiceCentersApi = () => {
-  return axios.get("/api/servicecenters");
+  return axios.get("/api/api/servicecenters");
 };
 
 export const changePasswordApi = async (id, passwordData) => {
