@@ -7,7 +7,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       "/api": {
-        target: "https://orthopterous-unwieldable-kristal.ngrok-free.dev",
+        target: "https://junie-preaortic-sina.ngrok-free.dev",
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, ""),

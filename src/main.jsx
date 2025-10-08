@@ -4,9 +4,11 @@ import App from "./App.jsx";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import LoginPage from "./pages/login.jsx";
 import PrivateRoute from "./components/routes/PrivateRoute.jsx";
+import RoleProtectedRoute from "./components/routes/RoleProtectedRoute.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import ManageUsers from "./pages/manageUsers.jsx";
 import SupplyChain from "./pages/SupplyChain";
+import PartPolicyManagement from "./pages/PartPolicyManagement.jsx";
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -27,9 +29,22 @@ const router = createBrowserRouter([
         element: <ManageUsers />,
       },
       {
-        path: "supply-chain", // supply
-        element: <SupplyChain />,
+        path: "supply-chain", //  chỉ admin + evm staff mới truy cập được
+        element: (
+          <RoleProtectedRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+            <SupplyChain />
+          </RoleProtectedRoute>
+        ),
       },
+      {
+        path: "part-policies", //  quản lý chính sách bảo hành chỉ admin và evm mới có
+        element: (
+          <RoleProtectedRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+            <PartPolicyManagement />
+          </RoleProtectedRoute>
+        ),
+      },
+
     ],
   },
   {
