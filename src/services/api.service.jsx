@@ -1,5 +1,8 @@
 import axios from "./axios.customize";
+<<<<<<< HEAD
 import { storage } from "../utils/storage";
+=======
+>>>>>>> origin/dev
 
 // Login API
 export const userLoginApi = (user, password) => {
@@ -28,8 +31,11 @@ export const createUserApi = async (
     serviceCenterId: 1,
   };
 
+<<<<<<< HEAD
   console.log("🎯 Create User Payload:", data);
 
+=======
+>>>>>>> origin/dev
   return axios.post(URL_BACKEND, data);
 };
 
@@ -68,6 +74,7 @@ export const getUserByIdApi = (id) => {
 };
 
 export const getServiceCentersApi = () => {
+<<<<<<< HEAD
   return axios.get("/api/servicecenters");
 };
 
@@ -116,3 +123,16 @@ export const deleteClaimApi = async (id) => {
   console.log("🗑️ Deleting claim:", id);
   return axios.delete(`/api/claims/${id}`);
 };
+=======
+  return axios.get("/api/api/servicecenters");
+};
+
+export const changePasswordApi = async (id, passwordData) => {
+  const URL_BACKEND = `/api/auth/${id}/change-password`;
+
+  return axios.post(URL_BACKEND, {
+    oldPassword: passwordData.currentPassword,
+    newPassword: passwordData.newPassword,
+  });
+};
+>>>>>>> origin/dev

@@ -99,6 +99,11 @@ const EditUserModal = ({ user, isOpen, onClose, onSave, loading }) => {
                 <option value="">Select Role</option>
                 <option value="STAFF">STAFF</option>
                 <option value="ADMIN">ADMIN</option>
+<<<<<<< HEAD
+=======
+                <option value="SC_STAFF">SC_STAFF</option>
+                <option value="EVM_STAFF">EVM_STAFF</option>
+>>>>>>> origin/dev
               </select>
             </div>
 
@@ -119,7 +124,11 @@ const EditUserModal = ({ user, isOpen, onClose, onSave, loading }) => {
                 <option value="">Select Service Center</option>
                 {serviceCenters.map((sc) => (
                   <option key={sc.id} value={sc.id}>
+<<<<<<< HEAD
                     {sc.name}
+=======
+                    {sc.address}
+>>>>>>> origin/dev
                   </option>
                 ))}
               </select>

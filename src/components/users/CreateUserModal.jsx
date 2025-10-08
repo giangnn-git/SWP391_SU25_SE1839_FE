@@ -6,7 +6,10 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
   const [formData, setFormData] = useState({
     email: "",
     name: "",
+<<<<<<< HEAD
     password: "",
+=======
+>>>>>>> origin/dev
     phoneNumber: "",
     role: "",
     serviceCenterId: "",
@@ -16,14 +19,21 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+<<<<<<< HEAD
     // Validation
+=======
+>>>>>>> origin/dev
     const newErrors = {};
     if (!formData.email.trim()) newErrors.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(formData.email))
       newErrors.email = "Email is invalid";
 
     if (!formData.name.trim()) newErrors.name = "Name is required";
+<<<<<<< HEAD
     if (!formData.password) newErrors.password = "Password is required";
+=======
+
+>>>>>>> origin/dev
     if (!formData.phoneNumber.trim())
       newErrors.phoneNumber = "Phone number is required";
     if (!formData.role) newErrors.role = "Please select a role";
@@ -35,7 +45,19 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
       return;
     }
 
+<<<<<<< HEAD
     onSubmit(formData);
+=======
+    const submitData = {
+      email: formData.email.trim(),
+      name: formData.name.trim(),
+      phoneNumber: formData.phoneNumber.trim(),
+      role: formData.role,
+      serviceCenterId: parseInt(formData.serviceCenterId),
+    };
+
+    onSubmit(submitData);
+>>>>>>> origin/dev
   };
 
   const handleChange = (field, value) => {
@@ -50,7 +72,10 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
     setFormData({
       email: "",
       name: "",
+<<<<<<< HEAD
       password: "",
+=======
+>>>>>>> origin/dev
       phoneNumber: "",
       role: "",
       serviceCenterId: "",
@@ -115,6 +140,7 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
             )}
           </div>
 
+<<<<<<< HEAD
           {/* Password Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -135,6 +161,8 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
             )}
           </div>
 
+=======
+>>>>>>> origin/dev
           {/* Phone Number Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -155,7 +183,11 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
             )}
           </div>
 
+<<<<<<< HEAD
           {/* Role Field */}
+=======
+          {/* Role Field - ĐÃ SỬA */}
+>>>>>>> origin/dev
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Role *
@@ -169,13 +201,24 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
               disabled={loading}
             >
               <option value="">Select a role</option>
+<<<<<<< HEAD
               <option value="STAFF">STAFF</option>
               <option value="ADMIN">ADMIN</option>
+=======
+              <option value="ADMIN">ADMIN</option>
+              <option value="TECHNICIAN">TECHNICIAN</option>
+              <option value="SC_STAFF">SC_STAFF</option>
+              <option value="EVM_STAFF">EVM_STAFF</option>
+>>>>>>> origin/dev
             </select>
             {errors.role && (
               <p className="mt-1 text-sm text-red-600">{errors.role}</p>
             )}
           </div>
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/dev
           {/* Service Center Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -195,7 +238,11 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
               <option value="">Select Service Center</option>
               {serviceCenters.map((sc) => (
                 <option key={sc.id} value={sc.id}>
+<<<<<<< HEAD
                   {sc.name}
+=======
+                  {sc.address}
+>>>>>>> origin/dev
                 </option>
               ))}
             </select>
