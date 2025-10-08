@@ -70,3 +70,49 @@ export const getUserByIdApi = (id) => {
 export const getServiceCentersApi = () => {
   return axios.get("/api/servicecenters");
 };
+
+//
+
+// ✅ CREATE (Tạo claim)
+export const createClaimApi = async (
+  description,
+  mileage,
+  vin,
+  priority,
+  partClaims,
+  attachments
+) => {
+  const data = {
+    description,
+    mileage,
+    vin,
+    priority,
+    partClaims,
+    attachments,
+  };
+
+  console.log("Create Claim Payload:", data);
+  return axios.post("/api/claims", data);
+};
+
+// READ (Lấy tất cả claims)
+export const getAllClaimsApi = async () => {
+  return axios.get("/api/claims");
+};
+
+// READ (Lấy claim theo ID)
+export const getClaimByIdApi = async (id) => {
+  return axios.get(`/api/claims/${id}`);
+};
+
+// UPDATE (Cập nhật claim)
+export const updateClaimApi = async (id, updatedData) => {
+  console.log("🛠 Updating claim:", id, updatedData);
+  return axios.put(`/api/claims/${id}`, updatedData);
+};
+
+// DELETE (Xóa claim)
+export const deleteClaimApi = async (id) => {
+  console.log("🗑️ Deleting claim:", id);
+  return axios.delete(`/api/claims/${id}`);
+};

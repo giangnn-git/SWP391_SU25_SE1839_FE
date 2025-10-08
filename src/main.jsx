@@ -5,7 +5,8 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import LoginPage from "./pages/login.jsx";
 import PrivateRoute from "./components/routes/PrivateRoute.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
-import ManageUsers from "./pages/manageUsers.jsx";
+import ManageUsers from "./pages/ManageUsers.jsx";
+import Claim from "./pages/WarrantyClaims.jsx";
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -24,6 +25,10 @@ const router = createBrowserRouter([
       {
         path: "manage-users", // only admin access
         element: <ManageUsers />,
+      },
+      {
+        path: "warranty-claims", // route cho page Claim
+        element: <Claim />,
       },
     ],
   },
