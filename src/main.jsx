@@ -8,8 +8,6 @@ import SupplyChain from "./pages/SupplyChain.jsx";
 import Policy from "./pages/Policy.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import ManageUsers from "./pages/manageUsers.jsx";
-import SupplyChain from "./pages/SupplyChain";
-import PartPolicyManagement from "./pages/PartPolicyManagement.jsx";
 import "./index.css";
 
 const router = createBrowserRouter([
