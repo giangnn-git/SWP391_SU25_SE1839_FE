@@ -10,6 +10,11 @@ export default defineConfig({
 
         target: "https://orthopterous-unwieldable-kristal.ngrok-free.dev", // tam
         // target: "https://junie-preaortic-sina.ngrok-free.dev/admin/user", // QA
+
+        // target: "https://orthopterous-unwieldable-kristal.ngrok-free.dev", // tam
+
+
+
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, ""),

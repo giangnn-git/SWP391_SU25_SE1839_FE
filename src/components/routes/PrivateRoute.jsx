@@ -23,7 +23,7 @@ const PrivateRoute = ({ children, allowedRoles = [] }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // Nếu cần đổi mật khẩu → về Change Password
+  // Nếu cần đổi mật khẩu → chuyển đến trang Change Password
   if (
     requiresPasswordChange === true &&
     location.pathname !== "/change-password"
@@ -31,7 +31,7 @@ const PrivateRoute = ({ children, allowedRoles = [] }) => {
     return <Navigate to="/change-password" replace />;
   }
 
-  // Nếu không cần đổi mật khẩu mà đang ở change-password → về Dashboard
+  // Nếu KHÔNG cần đổi mật khẩu mà đang ở trang đổi mật khẩu → về Dashboard
   if (
     requiresPasswordChange === false &&
     location.pathname === "/change-password"
@@ -39,7 +39,7 @@ const PrivateRoute = ({ children, allowedRoles = [] }) => {
     return <Navigate to="/" replace />;
   }
 
-  // Nếu route yêu cầu role cụ thể
+  // Nếu route yêu cầu role cụ thể mà user không đủ quyền → về Dashboard
   if (
     allowedRoles.length > 0 &&
     !allowedRoles.includes(currentUser.role?.toUpperCase())
@@ -47,7 +47,7 @@ const PrivateRoute = ({ children, allowedRoles = [] }) => {
     return <Navigate to="/" replace />;
   }
 
-  // Tất cả hợp lệ → render component con
+  // Tất cả điều kiện hợp lệ → render component con
   return children;
 };
 

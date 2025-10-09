@@ -8,6 +8,8 @@ import SupplyChain from "./pages/SupplyChain.jsx";
 import Policy from "./pages/Policy.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import ManageUsers from "./pages/manageUsers.jsx";
+import SupplyChain from "./pages/SupplyChain";
+import PartPolicyManagement from "./pages/PartPolicyManagement.jsx";
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -32,7 +34,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "supply-chain", // Only Admin + EVM Staff
+        path: "supply-chain", //  chỉ admin + evm staff mới truy cập được
         element: (
           <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
             <SupplyChain />
@@ -63,6 +65,7 @@ const router = createBrowserRouter([
           </PrivateRoute>
         ),
       },
+
     ],
   },
   {
