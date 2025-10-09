@@ -23,11 +23,6 @@ const LoginPage = () => {
       const name = res.data?.data?.name;
       const requiresPasswordChange = res.data?.data?.requiresPasswordChange;
 
-      console.log("🔍 LOGIN DEBUG:", {
-        requiresPasswordChange,
-        type: typeof requiresPasswordChange,
-      });
-
       if (!token) {
         setError("Token not received from server!");
         return;

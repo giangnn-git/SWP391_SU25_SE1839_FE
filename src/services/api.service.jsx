@@ -36,7 +36,7 @@ export const getAllUsersApi = () => {
 };
 
 // Update user
-export const updateUserApi = (id, userData) => {
+export const updateUserApi = (id, userData, token) => {
   return axios.put(`/api/auth/users/${id}`, {
     email: userData.email,
     name: userData.name,
