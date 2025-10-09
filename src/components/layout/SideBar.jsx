@@ -5,6 +5,7 @@ const Sidebar = () => {
   const { currentUser, loading } = useCurrentUser();
 
   const isAdmin = currentUser?.role === "ADMIN";
+  const isEvmStaff = currentUser?.role === "EVM_STAFF";
 
   const navigation = [
     { name: "Dashboard", href: "/", icon: "📊" },
@@ -13,6 +14,15 @@ const Sidebar = () => {
     { name: "Claim Approval", href: "/approvals", icon: "✅" },
     { name: "Supply Chain", href: "/supply-chain", icon: "🔗" },
     { name: "Analytics & Reports", href: "/analytics", icon: "📈" },
+    ...(isAdmin || isEvmStaff
+      ? [
+        {
+          name: "Policy",
+          href: "/policy",
+          icon: "📜",
+        },
+      ]
+      : []),
     ...(isAdmin
       ? [{ name: "User Management", href: "/manage-users", icon: "👥" }]
       : []),
@@ -43,19 +53,49 @@ const Sidebar = () => {
           <ul className="space-y-1">
             {navigation.map((item) => (
               <li key={item.name}>
-                <NavLink
-                  to={item.href}
-                  className={({ isActive }) =>
-                    `flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
-                      isActive
+                {item.subMenu ? (
+                  <details className="group">
+                    <summary className="flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer">
+                      <span className="flex items-center">
+                        <span className="mr-3 text-base">{item.icon}</span>
+                        {item.name}
+                      </span>
+                      <span className="text-gray-500 group-open:rotate-90 transition-transform">
+                        ▶
+                      </span>
+                    </summary>
+                    <ul className="pl-8 mt-1 space-y-1">
+                      {item.subMenu.map((sub) => (
+                        <li key={sub.name}>
+                          <NavLink
+                            to={sub.href}
+                            className={({ isActive }) =>
+                              `block px-3 py-1.5 text-sm rounded-md ${isActive
+                                ? "bg-blue-50 text-blue-700 border-r-2 border-blue-600"
+                                : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                              }`
+                            }
+                          >
+                            {sub.name}
+                          </NavLink>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ) : (
+                  <NavLink
+                    to={item.href}
+                    className={({ isActive }) =>
+                      `flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${isActive
                         ? "bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                         : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                    }`
-                  }
-                >
-                  <span className="mr-3 text-base">{item.icon}</span>
-                  {item.name}
-                </NavLink>
+                      }`
+                    }
+                  >
+                    <span className="mr-3 text-base">{item.icon}</span>
+                    {item.name}
+                  </NavLink>
+                )}
               </li>
             ))}
           </ul>

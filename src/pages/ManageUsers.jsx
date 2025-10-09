@@ -3,7 +3,6 @@ import {
   getAllUsersApi,
   createUserApi,
   updateUserApi,
-  toggleUserStatusApi,
 } from "../services/api.service";
 import UserTable from "../components/users/userTable.jsx";
 import EditUserModal from "../components/users/editUserModal.jsx";
@@ -151,7 +150,7 @@ const ManageUsers = () => {
         </div>
 
         <div className="flex items-center space-x-4">
-          {/* ✅ SEARCH INPUT */}
+          {/*  SEARCH INPUT */}
           <div className="relative">
             <input
               type="text"

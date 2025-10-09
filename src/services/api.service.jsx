@@ -9,22 +9,15 @@ export const userLoginApi = (user, password) => {
 };
 
 // Create User API
-export const createUserApi = async (
-  email,
-  name,
-  password,
-  phoneNumber,
-  role
-) => {
+export const createUserApi = async (userData) => {
   const URL_BACKEND = "/api/auth/user";
 
   const data = {
-    email: email,
-    name: name,
-    password: password,
-    phoneNumber: phoneNumber,
-    role: role,
-    serviceCenterId: 1,
+    email: userData.email,
+    name: userData.name,
+    phoneNumber: userData.phoneNumber,
+    role: userData.role,
+    serviceCenterId: userData.serviceCenterId,
   };
 
   return axios.post(URL_BACKEND, data);
@@ -36,7 +29,7 @@ export const getAllUsersApi = () => {
 };
 
 // Update user
-export const updateUserApi = (id, userData, token) => {
+export const updateUserApi = (id, userData) => {
   return axios.put(`/api/auth/users/${id}`, {
     email: userData.email,
     name: userData.name,
@@ -47,27 +40,29 @@ export const updateUserApi = (id, userData, token) => {
   });
 };
 
-// Inactive/Active user (toggle status)
-export const toggleUserStatusApi = (id, isActive) => {
-  return axios.patch(`/api/auth/users/${id}/status`, {
-    isActive,
-  });
-};
+// // Inactive/Active user (toggle status)
+// export const toggleUserStatusApi = (id, isActive) => {
+//   return axios.patch(`/api/auth/users/${id}/status`, {
+//     isActive,
+//   });
+// };
 
-// Delete user
-export const deleteUserApi = (id) => {
-  return axios.delete(`/api/auth/users/${id}`);
-};
+// // Delete user
+// export const deleteUserApi = (id) => {
+//   return axios.delete(`/api/auth/users/${id}`);
+// };
 
-// Get user by ID
-export const getUserByIdApi = (id) => {
-  return axios.get(`/api/auth/users/${id}`);
-};
+// // Get user by ID
+// export const getUserByIdApi = (id) => {
+//   return axios.get(`/api/auth/users/${id}`);
+// };
 
+//get all SC
 export const getServiceCentersApi = () => {
   return axios.get("/api/api/servicecenters");
 };
 
+//change pass
 export const changePasswordApi = async (id, passwordData) => {
   const URL_BACKEND = `/api/auth/${id}/change-password`;
 
@@ -75,4 +70,16 @@ export const changePasswordApi = async (id, passwordData) => {
     oldPassword: passwordData.currentPassword,
     newPassword: passwordData.newPassword,
   });
+};
+
+//{ Policy Warranty }
+
+//get all policy
+export const getAllWarrantyApi = () => {
+  return axios.get("/api/api/policies");
+};
+
+// create policy
+export const createWarrantyPolicyApi = (policyData) => {
+  return axios.post("/api/api/policy", policyData);
 };

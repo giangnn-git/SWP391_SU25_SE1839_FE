@@ -4,10 +4,10 @@ import App from "./App.jsx";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import LoginPage from "./pages/login.jsx";
 import PrivateRoute from "./components/routes/PrivateRoute.jsx";
+import SupplyChain from "./pages/SupplyChain.jsx";
+import Policy from "./pages/Policy.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import ManageUsers from "./pages/manageUsers.jsx";
-import ProfilePage from "./pages/Profiles.jsx";
-import ChangePasswordPage from "./pages/ChangePassword.jsx";
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -20,26 +20,51 @@ const router = createBrowserRouter([
     ),
     children: [
       {
-        index: true, //  Home page
+        index: true, // Home page
         element: <Dashboard />,
       },
       {
-        path: "manage-users", // only admin access
-        element: <ManageUsers />,
+        path: "manage-users", // Only Admin access
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN"]}>
+            <ManageUsers />
+          </PrivateRoute>
+        ),
       },
       {
-        path: "profile",
-        element: <ProfilePage />,
+        path: "supply-chain", //  chỉ admin + evm staff mới truy cập được
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+            <SupplyChain />
+          </PrivateRoute>
+        ),
       },
+      {
+        path: "policy", // Policy Management (Part + Warranty)
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+            <Policy />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: "part-policies", // Alias route: mở sẵn tab Part Policy
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+            <Policy />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: "warranty-policies", // Alias route: mở sẵn tab Warranty Policy
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+            <Policy />
+          </PrivateRoute>
+        ),
+      },
+
     ],
-  },
-  {
-    path: "/change-password",
-    element: (
-      <PrivateRoute>
-        <ChangePasswordPage />
-      </PrivateRoute>
-    ),
   },
   {
     path: "/login",
