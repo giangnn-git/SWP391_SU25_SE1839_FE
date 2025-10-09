@@ -1,91 +1,61 @@
 import React, { useState } from "react";
 import { PlusCircle, Filter, Eye } from "lucide-react";
 
-// ✅ Dummy data
-const dummyPolicies = [
+// ✅ Dummy data mẫu
+const dummyWarrantyPolicies = [
     {
-        partName: "Battery Module",
-        policyId: "WP-001",
-        startDate: "2024-01-10",
-        endDate: "2025-01-10",
-        status: "Active",
+        name: "Standard Battery Warranty",
+        description: "Covers battery and inverter for standard EV models.",
+        durationPeriod: "24 months",
+        mileageLimit: "40,000 km",
     },
     {
-        partName: "Inverter Controller",
-        policyId: "WP-002",
-        startDate: "2023-07-01",
-        endDate: "2024-07-01",
-        status: "Expired",
+        name: "Full Vehicle Protection",
+        description: "Includes all electric components, frame, and control unit.",
+        durationPeriod: "36 months",
+        mileageLimit: "60,000 km",
     },
     {
-        partName: "BMS Unit",
-        policyId: "WP-001",
-        startDate: "2024-04-15",
-        endDate: "2025-04-15",
-        status: "Active",
+        name: "Motor & Controller Policy",
+        description: "Protects motor drive and controller components.",
+        durationPeriod: "18 months",
+        mileageLimit: "30,000 km",
     },
     {
-        partName: "Motor Assembly",
-        policyId: "WP-003",
-        startDate: "2022-09-01",
-        endDate: "2023-09-01",
-        status: "Expired",
-    },
-    {
-        partName: "Charging Port",
-        policyId: "WP-004",
-        startDate: "2024-02-01",
-        endDate: "2025-02-01",
-        status: "Active",
-    },
-    {
-        partName: "Cooling Fan",
-        policyId: "WP-002",
-        startDate: "2024-03-20",
-        endDate: "2025-03-20",
-        status: "Active",
+        name: "Premium Long-Term Coverage",
+        description: "Extended protection plan for premium customers.",
+        durationPeriod: "48 months",
+        mileageLimit: "80,000 km",
     },
 ];
 
-// ✅ Dropdown sources
-const availableParts = [
-    "Battery Module",
-    "Inverter Controller",
-    "BMS Unit",
-    "Motor Assembly",
-    "Charging Port",
-    "Cooling Fan",
-];
-const availablePolicies = ["WP-001", "WP-002", "WP-003", "WP-004"];
-
-const PartPolicyManagement = () => {
-    const [policies, setPolicies] = useState(dummyPolicies);
+const WarrantyPolicyManagement = () => {
+    const [policies, setPolicies] = useState(dummyWarrantyPolicies);
     const [showModal, setShowModal] = useState(false);
     const [showViewModal, setShowViewModal] = useState(false);
     const [editing, setEditing] = useState(null);
     const [selectedPolicy, setSelectedPolicy] = useState(null);
 
     const [formData, setFormData] = useState({
-        partName: "",
-        policyId: "",
-        startDate: "",
-        endDate: "",
-        status: "Active",
+        name: "",
+        description: "",
+        durationPeriod: "",
+        mileageLimit: "",
     });
 
     // ✅ Filter & Pagination
-    const [filterPartName, setFilterPartName] = useState("");
-    const [filterPolicyId, setFilterPolicyId] = useState("");
-    const [filterStatus, setFilterStatus] = useState("");
+    const [filterDuration, setFilterDuration] = useState("");
+    const [filterMileage, setFilterMileage] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
     // ✅ Filter logic
     const filteredPolicies = policies.filter((p) => {
-        const matchPart = filterPartName ? p.partName === filterPartName : true;
-        const matchPolicy = filterPolicyId ? p.policyId === filterPolicyId : true;
-        const matchStatus = filterStatus ? p.status === filterStatus : true;
-        return matchPart && matchPolicy && matchStatus;
+        const matchDuration = filterDuration
+            ? p.durationPeriod === filterDuration
+            : true;
+        const matchMileage = filterMileage ? p.mileageLimit === filterMileage : true;
+        return matchDuration && matchMileage;
     });
 
     // ✅ Pagination logic
@@ -98,12 +68,8 @@ const PartPolicyManagement = () => {
 
     // ✅ CRUD handlers
     const handleSave = () => {
-        if (
-            !formData.partName ||
-            !formData.policyId ||
-            !formData.startDate ||
-            !formData.endDate
-        ) {
+        const { name, description, durationPeriod, mileageLimit } = formData;
+        if (!name || !description || !durationPeriod || !mileageLimit) {
             alert("Please fill in all fields before saving.");
             return;
         }
@@ -111,7 +77,7 @@ const PartPolicyManagement = () => {
         if (editing) {
             setPolicies(
                 policies.map((p) =>
-                    p.partName === editing.partName ? { ...p, ...formData } : p
+                    p.name === editing.name ? { ...p, ...formData } : p
                 )
             );
         } else {
@@ -121,20 +87,20 @@ const PartPolicyManagement = () => {
         setShowModal(false);
         setEditing(null);
         setFormData({
-            partName: "",
-            policyId: "",
-            startDate: "",
-            endDate: "",
-            status: "Active",
+            name: "",
+            description: "",
+            durationPeriod: "",
+            mileageLimit: "",
         });
     };
 
-    const handleDelete = (partName) => {
-        if (window.confirm("Are you sure you want to delete this policy?")) {
-            setPolicies(policies.filter((p) => p.partName !== partName));
+    const handleDelete = (name) => {
+        if (window.confirm("Are you sure you want to delete this warranty policy?")) {
+            setPolicies(policies.filter((p) => p.name !== name));
         }
     };
 
+    // ✅ Handle View
     const handleView = (policy) => {
         setSelectedPolicy(policy);
         setShowViewModal(true);
@@ -145,14 +111,14 @@ const PartPolicyManagement = () => {
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold flex items-center gap-2">
-                    📘 Part Policy Management
+                    🛡️ Warranty Policy Management
                 </h2>
                 <button
                     className="flex items-center bg-black text-white hover:bg-gray-800 px-4 py-2 rounded-md transition shadow-sm"
                     onClick={() => setShowModal(true)}
                 >
                     <PlusCircle size={18} className="mr-2" />
-                    Add New Policy
+                    Add New Warranty Policy
                 </button>
             </div>
 
@@ -161,39 +127,29 @@ const PartPolicyManagement = () => {
                 <div className="flex flex-wrap items-center gap-3 text-gray-700 font-medium">
                     <Filter size={18} className="text-gray-600" />
                     <select
-                        value={filterPartName}
-                        onChange={(e) => setFilterPartName(e.target.value)}
+                        value={filterDuration}
+                        onChange={(e) => setFilterDuration(e.target.value)}
                         className="border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
                     >
-                        <option value="">All Part Names</option>
-                        {[...new Set(policies.map((p) => p.partName))].map((part, i) => (
-                            <option key={i} value={part}>
-                                {part}
+                        <option value="">All Duration Periods</option>
+                        {[...new Set(policies.map((p) => p.durationPeriod))].map((d, i) => (
+                            <option key={i} value={d}>
+                                {d}
                             </option>
                         ))}
                     </select>
 
                     <select
-                        value={filterPolicyId}
-                        onChange={(e) => setFilterPolicyId(e.target.value)}
+                        value={filterMileage}
+                        onChange={(e) => setFilterMileage(e.target.value)}
                         className="border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
                     >
-                        <option value="">All Policy IDs</option>
-                        {[...new Set(policies.map((p) => p.policyId))].map((policy, i) => (
-                            <option key={i} value={policy}>
-                                {policy}
+                        <option value="">All Mileage Limits</option>
+                        {[...new Set(policies.map((p) => p.mileageLimit))].map((m, i) => (
+                            <option key={i} value={m}>
+                                {m}
                             </option>
                         ))}
-                    </select>
-
-                    <select
-                        value={filterStatus}
-                        onChange={(e) => setFilterStatus(e.target.value)}
-                        className="border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
-                    >
-                        <option value="">All Status</option>
-                        <option value="Active">Active</option>
-                        <option value="Expired">Expired</option>
                     </select>
                 </div>
             </div>
@@ -203,11 +159,10 @@ const PartPolicyManagement = () => {
                 <table className="min-w-full text-sm text-gray-700 border-separate border-spacing-y-1">
                     <thead className="bg-gray-100 text-gray-900 font-semibold">
                         <tr>
-                            <th className="py-3 px-4 text-left">Part Name</th>
-                            <th className="py-3 px-4 text-left">Policy ID</th>
-                            <th className="py-3 px-4 text-left">Start Date</th>
-                            <th className="py-3 px-4 text-left">End Date</th>
-                            <th className="py-3 px-4 text-left">Status</th>
+                            <th className="py-3 px-4 text-left">Name</th>
+                            <th className="py-3 px-4 text-left">Duration Period</th>
+                            <th className="py-3 px-4 text-left">Mileage Limit</th>
+                            <th className="py-3 px-4 text-left">Description</th>
                             <th className="py-3 px-4 text-center">Action</th>
                         </tr>
                     </thead>
@@ -222,23 +177,15 @@ const PartPolicyManagement = () => {
                                     onClick={() => handleView(p)}
                                     title="Click to view details"
                                 >
-                                    {p.partName}
+                                    {p.name}
                                 </td>
-                                <td className="py-3 px-4">{p.policyId}</td>
-                                <td className="py-3 px-4">{p.startDate}</td>
-                                <td className="py-3 px-4">{p.endDate}</td>
-                                <td className="py-3 px-4">
-                                    <span
-                                        className={`px-3 py-1 rounded-full text-xs font-medium ${p.status === "Active"
-                                            ? "bg-green-100 text-green-700"
-                                            : "bg-red-100 text-red-700"
-                                            }`}
-                                    >
-                                        {p.status}
-                                    </span>
+                                <td className="py-3 px-4">{p.durationPeriod}</td>
+                                <td className="py-3 px-4">{p.mileageLimit}</td>
+                                <td className="py-3 px-4 text-gray-600 truncate max-w-[300px]">
+                                    {p.description}
                                 </td>
 
-                                {/* ✅ Action Column */}
+                                {/* ✅ Action column */}
                                 <td className="py-3 px-4 text-center align-middle">
                                     <div className="flex items-center justify-center gap-2">
                                         <button
@@ -253,7 +200,7 @@ const PartPolicyManagement = () => {
                                             ✏️
                                         </button>
                                         <button
-                                            onClick={() => handleDelete(p.partName)}
+                                            onClick={() => handleDelete(p.name)}
                                             className="flex items-center justify-center w-9 h-9 rounded-md bg-red-500 hover:bg-red-600 text-white transition shadow-sm"
                                             title="Delete"
                                         >
@@ -266,8 +213,8 @@ const PartPolicyManagement = () => {
 
                         {currentPolicies.length === 0 && (
                             <tr>
-                                <td colSpan="6" className="text-center py-6 text-gray-500 italic">
-                                    No policies found.
+                                <td colSpan="5" className="text-center py-6 text-gray-500 italic">
+                                    No warranty policies found.
                                 </td>
                             </tr>
                         )}
@@ -306,70 +253,50 @@ const PartPolicyManagement = () => {
             {/* Modal - Add/Edit */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-lg w-[420px] p-6 animate-fadeIn">
+                    <div className="bg-white rounded-xl shadow-lg w-[460px] p-6 animate-fadeIn">
                         <h2 className="text-lg font-semibold mb-4">
-                            {editing ? "Edit Policy" : "Add New Policy"}
+                            {editing ? "Edit Warranty Policy" : "Add New Warranty Policy"}
                         </h2>
 
                         <div className="space-y-3">
-                            <select
-                                value={formData.partName}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, partName: e.target.value })
-                                }
-                                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                                <option value="">Select Part Name</option>
-                                {availableParts.map((part) => (
-                                    <option key={part} value={part}>
-                                        {part}
-                                    </option>
-                                ))}
-                            </select>
-
-                            <select
-                                value={formData.policyId}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, policyId: e.target.value })
-                                }
-                                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                                <option value="">Select Policy ID</option>
-                                {availablePolicies.map((policy) => (
-                                    <option key={policy} value={policy}>
-                                        {policy}
-                                    </option>
-                                ))}
-                            </select>
-
                             <input
-                                type="date"
+                                type="text"
+                                placeholder="Policy Name"
                                 className="w-full border rounded-md px-3 py-2 text-sm"
-                                value={formData.startDate}
+                                value={formData.name}
                                 onChange={(e) =>
-                                    setFormData({ ...formData, startDate: e.target.value })
+                                    setFormData({ ...formData, name: e.target.value })
+                                }
+                            />
+
+                            <textarea
+                                placeholder="Description"
+                                className="w-full border rounded-md px-3 py-2 text-sm"
+                                value={formData.description}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, description: e.target.value })
                                 }
                             />
 
                             <input
-                                type="date"
+                                type="text"
+                                placeholder="Duration Period (e.g. 24 months)"
                                 className="w-full border rounded-md px-3 py-2 text-sm"
-                                value={formData.endDate}
+                                value={formData.durationPeriod}
                                 onChange={(e) =>
-                                    setFormData({ ...formData, endDate: e.target.value })
+                                    setFormData({ ...formData, durationPeriod: e.target.value })
                                 }
                             />
 
-                            <select
-                                value={formData.status}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, status: e.target.value })
-                                }
+                            <input
+                                type="text"
+                                placeholder="Mileage Limit (e.g. 40,000 km)"
                                 className="w-full border rounded-md px-3 py-2 text-sm"
-                            >
-                                <option value="Active">Active</option>
-                                <option value="Expired">Expired</option>
-                            </select>
+                                value={formData.mileageLimit}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, mileageLimit: e.target.value })
+                                }
+                            />
                         </div>
 
                         <div className="flex justify-end gap-3 mt-5">
@@ -396,34 +323,27 @@ const PartPolicyManagement = () => {
             {/* ✅ View Details Modal */}
             {showViewModal && selectedPolicy && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-lg w-[460px] p-6">
+                    <div className="bg-white rounded-xl shadow-lg w-[480px] p-6">
                         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                             <Eye size={20} className="text-gray-700" />
-                            Policy Details
+                            Warranty Policy Details
                         </h2>
 
                         <div className="space-y-3 text-gray-700">
                             <p>
-                                <b>Part Name:</b> {selectedPolicy.partName}
+                                <b>Name:</b> {selectedPolicy.name}
                             </p>
                             <p>
-                                <b>Policy ID:</b> {selectedPolicy.policyId}
+                                <b>Duration Period:</b> {selectedPolicy.durationPeriod}
                             </p>
                             <p>
-                                <b>Start Date:</b> {selectedPolicy.startDate}
+                                <b>Mileage Limit:</b> {selectedPolicy.mileageLimit}
                             </p>
                             <p>
-                                <b>End Date:</b> {selectedPolicy.endDate}
-                            </p>
-                            <p>
-                                <b>Status:</b>{" "}
-                                <span
-                                    className={`px-2 py-1 rounded text-xs font-medium ${selectedPolicy.status === "Active"
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-red-100 text-red-700"
-                                        }`}
-                                >
-                                    {selectedPolicy.status}
+                                <b>Description:</b>
+                                <br />
+                                <span className="block mt-1 text-gray-600">
+                                    {selectedPolicy.description}
                                 </span>
                             </p>
                         </div>
@@ -443,4 +363,4 @@ const PartPolicyManagement = () => {
     );
 };
 
-export default PartPolicyManagement;
+export default WarrantyPolicyManagement;

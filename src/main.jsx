@@ -4,11 +4,10 @@ import App from "./App.jsx";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import LoginPage from "./pages/login.jsx";
 import PrivateRoute from "./components/routes/PrivateRoute.jsx";
-import RoleProtectedRoute from "./components/routes/RoleProtectedRoute.jsx";
+import SupplyChain from "./pages/SupplyChain.jsx";
+import Policy from "./pages/Policy.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import ManageUsers from "./pages/manageUsers.jsx";
-import SupplyChain from "./pages/SupplyChain";
-import PartPolicyManagement from "./pages/PartPolicyManagement.jsx";
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -21,30 +20,49 @@ const router = createBrowserRouter([
     ),
     children: [
       {
-        index: true, //  Home page
+        index: true, // Home page
         element: <Dashboard />,
       },
       {
-        path: "manage-users", // only admin access
-        element: <ManageUsers />,
+        path: "manage-users", // Only Admin access
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN"]}>
+            <ManageUsers />
+          </PrivateRoute>
+        ),
       },
       {
-        path: "supply-chain", //  chỉ admin + evm staff mới truy cập được
+        path: "supply-chain", // Only Admin + EVM Staff
         element: (
-          <RoleProtectedRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
             <SupplyChain />
-          </RoleProtectedRoute>
+          </PrivateRoute>
         ),
       },
       {
-        path: "part-policies", //  quản lý chính sách bảo hành chỉ admin và evm mới có
+        path: "policy", // Policy Management (Part + Warranty)
         element: (
-          <RoleProtectedRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
-            <PartPolicyManagement />
-          </RoleProtectedRoute>
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+            <Policy />
+          </PrivateRoute>
         ),
       },
-
+      {
+        path: "part-policies", // Alias route: mở sẵn tab Part Policy
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+            <Policy />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: "warranty-policies", // Alias route: mở sẵn tab Warranty Policy
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+            <Policy />
+          </PrivateRoute>
+        ),
+      },
     ],
   },
   {
