@@ -102,3 +102,13 @@ export const updateWarrantyPolicyApi = (id, policyData) => {
 export const deleteWarrantyPolicyApi = (id) => {
   return axios.delete(`/api/api/policy/${id}`);
 };
+
+//{ Policy Parts }
+export const getAllPartPoliciesApi = () => {
+  return axios.get("/api/api/part-policies");
+};
+
+// detail part
+export const getPartPolicyByIdApi = (policyId) => {
+  return axios.get(`/api/api/part-policies/${policyId}`);
+};

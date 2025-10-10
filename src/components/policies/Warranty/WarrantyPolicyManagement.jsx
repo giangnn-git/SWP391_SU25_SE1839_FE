@@ -5,7 +5,7 @@ import {
   createWarrantyPolicyApi,
   updateWarrantyPolicyApi,
   deleteWarrantyPolicyApi,
-} from "../../services/api.service";
+} from "../../../services/api.service";
 
 import WarrantyPolicyTable from "./WarrantyPolicyTable";
 import CreateEditWarrantyPolicyModal from "./CreateEditWarrantyPolicyModal";

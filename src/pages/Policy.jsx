@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import PartPolicyManagement from "../components/policies/PartPolicyManagement";
-import WarrantyPolicyManagement from "../components/policies/WarrantyPolicyManagement";
+import PartPolicyManagement from "../components/policies/Part/PartPolicyManagement";
+import WarrantyPolicyManagement from "../components/policies/Warranty/WarrantyPolicyManagement";
 
 const Policy = () => {
   const [activeTab, setActiveTab] = useState("part");
