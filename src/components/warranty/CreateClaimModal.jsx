@@ -1,259 +1,146 @@
 import { useState } from "react";
+import axios from "../../services/axios.customize";
 
-const CreateClaimModal = ({ isOpen, onClose, onSubmit, loading }) => {
+const CreateClaimModal = ({ onClose, onClaimCreated }) => {
     const [formData, setFormData] = useState({
-        vin: "",
-        mileage: "",
-        priority: "NORMAL",
         description: "",
+        mileage: "",
+        vin: "",
+        priority: "NORMAL",
         partClaims: [{ id: "", quantity: "" }],
         attachments: [],
     });
-    const [errors, setErrors] = useState({});
+    const [actionLoading, setActionLoading] = useState(false);
 
+    const handleCreateClaim = async () => {
+        try {
+            setActionLoading(true);
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
+            const fd = new FormData();
+            const claimObj = {
+                description: formData.description,
+                mileage: parseInt(formData.mileage),
+                vin: formData.vin,
+                priority: formData.priority,
+                partClaims: formData.partClaims
+                    .filter((p) => p.id && p.quantity)
+                    .map((p) => ({
+                        id: parseInt(p.id),
+                        quantity: parseInt(p.quantity),
+                    })),
+            };
 
-        const newErrors = {};
+            fd.append("claim", new Blob([JSON.stringify(claimObj)], { type: "application/json" }));
+            formData.attachments.forEach((file) => fd.append("attachments", file));
 
-        // Validation phù hợp với state hiện tại
-        if (!formData.vin.trim()) newErrors.vin = "VIN is required";
-        if (!formData.mileage.trim()) newErrors.mileage = "Mileage is required";
-        else if (isNaN(formData.mileage) || Number(formData.mileage) < 0)
-            newErrors.mileage = "Mileage must be a positive number";
+            const res = await axios.post("/api/api/claims", fd, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
 
-        if (!formData.priority.trim())
-            newErrors.priority = "Priority is required";
-
-        if (!formData.description.trim())
-            newErrors.description = "Description is required";
-
-        if (
-            !formData.partClaims.length ||
-            formData.partClaims.some(
-                (p) => !p.id.trim() || !p.quantity || p.quantity <= 0
-            )
-        ) {
-            newErrors.partClaims = "Each part must have valid ID and quantity";
+            alert("✅ Claim tạo thành công!");
+            onClaimCreated(res.data.data); // thêm vào đầu
+            onClose();
+        } catch (err) {
+            console.error(err);
+            alert("❌ Tạo claim thất bại!");
+        } finally {
+            setActionLoading(false);
         }
-
-        // Không cần validate attachments nếu không bắt buộc
-        // if (!formData.attachments.length)
-        //     newErrors.attachments = "At least one attachment is required";
-
-        if (Object.keys(newErrors).length > 0) {
-            setErrors(newErrors);
-            return;
-        }
-
-        onSubmit(formData);
     };
-
-    const handleChange = (field, value) => {
-        setFormData((prev) => ({ ...prev, [field]: value }));
-    };
-
-    const handlePartChange = (index, field, value) => {
-        const updated = [...formData.partClaims];
-        updated[index][field] = value;
-        setFormData((prev) => ({ ...prev, partClaims: updated }));
-    };
-
-    const addPartClaim = () => {
-        setFormData((prev) => ({
-            ...prev,
-            partClaims: [...prev.partClaims, { id: "", quantity: "" }],
-        }));
-    };
-
-
-    const handleClose = () => {
-        setFormData({
-            vin: "",
-            mileage: "",
-            priority: "NORMAL",
-            description: "",
-            partClaims: [{ id: "", quantity: "" }],
-            attachments: [],
-        });
-        setErrors({});
-        onClose();
-    };
-
-
-    if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold">Create New Claim</h2>
-                    <button
-                        onClick={handleClose}
-                        className="text-gray-400 hover:text-gray-600 text-2xl"
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-[500px]">
+                <h3 className="text-lg font-semibold mb-4">Thêm Claim mới</h3>
+                <div className="flex flex-col gap-3">
+                    <input
+                        type="text"
+                        placeholder="Description"
+                        className="border p-2 rounded-md"
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    />
+                    <input
+                        type="number"
+                        placeholder="Mileage"
+                        className="border p-2 rounded-md"
+                        value={formData.mileage}
+                        onChange={(e) => setFormData({ ...formData, mileage: e.target.value })}
+                    />
+                    <input
+                        type="text"
+                        placeholder="VIN"
+                        className="border p-2 rounded-md"
+                        value={formData.vin}
+                        onChange={(e) => setFormData({ ...formData, vin: e.target.value })}
+                    />
+                    <select
+                        className="border p-2 rounded-md"
+                        value={formData.priority}
+                        onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
                     >
-                    </button>
-                </div>
+                        <option value="NORMAL">NORMAL</option>
+                        <option value="HIGH">HIGH</option>
+                    </select>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* VIN Field */}
+                    {/* Part Claims */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            VIN *
-                        </label>
-                        <input
-                            type="text"
-                            value={formData.vin}
-                            onChange={(e) => handleChange("vin", e.target.value)}
-                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.vin ? "border-red-500" : "border-gray-300"
-                                }`}
-                            placeholder="Enter vehicle VIN"
-                            disabled={loading}
-                        />
-                        {errors.vin && (
-                            <p className="mt-1 text-sm text-red-600">{errors.vin}</p>
-                        )}
-                    </div>
-
-                    {/* Mileage Field */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Mileage *
-                        </label>
-                        <input
-                            type="number"
-                            value={formData.mileage}
-                            onChange={(e) => handleChange("mileage", e.target.value)}
-                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.mileage ? "border-red-500" : "border-gray-300"
-                                }`}
-                            placeholder="Enter mileage"
-                            disabled={loading}
-                        />
-                        {errors.mileage && (
-                            <p className="mt-1 text-sm text-red-600">{errors.mileage}</p>
-                        )}
-                    </div>
-
-                    {/* Priority Field */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Priority *
-                        </label>
-                        <select
-                            value={formData.priority}
-                            onChange={(e) => handleChange("priority", e.target.value)}
-                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.priority ? "border-red-500" : "border-gray-300"
-                                }`}
-                            disabled={loading}
-                        >
-                            <option value="NORMAL">NORMAL</option>
-                            <option value="HIGH">HIGH</option>
-                            <option value="URGENT">URGENT</option>
-                        </select>
-                        {errors.priority && (
-                            <p className="mt-1 text-sm text-red-600">{errors.priority}</p>
-                        )}
-                    </div>
-
-                    {/* Description Field */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Description *
-                        </label>
-                        <textarea
-                            value={formData.description}
-                            onChange={(e) => handleChange("description", e.target.value)}
-                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.description ? "border-red-500" : "border-gray-300"
-                                }`}
-                            placeholder="Describe the issue"
-                            disabled={loading}
-                            rows={3}
-                        />
-                        {errors.description && (
-                            <p className="mt-1 text-sm text-red-600">{errors.description}</p>
-                        )}
-                    </div>
-
-                    {/* Part Claims Field */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Part Claims *
-                        </label>
-                        {formData.partClaims.map((part, index) => (
-                            <div key={index} className="flex space-x-2 mb-2">
+                        <label className="text-sm font-medium">Part Claims</label>
+                        {formData.partClaims.map((p, idx) => (
+                            <div key={idx} className="flex gap-2 mt-1">
                                 <input
-                                    type="text"
-                                    value={part.id}
-                                    onChange={(e) =>
-                                        handlePartChange(index, "id", e.target.value)
-                                    }
+                                    type="number"
                                     placeholder="Part ID"
-                                    className="flex-1 px-3 py-2 border rounded-lg"
-                                    disabled={loading}
+                                    className="border p-2 rounded-md w-1/2"
+                                    value={p.id}
+                                    onChange={(e) => {
+                                        const newParts = [...formData.partClaims];
+                                        newParts[idx].id = e.target.value;
+                                        setFormData({ ...formData, partClaims: newParts });
+                                    }}
                                 />
                                 <input
                                     type="number"
-                                    value={part.quantity}
-                                    onChange={(e) =>
-                                        handlePartChange(index, "quantity", e.target.value)
-                                    }
-                                    placeholder="Quantity"
-                                    className="w-24 px-3 py-2 border rounded-lg"
-                                    disabled={loading}
+                                    placeholder="Qty"
+                                    className="border p-2 rounded-md w-1/2"
+                                    value={p.quantity}
+                                    onChange={(e) => {
+                                        const newParts = [...formData.partClaims];
+                                        newParts[idx].quantity = e.target.value;
+                                        setFormData({ ...formData, partClaims: newParts });
+                                    }}
                                 />
                             </div>
                         ))}
-                        <button
-                            type="button"
-                            onClick={addPartClaim}
-                            className="text-blue-600 text-sm hover:underline"
-                        >
-                            + Add another part
-                        </button>
-                        {errors.partClaims && (
-                            <p className="mt-1 text-sm text-red-600">{errors.partClaims}</p>
-                        )}
                     </div>
 
-                    {/* Attachments Field */}
+                    {/* Attachments */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Attachments
-                        </label>
+                        <label className="text-sm font-medium">Attachments</label>
                         <input
                             type="file"
                             multiple
-                            onChange={(e) =>
-                                handleChange("attachments", Array.from(e.target.files))
-                            }
-                            className="w-full"
-                            disabled={loading}
+                            className="mt-1"
+                            onChange={(e) => setFormData({ ...formData, attachments: Array.from(e.target.files) })}
                         />
                     </div>
+                </div>
 
-                    {/* Buttons */}
-                    <div className="flex justify-end space-x-3 pt-4">
-                        <button
-                            type="button"
-                            onClick={handleClose}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                            disabled={loading}
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-                            disabled={loading}
-                        >
-                            {loading ? "Submitting..." : "Create Claim"}
-                        </button>
-                    </div>
-                </form>
+                <div className="flex justify-end gap-3 mt-6">
+                    <button className="px-4 py-2 bg-gray-300 rounded-md" onClick={onClose}>
+                        Hủy
+                    </button>
+                    <button
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                        onClick={handleCreateClaim}
+                        disabled={actionLoading}
+                    >
+                        {actionLoading ? "Đang xử lý..." : "Tạo Claim"}
+                    </button>
+                </div>
             </div>
         </div>
     );
-}
+};
 
 export default CreateClaimModal;

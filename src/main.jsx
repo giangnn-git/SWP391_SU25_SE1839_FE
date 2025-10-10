@@ -6,7 +6,7 @@ import LoginPage from "./pages/login.jsx";
 import PrivateRoute from "./components/routes/PrivateRoute.jsx";
 import RoleProtectedRoute from "./components/routes/RoleProtectedRoute.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
-import ManageUsers from "./pages/manageUsers.jsx";
+import ManageUsers from "./pages/ManageUsers.jsx";
 import WarrantyClaims from "./pages/WarrantyClaims.jsx";
 import SupplyChain from "./pages/SupplyChain.jsx";
 import PartPolicyManagement from "./pages/PartPolicyManagement.jsx";

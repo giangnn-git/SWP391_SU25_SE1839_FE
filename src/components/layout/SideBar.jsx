@@ -11,8 +11,8 @@ const Sidebar = () => {
     { name: "Warranty Claims", href: "/warranty-claims", icon: "🛡️" },
     { name: "Vehicles", href: "/vehicles", icon: "🚗" },
     { name: "Claim Approval", href: "/approvals", icon: "✅" },
-    { name: "Supply Chain", href: "/supply-chain", icon: "🔗" },
-    { name: "Analytics & Reports", href: "/analytics", icon: "📈" },
+    // { name: "Supply Chain", href: "/supply-chain", icon: "🔗" },
+    // { name: "Analytics & Reports", href: "/analytics", icon: "📈" },
     ...(isAdmin || isEvmStaff
       ? [
         { name: "Supply Chain", href: "/supply-chain", icon: "🔗" },

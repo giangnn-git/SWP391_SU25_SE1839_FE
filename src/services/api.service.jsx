@@ -92,6 +92,21 @@ export const createClaimApi = async (
   return axios.post("/api/claims", data);
 };
 
+//
+export const createWarrantyClaimApi = (data) => {
+  return axios.post("/api/api/claims", data, {
+    // headers: {
+    //   "Content-Type": "application/json",
+    // },
+  });
+};
+
+
+export const getAllWarrantyClaimsApi = () => {
+  return axios.get("/api/api/claims");
+};
+
+//
 // READ (Lấy tất cả claims)
 export const getAllClaimsApi = async () => {
   return axios.get("/api/claims");

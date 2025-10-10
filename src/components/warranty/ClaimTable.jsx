@@ -1,110 +1,93 @@
 import { useState } from "react";
 
-const ClaimTable = ({ claims, loading, onView, onEdit }) => {
-    const [actionLoading, setActionLoading] = useState(null);
+const ClaimTable = ({ claims, loading, error }) => {
+    const [currentPage, setCurrentPage] = useState(1);
+    const claimsPerPage = 15; // ✅ Hiển thị 15 claim mỗi trang
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
-        );
-    }
-
-    if (!claims || claims.length === 0) {
-        return <div className="text-center py-8 text-gray-500">No claims found</div>;
-    }
+    const totalPages = Math.ceil(claims.length / claimsPerPage);
+    const startIndex = (currentPage - 1) * claimsPerPage;
+    const currentClaims = claims.slice(startIndex, startIndex + claimsPerPage);
 
     return (
-        <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                    <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            VIN
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Mileage
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Priority
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Description
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Part Claims
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
-
-                <tbody className="bg-white divide-y divide-gray-200">
-                    {claims.map((claim, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {claim.vin || "-"}
-                            </td>
-
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {claim.mileage ? `${claim.mileage} km` : "-"}
-                            </td>
-
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                <span
-                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                    ${claim.priority === "URGENT"
-                                            ? "bg-red-100 text-red-800"
-                                            : "bg-green-100 text-green-800"
-                                        }`}
-                                >
-                                    {claim.priority}
-                                </span>
-                            </td>
-
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 max-w-[250px] truncate">
-                                {claim.description || "-"}
-                            </td>
-
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {claim.partClaims && claim.partClaims.length > 0 ? (
-                                    <ul className="list-disc pl-4">
-                                        {claim.partClaims.map((part, i) => (
-                                            <li key={i}>
-                                                ID: {part.id || "N/A"} - Qty: {part.quantity || 0}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : (
-                                    "-"
-                                )}
-                            </td>
-
-                            {/* 🔹 Actions */}
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <div className="flex space-x-3">
-                                    <button
-                                        onClick={() => onView && onView(claim)}
-                                        className="text-blue-600 hover:text-blue-900 disabled:text-gray-400"
-                                        disabled={actionLoading === claim.id}
-                                    >
-                                        View
-                                    </button>
-                                    <button
-                                        onClick={() => onEdit && onEdit(claim)}
-                                        className="text-green-600 hover:text-green-900 disabled:text-gray-400"
-                                        disabled={actionLoading === claim.id}
-                                    >
-                                        Edit
-                                    </button>
-                                </div>
-                            </td>
+        <div>
+            <div className="overflow-x-auto bg-white border rounded-lg shadow-sm">
+                <table className="min-w-full text-sm">
+                    <thead className="bg-gray-100 text-gray-700 uppercase text-xs">
+                        <tr>
+                            <th className="px-4 py-2 text-left">Description</th>
+                            <th className="px-4 py-2 text-left">Mileage</th>
+                            <th className="px-4 py-2 text-left">VIN</th>
+                            <th className="px-4 py-2 text-left">Priority</th>
+                            <th className="px-4 py-2 text-left">Parts</th>
                         </tr>
+                    </thead>
+                    <tbody>
+                        {loading ? (
+                            <tr>
+                                <td colSpan="5" className="text-center py-6">
+                                    Đang tải dữ liệu...
+                                </td>
+                            </tr>
+                        ) : error ? (
+                            <tr>
+                                <td colSpan="5" className="text-center text-red-500 py-6">
+                                    {error}
+                                </td>
+                            </tr>
+                        ) : currentClaims.length > 0 ? (
+                            currentClaims.map((claim, i) => (
+                                <tr key={i} className="border-t hover:bg-gray-50">
+                                    <td className="px-4 py-2">{claim.description}</td>
+                                    <td className="px-4 py-2">{claim.mileage?.toLocaleString()} km</td>
+                                    <td className="px-4 py-2">{claim.vin}</td>
+                                    <td className="px-4 py-2">{claim.priority}</td>
+                                    <td className="px-4 py-2">
+                                        {claim.partClaims?.map((p, idx) => (
+                                            <div key={idx}>
+                                                ID: {p.id}, Qty: {p.quantity}
+                                            </div>
+                                        ))}
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan="5" className="text-center py-6">
+                                    Không có claim nào.
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 mt-4">
+                    <button
+                        onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                        className="px-3 py-1 border rounded-md"
+                    >
+                        ◀
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => (
+                        <button
+                            key={i}
+                            onClick={() => setCurrentPage(i + 1)}
+                            className={`px-3 py-1 border rounded-md ${currentPage === i + 1 ? "bg-blue-500 text-white" : ""
+                                }`}
+                        >
+                            {i + 1}
+                        </button>
                     ))}
-                </tbody>
-            </table>
+                    <button
+                        onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                        className="px-3 py-1 border rounded-md"
+                    >
+                        ▶
+                    </button>
+                </div>
+            )}
         </div>
     );
 };
