@@ -3,18 +3,24 @@ import { PlusCircle, Filter, Search } from "lucide-react";
 import {
   getAllWarrantyApi,
   createWarrantyPolicyApi,
+  updateWarrantyPolicyApi,
+  deleteWarrantyPolicyApi,
 } from "../services/api.service";
+
 import WarrantyPolicyTable from "../components/policies/WarrantyPolicyTable";
 import CreateEditWarrantyPolicyModal from "../components/policies/CreateEditWarrantyPolicyModal";
 import ViewWarrantyPolicyModal from "../components/policies/ViewWarrantyPolicy";
+import UpdateWarrantyPolicyModal from "../components/policies/UpdateWarrantyPolicyModal";
+import DeleteWarrantyPolicyModal from "../components/policies/DeleteWarrantyPolicyModal";
 
 const WarrantyPolicyManagement = () => {
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showModal, setShowModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
-  const [editing, setEditing] = useState(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedPolicy, setSelectedPolicy] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -63,7 +69,7 @@ const WarrantyPolicyManagement = () => {
     fetchPolicies();
   }, []);
 
-  // ✅ Create Policy Handler
+  // ✅ CREATE
   const handleCreatePolicy = async (policyData) => {
     try {
       setActionLoading(true);
@@ -77,146 +83,43 @@ const WarrantyPolicyManagement = () => {
 
       await createWarrantyPolicyApi(apiData);
       await fetchPolicies();
+      alert("✅ Policy created successfully!");
     } catch (error) {
       console.error("Error creating policy:", error);
-      throw error;
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // ✅ Update Policy Handler
-  const handleUpdatePolicy = async (id, policyData) => {
-    try {
-      setActionLoading(true);
-
-      const apiData = {
-        name: policyData.name,
-        durationPeriod: parseInt(policyData.durationPeriod),
-        mileageLimit: parseInt(policyData.mileageLimit),
-        description: policyData.description,
-      };
-
-      await updateWarrantyPolicyApi(id, apiData);
-      await fetchPolicies();
-    } catch (error) {
-      console.error("Error updating policy:", error);
-      throw error;
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // ✅ Delete Policy Handler
-  const handleDeletePolicy = async (id) => {
-    try {
-      setActionLoading(true);
-      await deleteWarrantyPolicyApi(id);
-      await fetchPolicies();
-    } catch (error) {
-      console.error("Error deleting policy:", error);
-      throw error;
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // ✅ Save Handler (Create or Update)
-  const handleSave = async () => {
-    const { name, description, durationPeriod, mileageLimit } = formData;
-
-    if (!name || !description || !durationPeriod || !mileageLimit) {
-      alert("Please fill in all fields before saving.");
-      return;
-    }
-
-    if (isNaN(durationPeriod) || isNaN(mileageLimit)) {
-      alert("Duration Period and Mileage Limit must be numbers.");
-      return;
-    }
-
-    try {
-      if (editing) {
-        await handleUpdatePolicy(editing.id, formData);
-      } else {
-        await handleCreatePolicy(formData);
-      }
-
-      setShowModal(false);
-      setEditing(null);
-      setFormData({
-        name: "",
-        description: "",
-        durationPeriod: "",
-        mileageLimit: "",
-      });
-    } catch (error) {
-      const errorMessage =
+      alert(
         error.response?.data?.message ||
-        "Failed to save policy. Please try again.";
-      alert(errorMessage);
+        "Failed to create policy. Please try again."
+      );
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  // ✅ Delete Handler
-  const handleDelete = async (id) => {
-    if (
-      window.confirm("Are you sure you want to delete this warranty policy?")
-    ) {
-      try {
-        await handleDeletePolicy(id);
-      } catch (error) {
-        const errorMessage =
-          error.response?.data?.message ||
-          "Failed to delete policy. Please try again.";
-        alert(errorMessage);
-      }
-    }
+  // ✅ UPDATE (open modal)
+  const handleEdit = (policy) => {
+    const selected = policy.originalData || policy;
+    setSelectedPolicy(selected);
+    setShowUpdateModal(true);
   };
 
-  // ✅ Handle View
+  // ✅ DELETE (open modal)
+  const handleDelete = (policy) => {
+    const selected = policy.originalData || policy;
+    setSelectedPolicy(selected);
+    setShowDeleteModal(true);
+  };
+
+  // ✅ VIEW
   const handleView = (policy) => {
     setSelectedPolicy(policy);
     setShowViewModal(true);
   };
 
-  // ✅ Handle Edit
-  const handleEdit = (policy) => {
-    setEditing(policy);
-    setFormData({
-      name: policy.name,
-      description: policy.description,
-      durationPeriod: policy.durationPeriod.replace(" months", ""),
-      mileageLimit: policy.mileageLimit.replace(" km", "").replace(/,/g, ""),
-    });
-    setShowModal(true);
-  };
-
-  // ✅ Handle Form Data Change
-  const handleFormDataChange = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  // ✅ Handle Modal Close
-  const handleModalClose = () => {
-    setShowModal(false);
-    setEditing(null);
-    setFormData({
-      name: "",
-      description: "",
-      durationPeriod: "",
-      mileageLimit: "",
-    });
-  };
-
-  // ✅ Filter and Search logic
+  // ✅ Filter, Search, Pagination
   const filteredPolicies = policies.filter((policy) => {
     const matchesSearch = searchTerm
       ? policy.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        policy.description.toLowerCase().includes(searchTerm.toLowerCase())
+      policy.description.toLowerCase().includes(searchTerm.toLowerCase())
       : true;
 
     const matchesDuration = filterDuration
@@ -230,7 +133,6 @@ const WarrantyPolicyManagement = () => {
     return matchesSearch && matchesDuration && matchesMileage;
   });
 
-  // ✅ Pagination logic
   const totalPages = Math.ceil(filteredPolicies.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentPolicies = filteredPolicies.slice(
@@ -238,18 +140,15 @@ const WarrantyPolicyManagement = () => {
     startIndex + itemsPerPage
   );
 
-  // ✅ Generate dynamic dropdown options
   const availableDurations = [
     ...new Set(policies.map((p) => p.durationPeriod)),
   ];
   const availableMileages = [...new Set(policies.map((p) => p.mileageLimit))];
 
-  // ✅ Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [filterDuration, filterMileage, searchTerm]);
 
-  // ✅ Clear search
   const clearSearch = () => {
     setSearchTerm("");
   };
@@ -270,7 +169,7 @@ const WarrantyPolicyManagement = () => {
 
   return (
     <div className="p-6">
-      {/* Header với Search Bar */}
+      {/* Header with Search Bar */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold flex items-center gap-2">
           🛡️ Warranty Policy Management
@@ -299,10 +198,10 @@ const WarrantyPolicyManagement = () => {
             )}
           </div>
 
-          {/* Add New Button */}
+          {/* Add New */}
           <button
             className="flex items-center bg-black text-white hover:bg-gray-800 px-4 py-2 rounded-md transition shadow-sm disabled:opacity-50"
-            onClick={() => setShowModal(true)}
+            onClick={() => setShowCreateModal(true)}
             disabled={actionLoading}
           >
             <PlusCircle size={18} className="mr-2" />
@@ -349,7 +248,7 @@ const WarrantyPolicyManagement = () => {
         </div>
       </div>
 
-      {/* Table Component */}
+      {/* Table */}
       <WarrantyPolicyTable
         policies={currentPolicies}
         loading={loading}
@@ -395,21 +294,42 @@ const WarrantyPolicyManagement = () => {
         </div>
       )}
 
-      {/* Modals */}
+      {/* ✅ Create */}
       <CreateEditWarrantyPolicyModal
-        showModal={showModal}
-        editing={editing}
+        showModal={showCreateModal}
+        editing={false}
         formData={formData}
         actionLoading={actionLoading}
-        onClose={handleModalClose}
-        onSave={handleSave}
-        onFormDataChange={handleFormDataChange}
+        onClose={() => setShowCreateModal(false)}
+        onSave={() => handleCreatePolicy(formData)}
+        onFormDataChange={(f, v) =>
+          setFormData((prev) => ({ ...prev, [f]: v }))
+        }
       />
 
+      {/* ✅ View */}
       <ViewWarrantyPolicyModal
         showModal={showViewModal}
         selectedPolicy={selectedPolicy}
         onClose={() => setShowViewModal(false)}
+      />
+
+      {/* ✅ Update */}
+      <UpdateWarrantyPolicyModal
+        showModal={showUpdateModal}
+        policy={selectedPolicy}
+        onClose={() => setShowUpdateModal(false)}
+        onUpdated={fetchPolicies}
+        updatePolicyApi={updateWarrantyPolicyApi}
+      />
+
+      {/* ✅ Delete */}
+      <DeleteWarrantyPolicyModal
+        showModal={showDeleteModal}
+        policy={selectedPolicy}
+        onClose={() => setShowDeleteModal(false)}
+        onDeleted={fetchPolicies}
+        deletePolicyApi={deleteWarrantyPolicyApi}
       />
     </div>
   );

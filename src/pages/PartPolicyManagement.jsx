@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { PlusCircle, Filter, Eye } from "lucide-react";
+import { PlusCircle, Filter, Eye, AlertTriangle } from "lucide-react";
 
 // ✅ Dummy data
 const dummyPolicies = [
@@ -73,6 +73,11 @@ const PartPolicyManagement = () => {
     status: "Active",
   });
 
+  // ✅ Delete modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedDelete, setSelectedDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
   // ✅ Filter & Pagination
   const [filterPartName, setFilterPartName] = useState("");
   const [filterPolicyId, setFilterPolicyId] = useState("");
@@ -129,10 +134,23 @@ const PartPolicyManagement = () => {
     });
   };
 
-  const handleDelete = (partName) => {
-    if (window.confirm("Are you sure you want to delete this policy?")) {
-      setPolicies(policies.filter((p) => p.partName !== partName));
-    }
+  const handleDelete = (partPolicy) => {
+    setSelectedDelete(partPolicy);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedDelete) return;
+    setDeleting(true);
+
+    setTimeout(() => {
+      setPolicies(
+        policies.filter((p) => p.partName !== selectedDelete.partName)
+      );
+      setDeleting(false);
+      setShowDeleteModal(false);
+      setSelectedDelete(null);
+    }, 600); // giả lập call API
   };
 
   const handleView = (policy) => {
@@ -229,11 +247,10 @@ const PartPolicyManagement = () => {
                 <td className="py-3 px-4">{p.endDate}</td>
                 <td className="py-3 px-4">
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      p.status === "Active"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
+                    className={`px-3 py-1 rounded-full text-xs font-medium ${p.status === "Active"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                      }`}
                   >
                     {p.status}
                   </span>
@@ -254,7 +271,7 @@ const PartPolicyManagement = () => {
                       ✏️
                     </button>
                     <button
-                      onClick={() => handleDelete(p.partName)}
+                      onClick={() => handleDelete(p)}
                       className="flex items-center justify-center w-9 h-9 rounded-md bg-red-500 hover:bg-red-600 text-white transition shadow-sm"
                       title="Delete"
                     >
@@ -307,138 +324,35 @@ const PartPolicyManagement = () => {
         </div>
       </div>
 
-      {/* Modal - Add/Edit */}
-      {showModal && (
+      {/* ✅ Delete Modal */}
+      {showDeleteModal && selectedDelete && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-lg w-[420px] p-6 animate-fadeIn">
-            <h2 className="text-lg font-semibold mb-4">
-              {editing ? "Edit Policy" : "Add New Policy"}
-            </h2>
-
-            <div className="space-y-3">
-              <select
-                value={formData.partName}
-                onChange={(e) =>
-                  setFormData({ ...formData, partName: e.target.value })
-                }
-                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Part Name</option>
-                {availableParts.map((part) => (
-                  <option key={part} value={part}>
-                    {part}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={formData.policyId}
-                onChange={(e) =>
-                  setFormData({ ...formData, policyId: e.target.value })
-                }
-                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Policy ID</option>
-                {availablePolicies.map((policy) => (
-                  <option key={policy} value={policy}>
-                    {policy}
-                  </option>
-                ))}
-              </select>
-
-              <input
-                type="date"
-                className="w-full border rounded-md px-3 py-2 text-sm"
-                value={formData.startDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, startDate: e.target.value })
-                }
-              />
-
-              <input
-                type="date"
-                className="w-full border rounded-md px-3 py-2 text-sm"
-                value={formData.endDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, endDate: e.target.value })
-                }
-              />
-
-              <select
-                value={formData.status}
-                onChange={(e) =>
-                  setFormData({ ...formData, status: e.target.value })
-                }
-                className="w-full border rounded-md px-3 py-2 text-sm"
-              >
-                <option value="Active">Active</option>
-                <option value="Expired">Expired</option>
-              </select>
+          <div className="bg-white rounded-xl shadow-lg w-[400px] p-6 text-center animate-fadeIn">
+            <div className="flex justify-center mb-3">
+              <AlertTriangle className="text-red-500" size={42} />
             </div>
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">
+              Confirm Delete
+            </h2>
+            <p className="text-gray-600 mb-5">
+              Are you sure you want to delete the policy for
+              <br />
+              <b>"{selectedDelete?.partName}"</b>?
+            </p>
 
-            <div className="flex justify-end gap-3 mt-5">
+            <div className="flex justify-center gap-4">
               <button
-                onClick={() => {
-                  setShowModal(false);
-                  setEditing(null);
-                }}
+                onClick={() => setShowDeleteModal(false)}
                 className="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-100 transition"
               >
                 Cancel
               </button>
               <button
-                onClick={handleSave}
-                className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition"
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 transition"
               >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ✅ View Details Modal */}
-      {showViewModal && selectedPolicy && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-lg w-[460px] p-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Eye size={20} className="text-gray-700" />
-              Policy Details
-            </h2>
-
-            <div className="space-y-3 text-gray-700">
-              <p>
-                <b>Part Name:</b> {selectedPolicy.partName}
-              </p>
-              <p>
-                <b>Policy ID:</b> {selectedPolicy.policyId}
-              </p>
-              <p>
-                <b>Start Date:</b> {selectedPolicy.startDate}
-              </p>
-              <p>
-                <b>End Date:</b> {selectedPolicy.endDate}
-              </p>
-              <p>
-                <b>Status:</b>{" "}
-                <span
-                  className={`px-2 py-1 rounded text-xs font-medium ${
-                    selectedPolicy.status === "Active"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-red-100 text-red-700"
-                  }`}
-                >
-                  {selectedPolicy.status}
-                </span>
-              </p>
-            </div>
-
-            <div className="flex justify-end mt-6">
-              <button
-                onClick={() => setShowViewModal(false)}
-                className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition"
-              >
-                Close
+                {deleting ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>

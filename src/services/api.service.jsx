@@ -83,3 +83,13 @@ export const getAllWarrantyApi = () => {
 export const createWarrantyPolicyApi = (policyData) => {
   return axios.post("/api/api/policy", policyData);
 };
+
+// update policy
+export const updateWarrantyPolicyApi = (id, policyData) => {
+  return axios.put(`/api/api/policy/${id}`, policyData);
+};
+
+//  Delete policy
+export const deleteWarrantyPolicyApi = (id) => {
+  return axios.delete(`/api/api/policy/${id}`);
+};
