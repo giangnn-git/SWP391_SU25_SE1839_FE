@@ -75,22 +75,18 @@ const ChangePasswordPage = () => {
 
     if (!validateForm()) return;
 
-    const id = storage.get("id");
-    if (!id) {
-      setError("User ID not found. Please login again.");
-      return;
-    }
-
     setLoading(true);
 
     try {
-      await changePasswordApi(id, {
+      //
+      await changePasswordApi({
         currentPassword: formData.currentPassword,
         newPassword: formData.newPassword,
       });
 
       setSuccess("Password changed successfully!");
 
+      // ✅ UPDATE LOCAL STORAGE
       storage.set("requiresPasswordChange", false);
 
       setTimeout(() => {

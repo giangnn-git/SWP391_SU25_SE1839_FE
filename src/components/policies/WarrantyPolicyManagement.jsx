@@ -5,13 +5,13 @@ import {
   createWarrantyPolicyApi,
   updateWarrantyPolicyApi,
   deleteWarrantyPolicyApi,
-} from "../services/api.service";
+} from "../../services/api.service";
 
-import WarrantyPolicyTable from "../components/policies/WarrantyPolicyTable";
-import CreateEditWarrantyPolicyModal from "../components/policies/CreateEditWarrantyPolicyModal";
-import ViewWarrantyPolicyModal from "../components/policies/ViewWarrantyPolicy";
-import UpdateWarrantyPolicyModal from "../components/policies/UpdateWarrantyPolicyModal";
-import DeleteWarrantyPolicyModal from "../components/policies/DeleteWarrantyPolicyModal";
+import WarrantyPolicyTable from "./WarrantyPolicyTable";
+import CreateEditWarrantyPolicyModal from "./CreateEditWarrantyPolicyModal";
+import ViewWarrantyPolicyModal from "./ViewWarrantyPolicy";
+import UpdateWarrantyPolicyModal from "./UpdateWarrantyPolicyModal";
+import DeleteWarrantyPolicyModal from "./DeleteWarrantyPolicyModal";
 
 const WarrantyPolicyManagement = () => {
   const [policies, setPolicies] = useState([]);
@@ -88,7 +88,7 @@ const WarrantyPolicyManagement = () => {
       console.error("Error creating policy:", error);
       alert(
         error.response?.data?.message ||
-        "Failed to create policy. Please try again."
+          "Failed to create policy. Please try again."
       );
     } finally {
       setActionLoading(false);
@@ -119,7 +119,7 @@ const WarrantyPolicyManagement = () => {
   const filteredPolicies = policies.filter((policy) => {
     const matchesSearch = searchTerm
       ? policy.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      policy.description.toLowerCase().includes(searchTerm.toLowerCase())
+        policy.description.toLowerCase().includes(searchTerm.toLowerCase())
       : true;
 
     const matchesDuration = filterDuration

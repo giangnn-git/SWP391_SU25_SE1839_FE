@@ -2,12 +2,14 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { userLoginApi } from "../services/api.service";
 import { storage } from "../utils/storage";
+import ForgotPasswordModal from "../components/auth/ForgotPasswordModal";
 
 const LoginPage = () => {
   const [user, setUser] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -15,13 +17,13 @@ const LoginPage = () => {
     setError("");
     setLoading(true);
 
-
     try {
       const res = await userLoginApi(user, password);
 
       const token = res.data?.data?.token;
       const id = res.data?.data?.id;
       const name = res.data?.data?.name;
+      const role = res.data?.data?.role;
       const requiresPasswordChange = res.data?.data?.requiresPasswordChange;
 
       if (!token) {
@@ -33,6 +35,7 @@ const LoginPage = () => {
       storage.set("userEmail", user);
       storage.set("isLoggedIn", true);
       storage.set("id", id);
+      storage.set("userRole", role);
       storage.set("userName", name);
       storage.set("requiresPasswordChange", requiresPasswordChange);
 
@@ -56,14 +59,21 @@ const LoginPage = () => {
   };
 
   const handleForgotPassword = () => {
-    // TODO: Implement forgot password functionality
-    alert("Forgot password feature will be implemented soon!");
+    setShowForgotPassword(true);
+  };
+
+  const handleCloseForgotPassword = () => {
+    setShowForgotPassword(false);
+  };
+
+  const handleBackToLogin = () => {
+    setShowForgotPassword(false);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        {/* Car Icon - Larger size */}
+        {/* Car Icon */}
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="24"
@@ -154,8 +164,8 @@ const LoginPage = () => {
               </button>
             </div>
 
-            {/* FORGOT PASSWORD & CHANGE PASSWORD LINKS */}
-            <div className="flex justify-between text-sm">
+            {/* FORGOT PASSWORD LINK */}
+            <div className="text-center">
               <button
                 type="button"
                 onClick={handleForgotPassword}
@@ -167,6 +177,13 @@ const LoginPage = () => {
           </form>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        showModal={showForgotPassword}
+        onClose={handleCloseForgotPassword}
+        onBackToLogin={handleBackToLogin}
+      />
     </div>
   );
 };

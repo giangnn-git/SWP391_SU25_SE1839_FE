@@ -1,5 +1,6 @@
 import axios from "./axios.customize";
 
+// {Auth}
 // Login API
 export const userLoginApi = (user, password) => {
   const URL_BACKEND = "/api/auth/token";
@@ -40,12 +41,13 @@ export const updateUserApi = (id, userData) => {
   });
 };
 
-// // Inactive/Active user (toggle status)
-// export const toggleUserStatusApi = (id, isActive) => {
-//   return axios.patch(`/api/auth/users/${id}/status`, {
-//     isActive,
-//   });
-// };
+export const deactivateUserApi = (userId) => {
+  return axios.patch(`/api/auth/users/inactive/${userId}`);
+};
+
+export const activateUserApi = (userId) => {
+  return axios.patch(`/api/auth/users/active/${userId}`);
+};
 
 // // Delete user
 // export const deleteUserApi = (id) => {
@@ -63,12 +65,19 @@ export const getServiceCentersApi = () => {
 };
 
 //change pass
-export const changePasswordApi = async (id, passwordData) => {
-  const URL_BACKEND = `/api/auth/${id}/change-password`;
+export const changePasswordApi = async (passwordData) => {
+  const URL_BACKEND = `/api/auth/change-password`;
 
   return axios.post(URL_BACKEND, {
     oldPassword: passwordData.currentPassword,
     newPassword: passwordData.newPassword,
+  });
+};
+
+//forgot pass
+export const forgotPasswordApi = async (email) => {
+  return axios.post("/api/auth/forgot-password", {
+    email: email,
   });
 };
 

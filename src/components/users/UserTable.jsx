@@ -3,7 +3,9 @@ import { storage } from "../../utils/storage";
 
 const UserTable = ({ users, onEdit, onDelete, onStatusToggle, loading }) => {
   const [actionLoading, setActionLoading] = useState(null);
+  const currentUserRole = storage.get("userRole");
 
+  // UserTable.jsx - ĐÃ ĐÚNG
   const handleStatusToggle = async (id, currentStatus) => {
     setActionLoading(id);
     try {

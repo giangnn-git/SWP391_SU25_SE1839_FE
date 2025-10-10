@@ -8,6 +8,7 @@ import SupplyChain from "./pages/SupplyChain.jsx";
 import Policy from "./pages/Policy.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import ManageUsers from "./pages/manageUsers.jsx";
+import ChangePasswordPage from "./pages/ChangePassword.jsx";
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -63,12 +64,15 @@ const router = createBrowserRouter([
           </PrivateRoute>
         ),
       },
-
     ],
   },
   {
     path: "/login",
     element: <LoginPage />,
+  },
+  {
+    path: "/change-password",
+    element: <ChangePasswordPage />,
   },
 ]);
 
