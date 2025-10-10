@@ -8,6 +8,7 @@ import RoleProtectedRoute from "./components/routes/RoleProtectedRoute.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import ManageUsers from "./pages/ManageUsers.jsx";
 import WarrantyClaims from "./pages/WarrantyClaims.jsx";
+import RepairOrders from "./pages/RepairOrders.jsx";
 import SupplyChain from "./pages/SupplyChain.jsx";
 import PartPolicyManagement from "./pages/PartPolicyManagement.jsx";
 import ProfilePage from "./pages/Profiles.jsx";
@@ -34,6 +35,10 @@ const router = createBrowserRouter([
       {
         path: "manage-users", // only admin access
         element: <ManageUsers />,
+      },
+      {
+        path: "repair-orders",
+        element: <RepairOrders />,
       },
       {
         path: "supply-chain", // chỉ admin + evm staff mới truy cập được

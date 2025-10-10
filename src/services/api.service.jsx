@@ -101,6 +101,10 @@ export const createWarrantyClaimApi = (data) => {
   });
 };
 
+export const updateWarrantyClaimApi = async (id, updatedData) => {
+  console.log("🛠 Updating claim:", id, updatedData);
+  return axios.put(`/api/claims/${id}`, updatedData);
+};
 
 export const getAllWarrantyClaimsApi = () => {
   return axios.get("/api/api/claims");

@@ -9,7 +9,7 @@ const Sidebar = () => {
   const navigation = [
     { name: "Dashboard", href: "/", icon: "📊" },
     { name: "Warranty Claims", href: "/warranty-claims", icon: "🛡️" },
-    { name: "Vehicles", href: "/vehicles", icon: "🚗" },
+    { name: "Repair Orders", href: "/repair-orders", icon: "🔗" },
     { name: "Claim Approval", href: "/approvals", icon: "✅" },
     // { name: "Supply Chain", href: "/supply-chain", icon: "🔗" },
     // { name: "Analytics & Reports", href: "/analytics", icon: "📈" },
