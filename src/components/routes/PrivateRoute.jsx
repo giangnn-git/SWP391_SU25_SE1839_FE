@@ -47,6 +47,16 @@ const PrivateRoute = ({ children, allowedRoles = [] }) => {
     return <Navigate to="/" replace />;
   }
 
+  // 🔹 Bổ sung: Ràng buộc riêng cho trang Claim Approval
+  // Chỉ ADMIN và EVM_STAFF mới được truy cập /approvals
+  if (
+    location.pathname.startsWith("/approvals") &&
+    currentUser.role?.toUpperCase() !== "ADMIN" &&
+    currentUser.role?.toUpperCase() !== "EVM_STAFF"
+  ) {
+    return <Navigate to="/" replace />;
+  }
+
   // Tất cả điều kiện hợp lệ → render component con
   return children;
 };

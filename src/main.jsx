@@ -14,6 +14,7 @@ import RepairOrders from "./pages/RepairOrders.jsx";
 import ProfilePage from "./pages/Profiles.jsx";
 import ChangePasswordPage from "./pages/ChangePassword.jsx";
 import Profiles from "./pages/Profiles.jsx";
+import ClaimApproval from "./pages/ClaimApproval.jsx"; // ✅ Đã có import
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -79,6 +80,16 @@ const router = createBrowserRouter([
         element: (
           <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
             <Policy />
+          </PrivateRoute>
+        ),
+      },
+
+      // ✅ Bổ sung mới: Route cho Claim Approval (ADMIN + EVM_STAFF)
+      {
+        path: "approvals",
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+            <ClaimApproval />
           </PrivateRoute>
         ),
       },

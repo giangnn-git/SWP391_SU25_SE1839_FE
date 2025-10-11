@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useCurrentUser } from "../../hooks/useCurrentUser";
 import {
@@ -9,10 +10,13 @@ import {
   BarChart3,
   FileText,
   Users,
+  PanelLeft,
+  PanelRight,
 } from "lucide-react";
 
 const Sidebar = () => {
   const { currentUser, loading } = useCurrentUser();
+  const [collapsed, setCollapsed] = useState(false);
 
   const isAdmin = currentUser?.role === "ADMIN";
   const isEvmStaff = currentUser?.role === "EVM_STAFF";
@@ -25,11 +29,15 @@ const Sidebar = () => {
       icon: <ShieldCheck size={18} />,
     },
     { name: "Repair Orders", href: "/repair-orders", icon: <Car size={18} /> },
-    {
-      name: "Claim Approval",
-      href: "/approvals",
-      icon: <CheckCircle2 size={18} />,
-    },
+    ...(isAdmin || isEvmStaff
+      ? [
+        {
+          name: "Claim Approval",
+          href: "/approvals",
+          icon: <CheckCircle2 size={18} />,
+        },
+      ]
+      : []),
     {
       name: "Supply Chain",
       href: "/supply-chain",
@@ -63,41 +71,66 @@ const Sidebar = () => {
   }
 
   return (
-    <div className="w-64 bg-white/80 backdrop-blur-md shadow-xl border-r border-gray-200 h-full flex flex-col">
+    <div
+      className={`transition-all duration-500 bg-white/50 backdrop-blur-xl border-r border-gray-200/70 shadow-lg h-full flex flex-col ${collapsed ? "w-20" : "w-64"
+        }`}
+    >
       {/* Header */}
-      <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100">
-        <h1 className="text-xl font-semibold text-gray-900 mb-1 tracking-tight flex items-center gap-2">
-          ⚡ EV Warranty
-        </h1>
-        <p className="text-sm text-gray-600">Management System</p>
+      <div className="relative p-6 border-b border-gray-200/60 bg-gradient-to-r from-blue-50/60 to-blue-100/40 flex items-center justify-between backdrop-blur-md">
+        {!collapsed && (
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900 mb-1 tracking-tight flex items-center gap-2">
+              ⚡ EV Warranty
+            </h1>
+            <p className="text-sm text-gray-600">Management System</p>
+          </div>
+        )}
+
+        {/* 🔹 Floating Gradient Toggle */}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="absolute -right-5 top-6 p-2 rounded-full shadow-lg border border-white/60 bg-white/50 backdrop-blur-sm transition-all duration-300 hover:scale-110 hover:shadow-[0_0_10px_rgba(59,130,246,0.4)]"
+          style={{
+            boxShadow:
+              "0 0 10px rgba(96,165,250,0.25), inset 0 0 5px rgba(255,255,255,0.2)",
+          }}
+        >
+          {collapsed ? (
+            <PanelRight size={18} className="text-blue-600" />
+          ) : (
+            <PanelLeft size={18} className="text-blue-600" />
+          )}
+        </button>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 p-4 overflow-y-auto">
         <div className="mb-6">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-            Main Menu
-          </h3>
+          {!collapsed && (
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+              Main Menu
+            </h3>
+          )}
           <ul className="space-y-1">
             {navigation.map((item) => (
-              <li key={item.name}>
+              <li key={item.name} title={collapsed ? item.name : ""}>
                 <NavLink
                   to={item.href}
                   className={({ isActive }) =>
                     isActive
                       ? "flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-all duration-150 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-r-2 border-blue-600 font-medium shadow-sm"
-                      : "flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-all duration-150 text-gray-700 hover:bg-gray-50 hover:text-blue-600"
+                      : "flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-all duration-150 text-gray-700 hover:bg-white/60 hover:text-blue-600 hover:shadow-sm"
                   }
                 >
                   <div
-                    className={`p-1.5 rounded-md ${item.isActive
+                    className={`p-1.5 rounded-md transition-all duration-300 ${item.isActive
                       ? "bg-blue-100 text-blue-700"
-                      : "bg-gray-100 text-gray-600 group-hover:bg-blue-50"
+                      : "bg-gray-100/70 text-gray-600 group-hover:bg-blue-50"
                       }`}
                   >
                     {item.icon}
                   </div>
-                  {item.name}
+                  {!collapsed && <span>{item.name}</span>}
                 </NavLink>
               </li>
             ))}
@@ -106,13 +139,16 @@ const Sidebar = () => {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-gray-200 bg-white/60 backdrop-blur-sm">
-        <p className="text-xs text-gray-600 text-center font-medium">
-          EV Motors Corp
-        </p>
-        <p className="text-xs text-gray-400 text-center mt-1 capitalize">
-          {currentUser?.role?.toLowerCase()}
-        </p>
+      <div
+        className={`p-4 border-t border-gray-200/70 bg-white/40 backdrop-blur-lg text-center ${collapsed ? "text-[10px]" : ""
+          }`}
+      >
+        <p className="text-xs text-gray-700 font-medium">EV Motors Corp</p>
+        {!collapsed && (
+          <p className="text-xs text-gray-400 mt-1 capitalize">
+            {currentUser?.role?.toLowerCase()}
+          </p>
+        )}
       </div>
     </div>
   );
