@@ -3,8 +3,7 @@ import {
   getAllUsersApi,
   createUserApi,
   updateUserApi,
-  deactivateUserApi,
-  activateUserApi,
+  toggleUserStatusApi,
 } from "../services/api.service";
 import UserTable from "../components/users/userTable.jsx";
 import EditUserModal from "../components/users/editUserModal.jsx";
@@ -113,37 +112,51 @@ const ManageUsers = () => {
     }
   };
 
-  // ✅ CẬP NHẬT: Toggle user status với API deactivate
-  const handleToggleStatus = async (id, isActive) => {
+  // Toggle user status
+  const handleToggleStatus = async (id, currentIsActive) => {
     setError("");
     try {
-      // Kiểm tra xem user có tồn tại không
       const targetUser = users.find((user) => user.id === id);
       if (!targetUser) {
         throw new Error("User not found");
       }
 
-      if (isActive) {
-        await activateUserApi(id);
-      } else {
-        await deactivateUserApi(id);
-      }
+      // call api
+      await toggleUserStatusApi(id, !currentIsActive);
 
       setSuccess(
-        `User ${isActive ? "activated" : "deactivated"} successfully!`
+        `User ${!currentIsActive ? "activated" : "deactivated"} successfully!`
       );
 
       // Update local state
-      setUsers(
-        users.map((user) =>
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
           user.id === id
-            ? { ...user, status: isActive ? "ACTIVE" : "INACTIVE" }
+            ? {
+                ...user,
+                isActive: !currentIsActive,
+                status: !currentIsActive ? "ACTIVE" : "INACTIVE",
+              }
+            : user
+        )
+      );
+
+      // update filteredUsers for UI refresh
+      setFilteredUsers((prevFiltered) =>
+        prevFiltered.map((user) =>
+          user.id === id
+            ? {
+                ...user,
+                isActive: !currentIsActive,
+                status: !currentIsActive ? "ACTIVE" : "INACTIVE",
+              }
             : user
         )
       );
     } catch (err) {
       const errorMessage =
         err.response?.data?.message ||
+        err.message ||
         "You don't have permission to perform this action";
       setError(errorMessage);
       throw err;

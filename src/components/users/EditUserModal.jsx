@@ -97,7 +97,7 @@ const EditUserModal = ({ user, isOpen, onClose, onSave, loading }) => {
                 required
               >
                 <option value="">Select Role</option>
-                <option value="STAFF">STAFF</option>
+                <option value="STAFF">TECHNICIAN</option>
                 <option value="ADMIN">ADMIN</option>
                 <option value="SC_STAFF">SC_STAFF</option>
                 <option value="EVM_STAFF">EVM_STAFF</option>

@@ -41,12 +41,10 @@ export const updateUserApi = (id, userData) => {
   });
 };
 
-export const deactivateUserApi = (userId) => {
-  return axios.patch(`/api/auth/users/inactive/${userId}`);
-};
-
-export const activateUserApi = (userId) => {
-  return axios.patch(`/api/auth/users/active/${userId}`);
+//toggle status
+export const toggleUserStatusApi = (userId, isActive) => {
+  const statusPath = isActive ? "active" : "inactive";
+  return axios.put(`/api/auth/users/${statusPath}/${userId}`);
 };
 
 // // Delete user
@@ -111,4 +109,7 @@ export const getAllPartPoliciesApi = () => {
 // detail part
 export const getPartPolicyByIdApi = (policyId) => {
   return axios.get(`/api/api/part-policies/${policyId}`);
+};
+export const createPartPolicyApi = (partPolicyData) => {
+  return axios.post("/api/api/part-policies", partPolicyData);
 };

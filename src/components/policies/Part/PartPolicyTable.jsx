@@ -1,6 +1,22 @@
 import React from "react";
 import { Eye } from "lucide-react";
 
+const formatDate = (dateString) => {
+  if (!dateString) return "N/A";
+
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return dateString; // Fallback to original string if error
+  }
+};
+
 const PartPolicyTable = ({
   policies,
   loading,
@@ -54,8 +70,8 @@ const PartPolicyTable = ({
                   {policy.partName}
                 </td>
                 <td className="py-3 px-4">{policy.policyId}</td>
-                <td className="py-3 px-4">{policy.startDate}</td>
-                <td className="py-3 px-4">{policy.endDate}</td>
+                <td className="py-3 px-4">{formatDate(policy.startDate)}</td>
+                <td className="py-3 px-4">{formatDate(policy.endDate)}</td>
                 <td className="py-3 px-4">
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-medium ${
