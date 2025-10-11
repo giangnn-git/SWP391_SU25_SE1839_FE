@@ -181,3 +181,7 @@ export const getAllPartPoliciesApi = () => {
 export const getPartPolicyByIdApi = (policyId) => {
   return axios.get(`/api/api/part-policies/${policyId}`);
 };
+
+export const getAllRepairOrdersApi = () => {
+  return axios.get("/api/api/repairOrders");
+};

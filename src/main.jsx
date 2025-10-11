@@ -10,10 +10,8 @@ import Dashboard from "./pages/Dashboard.jsx";
 import ManageUsers from "./pages/ManageUsers.jsx";
 import WarrantyClaims from "./pages/WarrantyClaims.jsx";
 import RepairOrders from "./pages/RepairOrders.jsx";
-import SupplyChain from "./pages/SupplyChain.jsx";
-import PartPolicyManagement from "./pages/PartPolicyManagement.jsx";
+// import PartPolicyManagement from "./pages/PartPolicyManagement.jsx";
 import ProfilePage from "./pages/Profiles.jsx";
-import ManageUsers from "./pages/ManageUsers.jsx";
 import ChangePasswordPage from "./pages/ChangePassword.jsx";
 import "./index.css";
 

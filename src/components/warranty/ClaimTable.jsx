@@ -2,7 +2,7 @@ import { useState } from "react";
 
 const ClaimTable = ({ claims, loading, error }) => {
     const [currentPage, setCurrentPage] = useState(1);
-    const claimsPerPage = 15; // ✅ Hiển thị 15 claim mỗi trang
+    const claimsPerPage = 15;
 
     const totalPages = Math.ceil(claims.length / claimsPerPage);
     const startIndex = (currentPage - 1) * claimsPerPage;
@@ -14,46 +14,53 @@ const ClaimTable = ({ claims, loading, error }) => {
                 <table className="min-w-full text-sm">
                     <thead className="bg-gray-100 text-gray-700 uppercase text-xs">
                         <tr>
-                            <th className="px-4 py-2 text-left">Description</th>
-                            <th className="px-4 py-2 text-left">Mileage</th>
+                            <th className="px-4 py-2 text-left">ID</th>
                             <th className="px-4 py-2 text-left">VIN</th>
+                            <th className="px-4 py-2 text-left">Mileage</th>
+                            <th className="px-4 py-2 text-left">Description</th>
+                            <th className="px-4 py-2 text-left">Sender</th>
                             <th className="px-4 py-2 text-left">Priority</th>
-                            <th className="px-4 py-2 text-left">Parts</th>
+                            <th className="px-4 py-2 text-left">Date</th>
+                            <th className="px-4 py-2 text-left">Status</th>
                         </tr>
                     </thead>
+
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan="5" className="text-center py-6">
-                                    Đang tải dữ liệu...
+                                <td colSpan="8" className="text-center py-6">
+                                    Loading data...
                                 </td>
                             </tr>
                         ) : error ? (
                             <tr>
-                                <td colSpan="5" className="text-center text-red-500 py-6">
+                                <td colSpan="8" className="text-center text-red-500 py-6">
                                     {error}
                                 </td>
                             </tr>
                         ) : currentClaims.length > 0 ? (
-                            currentClaims.map((claim, i) => (
-                                <tr key={i} className="border-t hover:bg-gray-50">
-                                    <td className="px-4 py-2">{claim.description}</td>
-                                    <td className="px-4 py-2">{claim.mileage?.toLocaleString()} km</td>
+                            currentClaims.map((claim) => (
+                                <tr key={claim.id} className="border-t hover:bg-gray-50">
+                                    <td className="px-4 py-2">{claim.id}</td>
                                     <td className="px-4 py-2">{claim.vin}</td>
+                                    <td className="px-4 py-2">{claim.milege} km</td>
+                                    <td className="px-4 py-2">{claim.description}</td>
+                                    <td className="px-4 py-2">{claim.senderName}</td>
                                     <td className="px-4 py-2">{claim.priority}</td>
                                     <td className="px-4 py-2">
-                                        {claim.partClaims?.map((p, idx) => (
-                                            <div key={idx}>
-                                                ID: {p.id}, Qty: {p.quantity}
-                                            </div>
-                                        ))}
+                                        {claim.claimDate
+                                            ? `${String(claim.claimDate[2]).padStart(2, "0")}/${String(
+                                                claim.claimDate[1]
+                                            ).padStart(2, "0")}/${claim.claimDate[0]}`
+                                            : ""}
                                     </td>
+                                    <td className="px-4 py-2">{claim.status}</td>
                                 </tr>
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="5" className="text-center py-6">
-                                    Không có claim nào.
+                                <td colSpan="8" className="text-center py-6">
+                                    No claims found.
                                 </td>
                             </tr>
                         )}

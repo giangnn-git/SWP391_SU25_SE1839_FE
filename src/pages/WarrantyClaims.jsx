@@ -83,6 +83,8 @@ const WarrantyClaimsManagement = () => {
                     onClaimCreated={handleClaimCreated}
                 />
             )}
+
+
         </div>
     );
 };
