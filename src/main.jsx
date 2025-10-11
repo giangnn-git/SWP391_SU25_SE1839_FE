@@ -13,6 +13,7 @@ import RepairOrders from "./pages/RepairOrders.jsx";
 // import PartPolicyManagement from "./pages/PartPolicyManagement.jsx";
 import ProfilePage from "./pages/Profiles.jsx";
 import ChangePasswordPage from "./pages/ChangePassword.jsx";
+import Profiles from "./pages/Profiles.jsx";
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -90,6 +91,10 @@ const router = createBrowserRouter([
   {
     path: "/change-password",
     element: <ChangePasswordPage />,
+  },
+  {
+    path: "/profile",
+    element: <Profiles />,
   },
 ]);
 

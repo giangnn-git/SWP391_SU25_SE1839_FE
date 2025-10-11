@@ -40,13 +40,27 @@ export const updateUserApi = (id, userData) => {
     status: userData.status,
   });
 };
+//change pass
+export const changePasswordApi = async (passwordData) => {
+  const URL_BACKEND = `/api/auth/change-password`;
 
-export const deactivateUserApi = (userId) => {
-  return axios.patch(`/api/auth/users/inactive/${userId}`);
+  return axios.post(URL_BACKEND, {
+    oldPassword: passwordData.currentPassword,
+    newPassword: passwordData.newPassword,
+  });
 };
 
-export const activateUserApi = (userId) => {
-  return axios.patch(`/api/auth/users/active/${userId}`);
+//forgot pass
+export const forgotPasswordApi = async (email) => {
+  return axios.post("/api/auth/forgot-password", {
+    email: email,
+  });
+};
+
+//toggle status
+export const toggleUserStatusApi = (userId, isActive) => {
+  const statusPath = isActive ? "active" : "inactive";
+  return axios.put(`/api/auth/users/${statusPath}/${userId}`);
 };
 
 // // Delete user
@@ -84,7 +98,6 @@ export const createClaimApi = async (
     attachments
   };
 
-  console.log("Create Claim Payload:", data);
   return axios.post("/api/claims", data);
 };
 
@@ -98,7 +111,6 @@ export const createWarrantyClaimApi = (data) => {
 };
 
 export const updateWarrantyClaimApi = async (id, updatedData) => {
-  console.log("🛠 Updating claim:", id, updatedData);
   return axios.put(`/api/claims/${id}`, updatedData);
 };
 
@@ -119,13 +131,11 @@ export const getClaimByIdApi = async (id) => {
 
 // UPDATE (Cập nhật claim)
 export const updateClaimApi = async (id, updatedData) => {
-  console.log("🛠 Updating claim:", id, updatedData);
   return axios.put(`/api/claims/${id}`, updatedData);
 };
 
 // DELETE (Xóa claim)
 export const deleteClaimApi = async (id) => {
-  console.log("🗑️ Deleting claim:", id);
   return axios.delete(`/api/claims/${id}`);
 };
 //   return axios.get("/api/api/servicecenters");
@@ -134,21 +144,6 @@ export const deleteClaimApi = async (id) => {
 // export const changePasswordApi = async (id, passwordData) => {
 //   const URL_BACKEND = `/api/auth/${id}/change-password`;
 //change pass
-export const changePasswordApi = async (passwordData) => {
-  const URL_BACKEND = `/api/auth/change-password`;
-
-  return axios.post(URL_BACKEND, {
-    oldPassword: passwordData.currentPassword,
-    newPassword: passwordData.newPassword,
-  });
-};
-
-//forgot pass
-export const forgotPasswordApi = async (email) => {
-  return axios.post("/api/auth/forgot-password", {
-    email: email,
-  });
-};
 
 //{ Policy Warranty }
 
@@ -182,6 +177,12 @@ export const getPartPolicyByIdApi = (policyId) => {
   return axios.get(`/api/api/part-policies/${policyId}`);
 };
 
+
+//{repairOrders API}
+
 export const getAllRepairOrdersApi = () => {
   return axios.get("/api/api/repairOrders");
-};
+}
+export const createPartPolicyApi = (partPolicyData) => {
+  return axios.post("/api/api/part-policies", partPolicyData);
+}

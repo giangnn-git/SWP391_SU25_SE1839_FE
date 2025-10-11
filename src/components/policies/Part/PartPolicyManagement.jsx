@@ -4,6 +4,7 @@ import { getAllPartPoliciesApi } from "../../../services/api.service";
 import PartPolicyTable from "./PartPolicyTable";
 import PartPolicyModal from "./PartPolicyModal";
 import ViewPartPolicyModal from "./ViewPartPolicy";
+import CreatePartPolicy from "./CreatePartPolicy";
 
 const PartPolicyManagement = () => {
   const [policies, setPolicies] = useState([]);
@@ -52,12 +53,12 @@ const PartPolicyManagement = () => {
     fetchPolicies();
   }, []);
 
-  // Filter and Search logic - THÊM SEARCH THEO ID
+  // Filter and Search logic
   const filteredPolicies = policies.filter((policy) => {
     const matchesSearch = searchTerm
       ? policy.partName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         policy.policyId.toString().includes(searchTerm) ||
-        policy.id.toString().includes(searchTerm) // THÊM SEARCH THEO ID
+        policy.id.toString().includes(searchTerm)
       : true;
 
     const matchesPart = filterPartName
@@ -147,7 +148,7 @@ const PartPolicyManagement = () => {
     setShowEditModal(true);
   };
 
-  // Handle Save (Create or Edit) - SỬA LỖI QUAN TRỌNG
+  // Handle Save (Create or Edit)
   const handleSave = async () => {
     const { partName, policyId, startDate, endDate } = formData;
 
@@ -164,7 +165,6 @@ const PartPolicyManagement = () => {
 
     try {
       if (selectedPolicy) {
-        // ✅ SỬA: Dùng id thay vì policyId
         await handleEditPolicy(selectedPolicy.id, formData);
       } else {
         // Create new policy
@@ -178,9 +178,7 @@ const PartPolicyManagement = () => {
         startDate: "",
         endDate: "",
       });
-    } catch (error) {
-      // Error handled in individual functions
-    }
+    } catch (error) {}
   };
 
   // Clear messages
@@ -338,11 +336,8 @@ const PartPolicyManagement = () => {
       )}
 
       {/* Create Modal */}
-      <PartPolicyModal
+      <CreatePartPolicy
         showModal={showCreateModal}
-        editing={false}
-        formData={formData}
-        actionLoading={actionLoading}
         onClose={() => {
           setShowCreateModal(false);
           setFormData({
@@ -353,9 +348,11 @@ const PartPolicyManagement = () => {
           });
         }}
         onSave={handleSave}
+        formData={formData}
         onFormDataChange={(field, value) =>
           setFormData((prev) => ({ ...prev, [field]: value }))
         }
+        actionLoading={actionLoading}
       />
 
       {/* Edit Modal */}
