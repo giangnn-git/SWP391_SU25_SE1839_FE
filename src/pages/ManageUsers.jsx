@@ -3,7 +3,8 @@ import {
   getAllUsersApi,
   createUserApi,
   updateUserApi,
-  toggleUserStatusApi,
+  deactivateUserApi,
+  activateUserApi,
 } from "../services/api.service";
 import UserTable from "../components/users/userTable.jsx";
 import EditUserModal from "../components/users/editUserModal.jsx";
@@ -77,7 +78,7 @@ const ManageUsers = () => {
       );
       setSuccess("User created successfully!");
       setIsCreateModalOpen(false);
-      loadUsers(); // Refresh list
+      loadUsers();
     } catch (err) {
       setError(
         "Failed to create user: " + (err.response?.data?.message || err.message)
@@ -112,20 +113,39 @@ const ManageUsers = () => {
     }
   };
 
-  // Toggle user status
+  // ✅ CẬP NHẬT: Toggle user status với API deactivate
   const handleToggleStatus = async (id, isActive) => {
     setError("");
     try {
-      await toggleUserStatusApi(id, isActive);
+      // Kiểm tra xem user có tồn tại không
+      const targetUser = users.find((user) => user.id === id);
+      if (!targetUser) {
+        throw new Error("User not found");
+      }
+
+      if (isActive) {
+        await activateUserApi(id);
+      } else {
+        await deactivateUserApi(id);
+      }
+
       setSuccess(
         `User ${isActive ? "activated" : "deactivated"} successfully!`
       );
-      loadUsers();
-    } catch (err) {
-      setError(
-        "Failed to update user status: " +
-          (err.response?.data?.message || err.message)
+
+      // Update local state
+      setUsers(
+        users.map((user) =>
+          user.id === id
+            ? { ...user, status: isActive ? "ACTIVE" : "INACTIVE" }
+            : user
+        )
       );
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message ||
+        "You don't have permission to perform this action";
+      setError(errorMessage);
       throw err;
     }
   };
@@ -151,7 +171,7 @@ const ManageUsers = () => {
         </div>
 
         <div className="flex items-center space-x-4">
-          {/* ✅ SEARCH INPUT */}
+          {/* SEARCH INPUT */}
           <div className="relative">
             <input
               type="text"
@@ -207,7 +227,7 @@ const ManageUsers = () => {
         </div>
       )}
 
-      {/* Users Table - pass filteredUsers instead of users */}
+      {/* Users Table */}
       <div className="bg-white rounded-lg shadow-sm border">
         <UserTable
           users={filteredUsers}
