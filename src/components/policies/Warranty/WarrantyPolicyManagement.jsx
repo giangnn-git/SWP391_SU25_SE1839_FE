@@ -17,6 +17,8 @@ const WarrantyPolicyManagement = () => {
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(""); // ✅ thêm state success message
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -73,6 +75,8 @@ const WarrantyPolicyManagement = () => {
   const handleCreatePolicy = async (policyData) => {
     try {
       setActionLoading(true);
+      setError(null);
+      setSuccess("");
 
       const apiData = {
         name: policyData.name,
@@ -83,12 +87,13 @@ const WarrantyPolicyManagement = () => {
 
       await createWarrantyPolicyApi(apiData);
       await fetchPolicies();
-      alert("✅ Policy created successfully!");
+      setSuccess("✅ Policy created successfully!");
+      setShowCreateModal(false);
     } catch (error) {
       console.error("Error creating policy:", error);
-      alert(
+      setError(
         error.response?.data?.message ||
-          "Failed to create policy. Please try again."
+        "Failed to create policy. Please try again."
       );
     } finally {
       setActionLoading(false);
@@ -119,7 +124,7 @@ const WarrantyPolicyManagement = () => {
   const filteredPolicies = policies.filter((policy) => {
     const matchesSearch = searchTerm
       ? policy.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        policy.description.toLowerCase().includes(searchTerm.toLowerCase())
+      policy.description.toLowerCase().includes(searchTerm.toLowerCase())
       : true;
 
     const matchesDuration = filterDuration
@@ -153,7 +158,18 @@ const WarrantyPolicyManagement = () => {
     setSearchTerm("");
   };
 
-  if (error) {
+  // ✅ Clear message after timeout
+  useEffect(() => {
+    if (error || success) {
+      const timer = setTimeout(() => {
+        setError(null);
+        setSuccess("");
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, success]);
+
+  if (error && !policies.length) {
     return (
       <div className="p-6 flex justify-center items-center h-64">
         <div className="text-lg text-red-600">{error}</div>
@@ -209,6 +225,18 @@ const WarrantyPolicyManagement = () => {
           </button>
         </div>
       </div>
+
+      {/* ✅ Message Area */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-300 text-red-700 rounded-md shadow-sm">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-300 text-green-700 rounded-md shadow-sm">
+          {success}
+        </div>
+      )}
 
       {/* Filter Bar */}
       <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
@@ -319,7 +347,10 @@ const WarrantyPolicyManagement = () => {
         showModal={showUpdateModal}
         policy={selectedPolicy}
         onClose={() => setShowUpdateModal(false)}
-        onUpdated={fetchPolicies}
+        onUpdated={() => {
+          fetchPolicies();
+          setSuccess("✅ Policy updated successfully!");
+        }}
         updatePolicyApi={updateWarrantyPolicyApi}
       />
 
@@ -328,7 +359,10 @@ const WarrantyPolicyManagement = () => {
         showModal={showDeleteModal}
         policy={selectedPolicy}
         onClose={() => setShowDeleteModal(false)}
-        onDeleted={fetchPolicies}
+        onDeleted={() => {
+          fetchPolicies();
+          setSuccess("🗑️ Policy deleted successfully!");
+        }}
         deletePolicyApi={deleteWarrantyPolicyApi}
       />
     </div>

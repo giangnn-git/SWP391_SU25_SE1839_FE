@@ -27,6 +27,7 @@ const PartPolicyManagement = () => {
   // Filter, Search & Pagination
   const [filterPartName, setFilterPartName] = useState("");
   const [filterPolicyId, setFilterPolicyId] = useState("");
+  const [filterStatus, setFilterStatus] = useState(""); // ✅ new
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -38,7 +39,6 @@ const PartPolicyManagement = () => {
       setError("");
       const response = await getAllPartPoliciesApi();
 
-      // Transform API data
       const partPolicies = response.data?.data?.partPolicies || [];
       setPolicies(partPolicies);
     } catch (err) {
@@ -56,9 +56,9 @@ const PartPolicyManagement = () => {
   // Filter and Search logic
   const filteredPolicies = policies.filter((policy) => {
     const matchesSearch = searchTerm
-      ? policy.partName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        policy.policyId.toString().includes(searchTerm) ||
-        policy.id.toString().includes(searchTerm)
+      ? policy.partName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      policy.policyId?.toString().includes(searchTerm) ||
+      policy.id?.toString().includes(searchTerm)
       : true;
 
     const matchesPart = filterPartName
@@ -66,10 +66,18 @@ const PartPolicyManagement = () => {
       : true;
 
     const matchesPolicy = filterPolicyId
-      ? policy.policyId.toString() === filterPolicyId
+      ? policy.policyId?.toString() === filterPolicyId
       : true;
 
-    return matchesSearch && matchesPart && matchesPolicy;
+    // ✅ Filter by status (Available / Expired)
+    const matchesStatus =
+      filterStatus === ""
+        ? true
+        : filterStatus === "available"
+          ? new Date(policy.endDate) > new Date()
+          : new Date(policy.endDate) <= new Date();
+
+    return matchesSearch && matchesPart && matchesPolicy && matchesStatus;
   });
 
   // Pagination logic
@@ -82,14 +90,16 @@ const PartPolicyManagement = () => {
 
   // Generate dynamic dropdown options
   const availableParts = [...new Set(policies.map((p) => p.partName))];
+
+  // ✅ FIX: Sort Policy IDs in ascending order (1 → 2 → 3 → 4 → 5)
   const availablePolicies = [
-    ...new Set(policies.map((p) => p.policyId.toString())),
-  ];
+    ...new Set(policies.map((p) => p.policyId?.toString())),
+  ].sort((a, b) => Number(a) - Number(b));
 
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterPartName, filterPolicyId, searchTerm]);
+  }, [filterPartName, filterPolicyId, filterStatus, searchTerm]);
 
   // Create Policy
   const handleCreatePolicy = async (policyData) => {
@@ -157,7 +167,6 @@ const PartPolicyManagement = () => {
       return;
     }
 
-    // Validate dates
     if (new Date(startDate) >= new Date(endDate)) {
       setError("End date must be after start date.");
       return;
@@ -167,18 +176,16 @@ const PartPolicyManagement = () => {
       if (selectedPolicy) {
         await handleEditPolicy(selectedPolicy.id, formData);
       } else {
-        // Create new policy
         await handleCreatePolicy(formData);
       }
 
-      // Reset form
       setFormData({
         partName: "",
         policyId: "",
         startDate: "",
         endDate: "",
       });
-    } catch (error) {}
+    } catch (error) { }
   };
 
   // Clear messages
@@ -243,6 +250,8 @@ const PartPolicyManagement = () => {
       <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-3 text-gray-700 font-medium">
           <Filter size={18} className="text-gray-600" />
+
+          {/* Part Name */}
           <select
             value={filterPartName}
             onChange={(e) => setFilterPartName(e.target.value)}
@@ -256,6 +265,7 @@ const PartPolicyManagement = () => {
             ))}
           </select>
 
+          {/* Policy ID */}
           <select
             value={filterPolicyId}
             onChange={(e) => setFilterPolicyId(e.target.value)}
@@ -267,6 +277,17 @@ const PartPolicyManagement = () => {
                 {policy}
               </option>
             ))}
+          </select>
+
+          {/* ✅ Status Filter */}
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+          >
+            <option value="">All Status</option>
+            <option value="available">Available</option>
+            <option value="expired">Expired</option>
           </select>
 
           {/* Search Results Info */}
