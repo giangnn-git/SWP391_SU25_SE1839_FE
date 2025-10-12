@@ -14,7 +14,7 @@ import ProfilePage from "./pages/Profiles.jsx";
 import ChangePasswordPage from "./pages/ChangePassword.jsx";
 import Profiles from "./pages/Profiles.jsx";
 import ClaimApproval from "./pages/ClaimApproval.jsx";
-import VehicleManagement from "./pages/VehicleManagement.jsx"; // ✅ Thêm mới
+import VehicleManagement from "./pages/VehicleManagement.jsx";
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -39,7 +39,7 @@ const router = createBrowserRouter([
         element: <RepairOrders />,
       },
 
-      // ✅ Vehicle Management — chỉ dành cho ADMIN
+      //  Vehicle Management — Only ADMIN
       {
         path: "vehicles",
         element: (
@@ -68,7 +68,26 @@ const router = createBrowserRouter([
       },
 
       {
-        path: "policy",
+        path: "part-policies",
+        path: "policy", // Policy Management (Part + Warranty)
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+            <Policy />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: "profile",
+        element: <ProfilePage />,
+        path: "part-policies",
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+            <Policy />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: "warranty-policies", // Alias route: mở sẵn tab Warranty Policy
         element: (
           <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
             <Policy />
@@ -76,6 +95,7 @@ const router = createBrowserRouter([
         ),
       },
 
+      //  Route for Claim Approval (ADMIN + EVM_STAFF)
       {
         path: "approvals",
         element: (
@@ -87,7 +107,7 @@ const router = createBrowserRouter([
     ],
   },
 
-  // ✅ Trang login / profile / đổi mật khẩu
+  //  login / profile / change-password
   {
     path: "/login",
     element: <LoginPage />,

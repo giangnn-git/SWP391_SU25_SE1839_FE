@@ -1,17 +1,48 @@
-// src/components/partPolicy/CreatePartPolicy.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
-import { createPartPolicyApi } from "../../../services/api.service";
+import {
+  createPartPolicyApi,
+  getPartPolicyCodesApi,
+} from "../../../services/api.service";
 
 const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
-    partId: "",
-    warrantyPolicyId: "",
+    partCode: "",
+    policyCode: "",
     startDate: "",
     endDate: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [availableCodes, setAvailableCodes] = useState({
+    partCode: [],
+    policyCode: [],
+  });
+  const [codesLoading, setCodesLoading] = useState(true);
+
+  // Fetch available part codes and policy codes
+  useEffect(() => {
+    const fetchAvailableCodes = async () => {
+      try {
+        setCodesLoading(true);
+        const response = await getPartPolicyCodesApi();
+        const data = response.data?.data || {};
+        setAvailableCodes({
+          partCode: data.partCode || [],
+          policyCode: data.policyCode || [],
+        });
+      } catch (err) {
+        console.error("Error fetching available codes:", err);
+        setError("Failed to load available codes. Please try again.");
+      } finally {
+        setCodesLoading(false);
+      }
+    };
+
+    if (showModal) {
+      fetchAvailableCodes();
+    }
+  }, [showModal]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,8 +57,8 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
 
     // Validation
     if (
-      !formData.partId ||
-      !formData.warrantyPolicyId ||
+      !formData.partCode ||
+      !formData.policyCode ||
       !formData.startDate ||
       !formData.endDate
     ) {
@@ -46,8 +77,8 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
     try {
       // Prepare data for API
       const policyData = {
-        partId: parseInt(formData.partId),
-        warrantyPolicyId: parseInt(formData.warrantyPolicyId),
+        partCode: formData.partCode,
+        policyCode: formData.policyCode,
         startDate: formData.startDate,
         endDate: formData.endDate,
       };
@@ -56,8 +87,8 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
 
       // Reset form
       setFormData({
-        partId: "",
-        warrantyPolicyId: "",
+        partCode: "",
+        policyCode: "",
         startDate: "",
         endDate: "",
       });
@@ -68,7 +99,7 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
       }
     } catch (err) {
       const errorMessage =
-        err.response?.data?.message || "Failed to create part policy";
+        err.response?.data?.message || "Failed to add part policy";
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -82,7 +113,7 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
       <div className="bg-white rounded-xl shadow-lg w-full max-w-md">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold">Create Part Policy</h3>
+          <h3 className="text-lg font-semibold">Add Part Policy</h3>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition"
@@ -95,40 +126,60 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6">
           <div className="space-y-4">
-            {/* Part ID */}
+            {/* Part Code Dropdown */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Part ID *
+                Part Code *
               </label>
-              <input
-                type="number"
-                name="partId"
-                value={formData.partId}
-                onChange={handleChange}
-                required
-                disabled={loading}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
-                placeholder="Enter part ID"
-                min="1"
-              />
+              {codesLoading ? (
+                <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 animate-pulse">
+                  Loading part codes...
+                </div>
+              ) : (
+                <select
+                  name="partCode"
+                  value={formData.partCode}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+                >
+                  <option value="">Select Part Code</option>
+                  {availableCodes.partCode.map((code) => (
+                    <option key={code} value={code}>
+                      {code}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
-            {/* Warranty Policy ID */}
+            {/* Policy Code Dropdown */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Warranty Policy ID *
+                Policy Code *
               </label>
-              <input
-                type="number"
-                name="warrantyPolicyId"
-                value={formData.warrantyPolicyId}
-                onChange={handleChange}
-                required
-                disabled={loading}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
-                placeholder="Enter warranty policy ID"
-                min="1"
-              />
+              {codesLoading ? (
+                <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 animate-pulse">
+                  Loading policy codes...
+                </div>
+              ) : (
+                <select
+                  name="policyCode"
+                  value={formData.policyCode}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+                >
+                  <option value="">Select Policy Code</option>
+                  {availableCodes.policyCode.map((code) => (
+                    <option key={code} value={code}>
+                      {code}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Date Range */}
@@ -184,16 +235,16 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || codesLoading}
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center"
             >
               {loading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Creating...
+                  Adding...
                 </>
               ) : (
-                "Create Policy"
+                "Add Policy"
               )}
             </button>
           </div>

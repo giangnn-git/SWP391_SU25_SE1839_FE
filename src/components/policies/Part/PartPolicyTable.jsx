@@ -1,5 +1,5 @@
 import React from "react";
-import { Eye } from "lucide-react";
+import { Eye, Trash2 } from "lucide-react";
 
 const formatDate = (dateString) => {
   if (!dateString) return "N/A";
@@ -21,7 +21,7 @@ const PartPolicyTable = ({
   policies,
   loading,
   onView,
-  onEdit,
+  onDelete,
   actionLoading,
   currentPage,
   itemsPerPage,
@@ -49,8 +49,9 @@ const PartPolicyTable = ({
       <table className="min-w-full text-sm text-gray-700 border-separate border-spacing-y-1">
         <thead className="bg-gray-100 text-gray-900 font-semibold">
           <tr>
+            <th className="py-3 px-4 text-left">Part Code</th>
             <th className="py-3 px-4 text-left">Part Name</th>
-            <th className="py-3 px-4 text-left">Policy ID</th>
+            <th className="py-3 px-4 text-left">Policy Code</th>
             <th className="py-3 px-4 text-left">Start Date</th>
             <th className="py-3 px-4 text-left">End Date</th>
             <th className="py-3 px-4 text-left">Status</th>
@@ -66,10 +67,13 @@ const PartPolicyTable = ({
                 key={policy.id}
                 className="bg-white border border-gray-200 hover:shadow-sm transition duration-100 h-[60px]"
               >
-                <td className="py-3 px-4 font-medium text-gray-900">
-                  {policy.partName}
+                <td className="py-3 px-4 font-mono text-sm font-medium bg-gray-50 rounded">
+                  {policy.partCode}
                 </td>
-                <td className="py-3 px-4">{policy.policyId}</td>
+                <td className="py-3 px-4 text-gray-900">{policy.partName}</td>
+                <td className="py-3 px-4 font-mono text-sm font-medium bg-blue-50 text-blue-700 rounded">
+                  {policy.policyCode}
+                </td>
                 <td className="py-3 px-4">{formatDate(policy.startDate)}</td>
                 <td className="py-3 px-4">{formatDate(policy.endDate)}</td>
                 <td className="py-3 px-4">
@@ -87,23 +91,23 @@ const PartPolicyTable = ({
                 {/* Action Column */}
                 <td className="py-3 px-4 text-center align-middle">
                   <div className="flex items-center justify-center gap-2">
-                    {/* Detail Button */}
+                    {/* View Button */}
                     <button
                       onClick={() => onView(policy)}
-                      className="flex items-center justify-center w-9 h-9 rounded-md bg-green-600 hover:bg-green-700 text-white transition shadow-sm"
+                      className="flex items-center justify-center w-9 h-9 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm"
                       title="View Details"
                     >
                       <Eye size={16} />
                     </button>
 
-                    {/* Edit Button */}
+                    {/* Delete Button */}
                     <button
-                      onClick={() => onEdit(policy)}
-                      className="flex items-center justify-center w-9 h-9 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm disabled:opacity-50"
-                      title="Edit"
+                      onClick={() => onDelete(policy)}
+                      className="flex items-center justify-center w-9 h-9 rounded-md bg-red-600 hover:bg-red-700 text-white transition shadow-sm disabled:opacity-50"
+                      title="Delete"
                       disabled={actionLoading}
                     >
-                      ✏️
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </td>

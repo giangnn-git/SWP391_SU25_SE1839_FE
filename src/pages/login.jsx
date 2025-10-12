@@ -16,7 +16,7 @@ const LoginPage = () => {
     e.preventDefault();
     setError("");
     setLoading(true);
-    localStorage.clear()
+    // localStorage.clear();
 
     try {
       const res = await userLoginApi(user, password);
@@ -24,7 +24,9 @@ const LoginPage = () => {
       const token = res.data?.data?.token;
       const id = res.data?.data?.id;
       const name = res.data?.data?.name;
-      const role = res.data?.data?.role;
+      const phone = res.data?.data?.phoneNumber;
+      const scid = res.data?.data?.serviceCenterId;
+
       const requiresPasswordChange = res.data?.data?.requiresPasswordChange;
 
       if (!token) {
@@ -36,8 +38,9 @@ const LoginPage = () => {
       storage.set("userEmail", user);
       storage.set("isLoggedIn", true);
       storage.set("id", id);
-      storage.set("userRole", role);
       storage.set("userName", name);
+      storage.set("userPhone", phone);
+      storage.set("serviceCenterId", scid);
       storage.set("requiresPasswordChange", requiresPasswordChange);
 
       if (requiresPasswordChange === true) {

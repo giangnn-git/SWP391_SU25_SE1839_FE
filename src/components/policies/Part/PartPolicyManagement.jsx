@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { PlusCircle, Filter, Search } from "lucide-react";
 import { getAllPartPoliciesApi } from "../../../services/api.service";
 import PartPolicyTable from "./PartPolicyTable";
-import PartPolicyModal from "./PartPolicyModal";
 import ViewPartPolicyModal from "./ViewPartPolicy";
 import CreatePartPolicy from "./CreatePartPolicy";
 
@@ -13,21 +12,14 @@ const PartPolicyManagement = () => {
   const [success, setSuccess] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedPolicy, setSelectedPolicy] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const [formData, setFormData] = useState({
-    partName: "",
-    policyId: "",
-    startDate: "",
-    endDate: "",
-  });
-
   // Filter, Search & Pagination
   const [filterPartName, setFilterPartName] = useState("");
-  const [filterPolicyId, setFilterPolicyId] = useState("");
-  const [filterStatus, setFilterStatus] = useState(""); // ✅ new
+  const [filterPartCode, setFilterPartCode] = useState("");
+  const [filterPolicyCode, setFilterPolicyCode] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -39,7 +31,9 @@ const PartPolicyManagement = () => {
       setError("");
       const response = await getAllPartPoliciesApi();
 
-      const partPolicies = response.data?.data?.partPolicies || [];
+      // Cập nhật theo API response mới
+      const partPolicies =
+        response.data?.data?.partPolicies || response.data?.data || [];
       setPolicies(partPolicies);
     } catch (err) {
       console.error("Error fetching part policies:", err);
@@ -57,27 +51,37 @@ const PartPolicyManagement = () => {
   const filteredPolicies = policies.filter((policy) => {
     const matchesSearch = searchTerm
       ? policy.partName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      policy.policyId?.toString().includes(searchTerm) ||
-      policy.id?.toString().includes(searchTerm)
+        policy.partCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        policy.policyCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        policy.id?.toString().includes(searchTerm)
       : true;
 
     const matchesPart = filterPartName
       ? policy.partName === filterPartName
       : true;
 
-    const matchesPolicy = filterPolicyId
-      ? policy.policyId?.toString() === filterPolicyId
+    const matchesPartCode = filterPartCode
+      ? policy.partCode === filterPartCode
       : true;
 
-    // ✅ Filter by status (Available / Expired)
+    const matchesPolicyCode = filterPolicyCode
+      ? policy.policyCode === filterPolicyCode
+      : true;
+
     const matchesStatus =
       filterStatus === ""
         ? true
         : filterStatus === "available"
-          ? new Date(policy.endDate) > new Date()
-          : new Date(policy.endDate) <= new Date();
+        ? new Date(policy.endDate) > new Date()
+        : new Date(policy.endDate) <= new Date();
 
-    return matchesSearch && matchesPart && matchesPolicy && matchesStatus;
+    return (
+      matchesSearch &&
+      matchesPart &&
+      matchesPartCode &&
+      matchesPolicyCode &&
+      matchesStatus
+    );
   });
 
   // Pagination logic
@@ -90,55 +94,21 @@ const PartPolicyManagement = () => {
 
   // Generate dynamic dropdown options
   const availableParts = [...new Set(policies.map((p) => p.partName))];
-
-  // ✅ FIX: Sort Policy IDs in ascending order (1 → 2 → 3 → 4 → 5)
-  const availablePolicies = [
-    ...new Set(policies.map((p) => p.policyId?.toString())),
-  ].sort((a, b) => Number(a) - Number(b));
+  const availablePartCodes = [...new Set(policies.map((p) => p.partCode))];
+  const availablePolicyCodes = [
+    ...new Set(policies.map((p) => p.policyCode)),
+  ].sort();
 
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterPartName, filterPolicyId, filterStatus, searchTerm]);
-
-  // Create Policy
-  const handleCreatePolicy = async (policyData) => {
-    setActionLoading(true);
-    setError("");
-    try {
-      await createPartPolicyApi(policyData);
-      setSuccess("Part policy created successfully!");
-      setShowCreateModal(false);
-      fetchPolicies();
-    } catch (err) {
-      const errorMessage =
-        err.response?.data?.message || "Failed to create part policy.";
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // Edit Policy
-  const handleEditPolicy = async (id, policyData) => {
-    setActionLoading(true);
-    setError("");
-    try {
-      await updatePartPolicyApi(id, policyData);
-      setSuccess("Part policy updated successfully!");
-      setShowEditModal(false);
-      setSelectedPolicy(null);
-      fetchPolicies();
-    } catch (err) {
-      const errorMessage =
-        err.response?.data?.message || "Failed to update part policy.";
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setActionLoading(false);
-    }
-  };
+  }, [
+    filterPartName,
+    filterPartCode,
+    filterPolicyCode,
+    filterStatus,
+    searchTerm,
+  ]);
 
   // Handle View
   const handleView = (policy) => {
@@ -146,46 +116,28 @@ const PartPolicyManagement = () => {
     setShowViewModal(true);
   };
 
-  // Handle Edit
-  const handleEdit = (policy) => {
-    setSelectedPolicy(policy);
-    setFormData({
-      partName: policy.partName,
-      policyId: policy.policyId.toString(),
-      startDate: policy.startDate,
-      endDate: policy.endDate,
-    });
-    setShowEditModal(true);
-  };
-
-  // Handle Save (Create or Edit)
-  const handleSave = async () => {
-    const { partName, policyId, startDate, endDate } = formData;
-
-    if (!partName || !policyId || !startDate || !endDate) {
-      setError("Please fill in all fields before saving.");
+  // Handle Delete
+  const handleDelete = async (policy) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete part policy "${policy.partCode} - ${policy.partName}"?`
+      )
+    ) {
       return;
     }
 
-    if (new Date(startDate) >= new Date(endDate)) {
-      setError("End date must be after start date.");
-      return;
-    }
-
+    setActionLoading(true);
     try {
-      if (selectedPolicy) {
-        await handleEditPolicy(selectedPolicy.id, formData);
-      } else {
-        await handleCreatePolicy(formData);
-      }
-
-      setFormData({
-        partName: "",
-        policyId: "",
-        startDate: "",
-        endDate: "",
-      });
-    } catch (error) { }
+      await deletePartPolicyApi(policy.id);
+      setSuccess("Part policy deleted successfully!");
+      fetchPolicies(); // Refresh list
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message || "Failed to delete part policy.";
+      setError(errorMessage);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   // Clear messages
@@ -219,7 +171,7 @@ const PartPolicyManagement = () => {
             </div>
             <input
               type="text"
-              placeholder="Search by part name, policy ID, or ID..."
+              placeholder="Search by part name, code, or policy code..."
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -251,6 +203,20 @@ const PartPolicyManagement = () => {
         <div className="flex flex-wrap items-center gap-3 text-gray-700 font-medium">
           <Filter size={18} className="text-gray-600" />
 
+          {/* Part Code */}
+          <select
+            value={filterPartCode}
+            onChange={(e) => setFilterPartCode(e.target.value)}
+            className="border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+          >
+            <option value="">All Part Codes</option>
+            {availablePartCodes.map((code, i) => (
+              <option key={i} value={code}>
+                {code}
+              </option>
+            ))}
+          </select>
+
           {/* Part Name */}
           <select
             value={filterPartName}
@@ -265,21 +231,21 @@ const PartPolicyManagement = () => {
             ))}
           </select>
 
-          {/* Policy ID */}
+          {/* Policy Code */}
           <select
-            value={filterPolicyId}
-            onChange={(e) => setFilterPolicyId(e.target.value)}
+            value={filterPolicyCode}
+            onChange={(e) => setFilterPolicyCode(e.target.value)}
             className="border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
           >
-            <option value="">All Policy IDs</option>
-            {availablePolicies.map((policy, i) => (
-              <option key={i} value={policy}>
-                {policy}
+            <option value="">All Policy Codes</option>
+            {availablePolicyCodes.map((code, i) => (
+              <option key={i} value={code}>
+                {code}
               </option>
             ))}
           </select>
 
-          {/* ✅ Status Filter */}
+          {/* Status Filter */}
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
@@ -316,7 +282,7 @@ const PartPolicyManagement = () => {
         policies={currentPolicies}
         loading={loading}
         onView={handleView}
-        onEdit={handleEdit}
+        onDelete={handleDelete}
         actionLoading={actionLoading}
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}
@@ -359,43 +325,12 @@ const PartPolicyManagement = () => {
       {/* Create Modal */}
       <CreatePartPolicy
         showModal={showCreateModal}
-        onClose={() => {
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={() => {
+          setSuccess("Part policy created successfully!");
           setShowCreateModal(false);
-          setFormData({
-            partName: "",
-            policyId: "",
-            startDate: "",
-            endDate: "",
-          });
+          fetchPolicies(); // Refresh list
         }}
-        onSave={handleSave}
-        formData={formData}
-        onFormDataChange={(field, value) =>
-          setFormData((prev) => ({ ...prev, [field]: value }))
-        }
-        actionLoading={actionLoading}
-      />
-
-      {/* Edit Modal */}
-      <PartPolicyModal
-        showModal={showEditModal}
-        editing={true}
-        formData={formData}
-        actionLoading={actionLoading}
-        onClose={() => {
-          setShowEditModal(false);
-          setSelectedPolicy(null);
-          setFormData({
-            partName: "",
-            policyId: "",
-            startDate: "",
-            endDate: "",
-          });
-        }}
-        onSave={handleSave}
-        onFormDataChange={(field, value) =>
-          setFormData((prev) => ({ ...prev, [field]: value }))
-        }
       />
 
       {/* View Details Modal */}
