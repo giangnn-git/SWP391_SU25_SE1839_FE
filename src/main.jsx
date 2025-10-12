@@ -10,11 +10,11 @@ import Dashboard from "./pages/Dashboard.jsx";
 import ManageUsers from "./pages/ManageUsers.jsx";
 import WarrantyClaims from "./pages/WarrantyClaims.jsx";
 import RepairOrders from "./pages/RepairOrders.jsx";
-// import PartPolicyManagement from "./pages/PartPolicyManagement.jsx";
 import ProfilePage from "./pages/Profiles.jsx";
 import ChangePasswordPage from "./pages/ChangePassword.jsx";
 import Profiles from "./pages/Profiles.jsx";
 import ClaimApproval from "./pages/ClaimApproval.jsx";
+import VehicleManagement from "./pages/VehicleManagement.jsx"; // ✅ Thêm mới
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -31,52 +31,44 @@ const router = createBrowserRouter([
         element: <Dashboard />,
       },
       {
-        path: "warranty-claims", // only admin access
+        path: "warranty-claims",
         element: <WarrantyClaims />,
       },
-
       {
         path: "repair-orders",
         element: <RepairOrders />,
       },
+
+      // ✅ Vehicle Management — chỉ dành cho ADMIN
       {
-        path: "supply-chain", // chỉ admin + evm staff mới truy cập được
-        path: "manage-users", // Only Admin access
+        path: "vehicles",
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN"]}>
+            <VehicleManagement />
+          </PrivateRoute>
+        ),
+      },
+
+      {
+        path: "manage-users",
         element: (
           <PrivateRoute allowedRoles={["ADMIN"]}>
             <ManageUsers />
           </PrivateRoute>
         ),
       },
+
       {
-        path: "supply-chain", //  chỉ admin + evm staff mới truy cập được
+        path: "supply-chain",
         element: (
           <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
             <SupplyChain />
           </PrivateRoute>
         ),
       },
+
       {
-        path: "part-policies", // quản lý chính sách bảo hành
-        path: "policy", // Policy Management (Part + Warranty)
-        element: (
-          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
-            <Policy />
-          </PrivateRoute>
-        ),
-      },
-      {
-        path: "profile",
-        element: <ProfilePage />,
-        path: "part-policies", // Alias route: mở sẵn tab Part Policy
-        element: (
-          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
-            <Policy />
-          </PrivateRoute>
-        ),
-      },
-      {
-        path: "warranty-policies", // Alias route: mở sẵn tab Warranty Policy
+        path: "policy",
         element: (
           <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
             <Policy />
@@ -84,7 +76,6 @@ const router = createBrowserRouter([
         ),
       },
 
-      // ✅ Bổ sung mới: Route cho Claim Approval (ADMIN + EVM_STAFF)
       {
         path: "approvals",
         element: (
@@ -95,6 +86,8 @@ const router = createBrowserRouter([
       },
     ],
   },
+
+  // ✅ Trang login / profile / đổi mật khẩu
   {
     path: "/login",
     element: <LoginPage />,

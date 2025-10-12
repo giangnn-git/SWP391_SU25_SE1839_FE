@@ -186,3 +186,7 @@ export const getAllRepairOrdersApi = () => {
 export const createPartPolicyApi = (partPolicyData) => {
   return axios.post("/api/api/part-policies", partPolicyData);
 }
+
+export const getAllModelsApi = () => {
+  return axios.get("/api/api/models");
+};
