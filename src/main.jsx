@@ -14,7 +14,7 @@ import RepairOrders from "./pages/RepairOrders.jsx";
 import ProfilePage from "./pages/Profiles.jsx";
 import ChangePasswordPage from "./pages/ChangePassword.jsx";
 import Profiles from "./pages/Profiles.jsx";
-import ClaimApproval from "./pages/ClaimApproval.jsx"; // ✅ Đã có import
+import ClaimApproval from "./pages/ClaimApproval.jsx";
 import "./index.css";
 
 const router = createBrowserRouter([
