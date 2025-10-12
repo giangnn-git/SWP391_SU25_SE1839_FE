@@ -39,7 +39,7 @@ const router = createBrowserRouter([
         element: <RepairOrders />,
       },
 
-      //  Vehicle Management — Only ADMIN
+      //  Vehicle Management — ADMIN only
       {
         path: "vehicles",
         element: (
@@ -87,7 +87,8 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "warranty-policies", // Alias route: mở sẵn tab Warranty Policy
+        path: "warranty-policies",
+        path: "policy",
         element: (
           <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
             <Policy />
@@ -107,7 +108,7 @@ const router = createBrowserRouter([
     ],
   },
 
-  //  login / profile / change-password
+  //  Trang login / profile / đổi mật khẩu
   {
     path: "/login",
     element: <LoginPage />,

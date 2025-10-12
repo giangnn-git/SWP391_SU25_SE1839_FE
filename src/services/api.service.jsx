@@ -87,7 +87,6 @@ export const createWarrantyClaimApi = (data) => {
     },
   });
 };
-
 //{ Policy Warranty }
 
 //get all policy
@@ -128,6 +127,11 @@ export const createPartPolicyApi = (partPolicyData) => {
 // Get available part codes and policy codes
 export const getPartPolicyCodesApi = () => {
   return axios.get("/api/api/part-policy/code");
+};
+
+// { vehicle storage API}
+export const getVehicleDetailApi = (vehicleId) => {
+  return axios.get(`/api/api/model/detail/${vehicleId}`);
 };
 
 // {Claim API}
