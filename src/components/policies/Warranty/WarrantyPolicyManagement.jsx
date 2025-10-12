@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { PlusCircle, Filter, Search } from "lucide-react";
+import { PlusCircle, Filter, Search, CheckCircle2, XCircle } from "lucide-react"; // ✅ Thêm icon
 import {
   getAllWarrantyApi,
   createWarrantyPolicyApi,
@@ -17,7 +17,7 @@ const WarrantyPolicyManagement = () => {
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(""); // ✅ thêm state success message
+  const [success, setSuccess] = useState(""); // ✅ hiển thị thông báo UI
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -145,9 +145,7 @@ const WarrantyPolicyManagement = () => {
     startIndex + itemsPerPage
   );
 
-  const availableDurations = [
-    ...new Set(policies.map((p) => p.durationPeriod)),
-  ];
+  const availableDurations = [...new Set(policies.map((p) => p.durationPeriod))];
   const availableMileages = [...new Set(policies.map((p) => p.mileageLimit))];
 
   useEffect(() => {
@@ -226,15 +224,17 @@ const WarrantyPolicyManagement = () => {
         </div>
       </div>
 
-      {/* ✅ Message Area */}
+      {/* ✅ Message Area (đã thêm icon chuyên nghiệp) */}
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-300 text-red-700 rounded-md shadow-sm">
-          {error}
+        <div className="mb-4 p-3 bg-red-50 border border-red-300 text-red-700 rounded-md shadow-sm flex items-center gap-2">
+          <XCircle size={18} className="text-red-600" />
+          <span className="font-medium">{error}</span>
         </div>
       )}
       {success && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-300 text-green-700 rounded-md shadow-sm">
-          {success}
+        <div className="mb-4 p-3 bg-green-50 border border-green-300 text-green-700 rounded-md shadow-sm flex items-center gap-2">
+          <CheckCircle2 size={18} className="text-green-600" />
+          <span className="font-medium">{success}</span>
         </div>
       )}
 

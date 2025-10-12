@@ -45,15 +45,15 @@ const UpdateWarrantyPolicyModal = ({
     formData.name !== (policy?.name || "") ||
     formData.description !== (policy?.description || "") ||
     formData.durationPeriod !==
-      (policy?.durationPeriod?.toString().replace(" months", "") || "") ||
+    (policy?.durationPeriod?.toString().replace(" months", "") || "") ||
     formData.mileageLimit !==
-      (policy?.mileageLimit?.toString().replace(" km", "").replace(/,/g, "") ||
-        "");
+    (policy?.mileageLimit?.toString().replace(" km", "").replace(/,/g, "") ||
+      "");
 
   // ✅ Gửi request update
   const handleSubmit = async () => {
     if (!policy?.id) {
-      alert("Invalid policy ID.");
+      console.error("Invalid policy ID.");
       return;
     }
 
@@ -63,7 +63,7 @@ const UpdateWarrantyPolicyModal = ({
       !formData.durationPeriod ||
       !formData.mileageLimit
     ) {
-      alert("Please fill in all fields before saving.");
+      console.error("Please fill in all fields before saving.");
       return;
     }
 
@@ -76,14 +76,15 @@ const UpdateWarrantyPolicyModal = ({
       };
 
       await updatePolicyApi(policy.id, apiData);
-      alert(" Policy updated successfully!");
-      onUpdated();
+
+      // ✅ Gọi callback để hiển thị thông báo ở UI cha
+      if (onUpdated) onUpdated();
       onClose();
     } catch (error) {
-      console.error("Update failed:", error);
-      alert(
+      console.error(
+        "Update failed:",
         error.response?.data?.message ||
-          "Failed to update policy. Please try again."
+        "Failed to update policy. Please try again."
       );
     }
   };
@@ -149,11 +150,10 @@ const UpdateWarrantyPolicyModal = ({
           </button>
           <button
             onClick={handleSubmit}
-            className={`px-4 py-2 rounded-md text-white transition ${
-              !isChanged
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-black hover:bg-gray-800"
-            }`}
+            className={`px-4 py-2 rounded-md text-white transition ${!isChanged
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-black hover:bg-gray-800"
+              }`}
             disabled={actionLoading || !isChanged}
           >
             {actionLoading ? "Saving..." : "Save Changes"}

@@ -1,59 +1,116 @@
-import React, { useState } from "react";
-import { PlusCircle, Search, Warehouse, Filter, Eye, Truck } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { PlusCircle, Search, Warehouse, Filter, Eye, RotateCcw } from "lucide-react";
 import CreatePartModal from "../components/supply/CreatePartModal";
-import DistributePartModal from "../components/supply/DistributePartModal";
-import PartStatusTag from "../components/supply/PartStatusTag";
-import ViewPartModal from "../components/supply/ViewPartModal"; // ✅ modal xem chi tiết
-
-const initialParts = [
-    { id: 1, code: "BAT-001", name: "Battery Pack 48V", quantity: 6, location: "HCM Warehouse", status: "Low stock" },
-    { id: 2, code: "INV-032", name: "Inverter Module", quantity: 24, location: "Hanoi Warehouse", status: "Available" },
-    { id: 3, code: "BMS-004", name: "Battery Management System", quantity: 2, location: "Danang Warehouse", status: "Critical" },
-    { id: 4, code: "MOT-020", name: "Motor Drive Unit", quantity: 18, location: "HCM Warehouse", status: "Available" },
-    { id: 5, code: "CHG-015", name: "Charging Module", quantity: 12, location: "Hanoi Warehouse", status: "Available" },
-    { id: 6, code: "BMS-009", name: "Battery Management System", quantity: 3, location: "HCM Warehouse", status: "Low stock" },
-    { id: 7, code: "MOT-025", name: "Motor Drive Unit", quantity: 1, location: "Danang Warehouse", status: "Critical" },
-    { id: 8, code: "INV-100", name: "Inverter Module", quantity: 30, location: "HCM Warehouse", status: "Available" },
-];
+import ViewPartModal from "../components/supply/ViewPartModal";
+import {
+    getAllPartInventoriesApi,
+    getPartInventoryByServiceCenterIdApi,
+} from "../services/api.service";
 
 const SupplyChain = () => {
+    // =========================
+    // 🧩 STATE
+    // =========================
     const [searchTerm, setSearchTerm] = useState("");
-    const [filterStatus, setFilterStatus] = useState("");
     const [filterWarehouse, setFilterWarehouse] = useState("");
-    const [parts, setParts] = useState(initialParts);
+    const [parts, setParts] = useState([]);
     const [selectedPart, setSelectedPart] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
-    const [showDistributeModal, setShowDistributeModal] = useState(false);
-    const [showViewModal, setShowViewModal] = useState(false); // ✅ modal xem chi tiết
-
-    // ✅ Pagination
+    const [showViewModal, setShowViewModal] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
+    const [showSuccess, setShowSuccess] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
+    const [selectedServiceCenter, setSelectedServiceCenter] = useState("");
 
-    // ✅ Filter + Search
+    // =========================
+    // 🔄 FETCH API
+    // =========================
+    const fetchPartInventories = async (serviceCenterId = null) => {
+        try {
+            setLoading(true);
+            setError("");
+            setSuccess("");
+            setShowSuccess(false);
+
+            const response = serviceCenterId
+                ? await getPartInventoryByServiceCenterIdApi(serviceCenterId)
+                : await getAllPartInventoriesApi();
+
+            const data = response.data?.data || response.data;
+
+            if (!Array.isArray(data)) {
+                throw new Error("Invalid response format from API");
+            }
+
+            const formatted = data.map((item) => ({
+                id: item.id,
+                code: item.partId ? `PART-${item.partId}` : "N/A",
+                name: item.partName || "Unnamed Part",
+                category: item.partCategory || "-",
+                warehouse: item.serviceCenterName || "Unknown Warehouse",
+                address: item.serviceCenterAddress || "Unknown Address",
+                quantity: item.quantity ?? 0,
+                lastUpdated: item.updatedAt || "",
+            }));
+
+            setParts(formatted);
+            setSuccess("✅ Inventory data loaded successfully!");
+            setShowSuccess(true);
+
+            // ✅ Ẩn sau 3 giây
+            setTimeout(() => setShowSuccess(false), 3000);
+        } catch (err) {
+            console.error("❌ Error fetching part inventories:", err);
+            setError("Failed to load part inventories. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (selectedServiceCenter) {
+            fetchPartInventories(selectedServiceCenter);
+        } else {
+            fetchPartInventories();
+        }
+    }, [selectedServiceCenter]);
+
+    // =========================
+    // 🔍 FILTER & SEARCH
+    // =========================
     const filteredParts = parts.filter((p) => {
         const matchesSearch =
             p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             p.code.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = filterStatus ? p.status === filterStatus : true;
-        const matchesWarehouse = filterWarehouse ? p.location === filterWarehouse : true;
-        return matchesSearch && matchesStatus && matchesWarehouse;
+        const matchesWarehouse = filterWarehouse ? p.warehouse === filterWarehouse : true;
+        return matchesSearch && matchesWarehouse;
     });
 
-    // ✅ Pagination logic
+    // =========================
+    // 📄 PAGINATION
+    // =========================
     const totalPages = Math.ceil(filteredParts.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const currentParts = filteredParts.slice(startIndex, startIndex + itemsPerPage);
+    const uniqueWarehouses = [...new Set(parts.map((p) => p.warehouse))];
 
-    const uniqueStatuses = [...new Set(parts.map((p) => p.status))];
-    const uniqueWarehouses = [...new Set(parts.map((p) => p.location))];
-
-    // ✅ Add new part
+    // =========================
+    // ➕ ADD NEW PART (local only)
+    // =========================
     const handleAddPart = (newPart) => {
         setParts([...parts, { ...newPart, id: Date.now() }]);
         setShowAddModal(false);
+        setSuccess("✅ New part added (local only, not synced to API).");
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
     };
 
+    // =========================
+    // 🧮 UI RENDER
+    // =========================
     return (
         <div className="p-6">
             {/* Header */}
@@ -68,31 +125,56 @@ const SupplyChain = () => {
                     </p>
                 </div>
 
-                <button
-                    className="flex items-center bg-black text-white hover:bg-gray-800 px-4 py-2 rounded-md transition-all shadow-sm"
-                    onClick={() => setShowAddModal(true)}
-                >
-                    <PlusCircle size={18} className="mr-2" />
-                    Add New Part
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => fetchPartInventories(selectedServiceCenter || null)}
+                        className="flex items-center border border-gray-400 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-md transition-all"
+                    >
+                        <RotateCcw size={18} className="mr-2" />
+                        Refresh
+                    </button>
+
+                    <button
+                        className="flex items-center bg-black text-white hover:bg-gray-800 px-4 py-2 rounded-md transition-all shadow-sm"
+                        onClick={() => setShowAddModal(true)}
+                    >
+                        <PlusCircle size={18} className="mr-2" />
+                        Add New Part
+                    </button>
+                </div>
             </div>
 
-            {/* Search & Filter Bar */}
+            {/* ✅ Notifications */}
+            {loading && (
+                <div className="text-center text-gray-500 py-6">Loading inventory data...</div>
+            )}
+
+            {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-300 text-red-700 rounded-md shadow-sm text-center">
+                    {error}
+                </div>
+            )}
+
+            {showSuccess && success && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-300 text-green-700 rounded-md shadow-sm text-center transition-opacity duration-500">
+                    {success}
+                </div>
+            )}
+
+            {/* Filter Bar */}
             <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
                 <div className="flex flex-wrap items-center gap-3 text-gray-700 font-medium">
                     <Filter size={18} className="text-gray-600" />
 
                     <select
-                        value={filterStatus}
-                        onChange={(e) => setFilterStatus(e.target.value)}
+                        value={selectedServiceCenter}
+                        onChange={(e) => setSelectedServiceCenter(e.target.value)}
                         className="border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
                     >
-                        <option value="">All Status</option>
-                        {uniqueStatuses.map((status, index) => (
-                            <option key={index} value={status}>
-                                {status}
-                            </option>
-                        ))}
+                        <option value="">All Service Centers</option>
+                        <option value="1">HCM Service Center</option>
+                        <option value="2">Hanoi Service Center</option>
+                        <option value="3">Danang Service Center</option>
                     </select>
 
                     <select
@@ -132,37 +214,35 @@ const SupplyChain = () => {
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-                <table className="min-w-full text-sm text-gray-700 border-separate border-spacing-y-1">
-                    <thead className="bg-gray-100 text-gray-900 font-semibold">
-                        <tr>
-                            <th className="py-3 px-4 text-left">Part Code</th>
-                            <th className="py-3 px-4 text-left">Part Name</th>
-                            <th className="py-3 px-4 text-center">Quantity</th>
-                            <th className="py-3 px-4 text-left">Warehouse</th>
-                            <th className="py-3 px-4 text-left">Status</th>
-                            <th className="py-3 px-4 text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {currentParts.map((part) => (
-                            <tr
-                                key={part.id}
-                                className="bg-white border border-gray-200 hover:shadow-sm transition duration-100"
-                            >
-                                <td className="py-3 px-4 font-medium">{part.code}</td>
-                                <td className="py-3 px-4">{part.name}</td>
-                                <td className="py-3 px-4 text-center">{part.quantity}</td>
-                                <td className="py-3 px-4">{part.location}</td>
-                                <td className="py-3 px-4">
-                                    <PartStatusTag status={part.status} />
-                                </td>
-
-                                {/* ✅ Only View + Distribute buttons */}
-                                <td className="py-3 px-4 text-center">
-                                    <div className="flex justify-center gap-2">
+            {!loading && (
+                <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+                    <table className="min-w-full text-sm text-gray-700 border-separate border-spacing-y-1">
+                        <thead className="bg-gray-100 text-gray-900 font-semibold">
+                            <tr>
+                                <th className="py-3 px-4 text-left">Part Code</th>
+                                <th className="py-3 px-4 text-left">Part Name</th>
+                                <th className="py-3 px-4 text-left">Category</th>
+                                <th className="py-3 px-4 text-left">Warehouse</th>
+                                <th className="py-3 px-4 text-left">Address</th>
+                                <th className="py-3 px-4 text-center">Quantity</th>
+                                <th className="py-3 px-4 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {currentParts.map((part) => (
+                                <tr
+                                    key={part.id}
+                                    className="bg-white border border-gray-200 hover:shadow-sm transition duration-100"
+                                >
+                                    <td className="py-3 px-4 font-medium">{part.code}</td>
+                                    <td className="py-3 px-4">{part.name}</td>
+                                    <td className="py-3 px-4">{part.category}</td>
+                                    <td className="py-3 px-4">{part.warehouse}</td>
+                                    <td className="py-3 px-4">{part.address}</td>
+                                    <td className="py-3 px-4 text-center font-semibold">{part.quantity}</td>
+                                    <td className="py-3 px-4 text-center">
                                         <button
-                                            className="flex items-center justify-center w-8 h-8 bg-green-600 hover:bg-green-700 text-white rounded-md transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
+                                            className="flex items-center justify-center w-8 h-8 bg-green-600 hover:bg-green-700 text-white rounded-md transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 mx-auto"
                                             title="View details"
                                             onClick={() => {
                                                 setSelectedPart(part);
@@ -171,33 +251,23 @@ const SupplyChain = () => {
                                         >
                                             <Eye size={16} />
                                         </button>
-                                        <button
-                                            onClick={() => {
-                                                setSelectedPart(part);
-                                                setShowDistributeModal(true);
-                                            }}
-                                            className="flex items-center justify-center w-8 h-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
-                                            title="Distribute part"
-                                        >
-                                            <Truck size={16} />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
+                                    </td>
+                                </tr>
+                            ))}
 
-                        {currentParts.length === 0 && (
-                            <tr>
-                                <td colSpan="6" className="text-center py-6 text-gray-500 italic">
-                                    No parts found.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                            {currentParts.length === 0 && (
+                                <tr>
+                                    <td colSpan="7" className="text-center py-6 text-gray-500 italic">
+                                        No parts found.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            )}
 
-            {/* ✅ Pagination */}
+            {/* Pagination */}
             {filteredParts.length > 0 && (
                 <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
                     <span>
@@ -229,24 +299,11 @@ const SupplyChain = () => {
 
             {/* Modals */}
             {showAddModal && (
-                <CreatePartModal
-                    onClose={() => setShowAddModal(false)}
-                    onSubmit={handleAddPart}
-                />
-            )}
-
-            {showDistributeModal && selectedPart && (
-                <DistributePartModal
-                    part={selectedPart}
-                    onClose={() => setShowDistributeModal(false)}
-                />
+                <CreatePartModal onClose={() => setShowAddModal(false)} onSubmit={handleAddPart} />
             )}
 
             {showViewModal && selectedPart && (
-                <ViewPartModal
-                    part={selectedPart}
-                    onClose={() => setShowViewModal(false)}
-                />
+                <ViewPartModal part={selectedPart} onClose={() => setShowViewModal(false)} />
             )}
         </div>
     );

@@ -187,6 +187,16 @@ export const createPartPolicyApi = (partPolicyData) => {
   return axios.post("/api/api/part-policies", partPolicyData);
 }
 
+//get Vehicle Management
 export const getAllModelsApi = () => {
   return axios.get("/api/api/models");
+};
+
+//get SupplyChain
+export const getAllPartInventoriesApi = () => {
+  return axios.get("/api/api/part-inventories");
+};
+
+export const getPartInventoryByServiceCenterIdApi = (serviceCenterId) => {
+  return axios.get(`/api/part-inventory/service-center/${serviceCenterId}`);
 };

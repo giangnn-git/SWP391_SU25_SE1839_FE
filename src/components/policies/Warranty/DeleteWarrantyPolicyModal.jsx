@@ -13,7 +13,7 @@ const DeleteWarrantyPolicyModal = ({
 
     const handleDelete = async () => {
         if (!policy?.id) {
-            alert("Invalid policy ID.");
+            console.error("Invalid policy ID.");
             return;
         }
 
@@ -25,11 +25,10 @@ const DeleteWarrantyPolicyModal = ({
 
             // ✅ Nếu BE trả 200 hoặc 204 => Xóa thành công
             if (response.status === 200 || response.status === 204) {
-                alert(`🗑️ Deleted policy "${policy.name}" successfully!`);
-                onDeleted();
+                if (onDeleted) onDeleted(); // callback để cập nhật UI
                 onClose();
             } else {
-                alert(
+                console.error(
                     response.data?.message ||
                     "⚠️ Failed to delete policy. Please check related part policies."
                 );
@@ -39,13 +38,13 @@ const DeleteWarrantyPolicyModal = ({
 
             // ✅ Nếu BE ném lỗi 500 (policy vẫn được liên kết với part policy)
             if (error.response?.status === 500) {
-                alert(
+                console.error(
                     error.response?.data?.message ||
                     "Cannot delete policy because it is still linked with active part policies."
                 );
             } else {
                 // ✅ Các lỗi khác (404, 401, timeout, network...)
-                alert(
+                console.error(
                     error.response?.data?.message ||
                     "Failed to delete policy. Please try again."
                 );
