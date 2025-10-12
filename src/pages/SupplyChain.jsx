@@ -6,14 +6,14 @@ import PartStatusTag from "../components/supply/PartStatusTag";
 import ViewPartModal from "../components/supply/ViewPartModal"; // ✅ modal xem chi tiết
 
 const initialParts = [
-    { id: 1, code: "BAT-001", name: "Battery Pack 48V", model: "EVM-A1", quantity: 6, location: "HCM Warehouse", status: "Low stock" },
-    { id: 2, code: "INV-032", name: "Inverter Module", model: "EVM-A1", quantity: 24, location: "Hanoi Warehouse", status: "Available" },
-    { id: 3, code: "BMS-004", name: "Battery Management System", model: "EVM-C2", quantity: 2, location: "Danang Warehouse", status: "Critical" },
-    { id: 4, code: "MOT-020", name: "Motor Drive Unit", model: "EVM-B2", quantity: 18, location: "HCM Warehouse", status: "Available" },
-    { id: 5, code: "CHG-015", name: "Charging Module", model: "EVM-A2", quantity: 12, location: "Hanoi Warehouse", status: "Available" },
-    { id: 6, code: "BMS-009", name: "Battery Management System", model: "EVM-B1", quantity: 3, location: "HCM Warehouse", status: "Low stock" },
-    { id: 7, code: "MOT-025", name: "Motor Drive Unit", model: "EVM-C3", quantity: 1, location: "Danang Warehouse", status: "Critical" },
-    { id: 8, code: "INV-100", name: "Inverter Module", model: "EVM-D1", quantity: 30, location: "HCM Warehouse", status: "Available" },
+    { id: 1, code: "BAT-001", name: "Battery Pack 48V", quantity: 6, location: "HCM Warehouse", status: "Low stock" },
+    { id: 2, code: "INV-032", name: "Inverter Module", quantity: 24, location: "Hanoi Warehouse", status: "Available" },
+    { id: 3, code: "BMS-004", name: "Battery Management System", quantity: 2, location: "Danang Warehouse", status: "Critical" },
+    { id: 4, code: "MOT-020", name: "Motor Drive Unit", quantity: 18, location: "HCM Warehouse", status: "Available" },
+    { id: 5, code: "CHG-015", name: "Charging Module", quantity: 12, location: "Hanoi Warehouse", status: "Available" },
+    { id: 6, code: "BMS-009", name: "Battery Management System", quantity: 3, location: "HCM Warehouse", status: "Low stock" },
+    { id: 7, code: "MOT-025", name: "Motor Drive Unit", quantity: 1, location: "Danang Warehouse", status: "Critical" },
+    { id: 8, code: "INV-100", name: "Inverter Module", quantity: 30, location: "HCM Warehouse", status: "Available" },
 ];
 
 const SupplyChain = () => {
@@ -34,8 +34,7 @@ const SupplyChain = () => {
     const filteredParts = parts.filter((p) => {
         const matchesSearch =
             p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.model.toLowerCase().includes(searchTerm.toLowerCase());
+            p.code.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = filterStatus ? p.status === filterStatus : true;
         const matchesWarehouse = filterWarehouse ? p.location === filterWarehouse : true;
         return matchesSearch && matchesStatus && matchesWarehouse;
@@ -115,7 +114,7 @@ const SupplyChain = () => {
                         </div>
                         <input
                             type="text"
-                            placeholder="Search by code, name, or model..."
+                            placeholder="Search by code or name..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64"
@@ -139,7 +138,6 @@ const SupplyChain = () => {
                         <tr>
                             <th className="py-3 px-4 text-left">Part Code</th>
                             <th className="py-3 px-4 text-left">Part Name</th>
-                            <th className="py-3 px-4 text-left">Model</th>
                             <th className="py-3 px-4 text-center">Quantity</th>
                             <th className="py-3 px-4 text-left">Warehouse</th>
                             <th className="py-3 px-4 text-left">Status</th>
@@ -154,7 +152,6 @@ const SupplyChain = () => {
                             >
                                 <td className="py-3 px-4 font-medium">{part.code}</td>
                                 <td className="py-3 px-4">{part.name}</td>
-                                <td className="py-3 px-4">{part.model}</td>
                                 <td className="py-3 px-4 text-center">{part.quantity}</td>
                                 <td className="py-3 px-4">{part.location}</td>
                                 <td className="py-3 px-4">
@@ -191,7 +188,7 @@ const SupplyChain = () => {
 
                         {currentParts.length === 0 && (
                             <tr>
-                                <td colSpan="7" className="text-center py-6 text-gray-500 italic">
+                                <td colSpan="6" className="text-center py-6 text-gray-500 italic">
                                     No parts found.
                                 </td>
                             </tr>
