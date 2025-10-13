@@ -27,16 +27,25 @@ const Sidebar = () => {
   const iconStyle = "text-gray-600 group-hover:text-blue-600 transition-colors";
 
   const navigation = [
-    { name: "Dashboard", href: "/", icon: <LayoutDashboard size={18} className={iconStyle} strokeWidth={1.8} /> },
+    {
+      name: "Dashboard",
+      href: "/",
+      icon: <LayoutDashboard size={18} className={iconStyle} strokeWidth={1.8} />,
+    },
     {
       name: "Warranty Claims",
       href: "/warranty-claims",
       icon: <ShieldCheck size={18} className={iconStyle} strokeWidth={1.8} />,
     },
-    // ✅ Repair Orders: icon mới (Wrench)
-    { name: "Repair Orders", href: "/repair-orders", icon: <Wrench size={18} className={iconStyle} strokeWidth={1.8} /> },
 
-    // ✅ Vehicle Management: cho Admin + EVM Staff (dùng icon Car)
+    // ✅ Repair Orders: icon mới (Wrench)
+    {
+      name: "Repair Orders",
+      href: "/repair-orders",
+      icon: <Wrench size={18} className={iconStyle} strokeWidth={1.8} />,
+    },
+
+    // ✅ Vehicle Management: cho Admin + EVM Staff
     ...(isAdmin || isEvmStaff
       ? [
         {
@@ -47,7 +56,7 @@ const Sidebar = () => {
       ]
       : []),
 
-    // ✅ Claim Approval
+    // ✅ Claim Approval: cho Admin + EVM Staff
     ...(isAdmin || isEvmStaff
       ? [
         {
@@ -58,26 +67,36 @@ const Sidebar = () => {
       ]
       : []),
 
-    // ✅ Supply Chain
-    {
-      name: "Supply Chain",
-      href: "/supply-chain",
-      icon: <PackageSearch size={18} className={iconStyle} strokeWidth={1.8} />,
-    },
+    // ✅ Supply Chain: CHỈ hiển thị cho Admin + EVM Staff
+    ...(isAdmin || isEvmStaff
+      ? [
+        {
+          name: "Supply Chain",
+          href: "/supply-chain",
+          icon: <PackageSearch size={18} className={iconStyle} strokeWidth={1.8} />,
+        },
+      ]
+      : []),
 
-    // ✅ Analytics
+    // ✅ Analytics (cho tất cả)
     {
       name: "Analytics & Reports",
       href: "/analytics",
       icon: <BarChart3 size={18} className={iconStyle} strokeWidth={1.8} />,
     },
 
-    // ✅ Policy
+    // ✅ Policy: cho Admin + EVM Staff
     ...(isAdmin || isEvmStaff
-      ? [{ name: "Policy", href: "/policy", icon: <FileText size={18} className={iconStyle} strokeWidth={1.8} /> }]
+      ? [
+        {
+          name: "Policy",
+          href: "/policy",
+          icon: <FileText size={18} className={iconStyle} strokeWidth={1.8} />,
+        },
+      ]
       : []),
 
-    // ✅ User Management
+    // ✅ User Management: chỉ Admin
     ...(isAdmin
       ? [
         {

@@ -6,6 +6,8 @@ import {
   Eye,
   RotateCcw,
 } from "lucide-react";
+import { Navigate } from "react-router-dom";
+import { useCurrentUser } from "../hooks/useCurrentUser"; // ✅ hook lấy user hiện tại
 import ViewPartModal from "../components/supply/ViewPartModal";
 import {
   getAllPartInventoriesApi,
@@ -14,6 +16,18 @@ import {
 } from "../services/api.service";
 
 const SupplyChain = () => {
+  // =========================
+  // 🔐 Role-based access
+  // =========================
+  const { currentUser } = useCurrentUser();
+  const isAuthorized =
+    currentUser?.role === "ADMIN" || currentUser?.role === "EVM_STAFF";
+
+  // Nếu không có quyền → quay lại trang chủ
+  if (!isAuthorized) {
+    return <Navigate to="/" replace />;
+  }
+
   // =========================
   //  STATE
   // =========================
