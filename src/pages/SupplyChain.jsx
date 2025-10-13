@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from "react";
 import {
-  PlusCircle,
   Search,
   Warehouse,
   Filter,
   Eye,
   RotateCcw,
 } from "lucide-react";
-import CreatePartModal from "../components/supply/CreatePartModal";
 import ViewPartModal from "../components/supply/ViewPartModal";
 import {
   getAllPartInventoriesApi,
   getPartInventoryByServiceCenterIdApi,
+  getServiceCentersApi,
 } from "../services/api.service";
 
 const SupplyChain = () => {
@@ -22,7 +21,6 @@ const SupplyChain = () => {
   const [filterWarehouse, setFilterWarehouse] = useState("");
   const [parts, setParts] = useState([]);
   const [selectedPart, setSelectedPart] = useState(null);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -31,6 +29,9 @@ const SupplyChain = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
   const [selectedServiceCenter, setSelectedServiceCenter] = useState("");
+
+  // ✅ danh sách trung tâm động
+  const [serviceCenters, setServiceCenters] = useState([]);
 
   // =========================
   //  FETCH API
@@ -64,18 +65,43 @@ const SupplyChain = () => {
       }));
 
       setParts(formatted);
-      setSuccess(" Inventory data loaded successfully!");
+      setSuccess("Inventory data loaded successfully!");
       setShowSuccess(true);
-
-      //  Ẩn sau 3 giây
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (err) {
-      console.error(" Error fetching part inventories:", err);
+      console.error("❌ Error fetching part inventories:", err);
       setError("Failed to load part inventories. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+
+  // ✅ Fetch Service Centers động từ BE
+  const fetchServiceCenters = async () => {
+    try {
+      const res = await getAllPartInventoriesApi();
+      const data = res.data?.data || [];
+      const uniqueCenters = [
+        ...new Map(
+          data.map((item) => [
+            item.serviceCenterId,
+            {
+              id: item.serviceCenterId,
+              name: item.serviceCenterName,
+              address: item.serviceCenterAddress,
+            },
+          ])
+        ).values(),
+      ];
+      setServiceCenters(uniqueCenters);
+    } catch (err) {
+      console.error("❌ Error loading service centers:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchServiceCenters();
+  }, []);
 
   useEffect(() => {
     if (selectedServiceCenter) {
@@ -110,17 +136,6 @@ const SupplyChain = () => {
   const uniqueWarehouses = [...new Set(parts.map((p) => p.warehouse))];
 
   // =========================
-  //  ADD NEW PART (local only)
-  // =========================
-  const handleAddPart = (newPart) => {
-    setParts([...parts, { ...newPart, id: Date.now() }]);
-    setShowAddModal(false);
-    setSuccess("✅ New part added (local only, not synced to API).");
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
-  };
-
-  // =========================
   //  UI RENDER
   // =========================
   return (
@@ -145,18 +160,10 @@ const SupplyChain = () => {
             <RotateCcw size={18} className="mr-2" />
             Refresh
           </button>
-
-          <button
-            className="flex items-center bg-black text-white hover:bg-gray-800 px-4 py-2 rounded-md transition-all shadow-sm"
-            onClick={() => setShowAddModal(true)}
-          >
-            <PlusCircle size={18} className="mr-2" />
-            Add New Part
-          </button>
         </div>
       </div>
 
-      {/*  Notifications */}
+      {/* Notifications */}
       {loading && (
         <div className="text-center text-gray-500 py-6">
           Loading inventory data...
@@ -186,9 +193,11 @@ const SupplyChain = () => {
             className="border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
           >
             <option value="">All Service Centers</option>
-            <option value="1">HCM Service Center</option>
-            <option value="2">Hanoi Service Center</option>
-            <option value="3">Danang Service Center</option>
+            {serviceCenters.map((sc) => (
+              <option key={sc.id} value={sc.id}>
+                {sc.name} – {sc.address}
+              </option>
+            ))}
           </select>
 
           <select
@@ -316,14 +325,7 @@ const SupplyChain = () => {
         </div>
       )}
 
-      {/* Modals */}
-      {showAddModal && (
-        <CreatePartModal
-          onClose={() => setShowAddModal(false)}
-          onSubmit={handleAddPart}
-        />
-      )}
-
+      {/* View Modal */}
       {showViewModal && selectedPart && (
         <ViewPartModal
           part={selectedPart}

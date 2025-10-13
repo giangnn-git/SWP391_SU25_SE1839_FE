@@ -194,7 +194,7 @@ export const getAllPartInventoriesApi = () => {
 };
 
 export const getPartInventoryByServiceCenterIdApi = (serviceCenterId) => {
-  return axios.get(`/api/part-inventory/service-center/${serviceCenterId}`);
+  return axios.get(`/api/api/part-inventory/service-center/${serviceCenterId}`);
 };
 
 // {Misunderstand API}
