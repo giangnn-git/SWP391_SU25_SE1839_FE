@@ -5,7 +5,7 @@ import {
   LayoutDashboard,
   ShieldCheck,
   Car,
-  Wrench, // ✅ Biểu tượng mới cho Repair Orders
+  Wrench,
   CheckCircle2,
   PackageSearch,
   BarChart3,
@@ -13,6 +13,7 @@ import {
   Users,
   PanelLeft,
   PanelRight,
+  UserPlus, // ✅ icon cho Customer Registration
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -27,25 +28,39 @@ const Sidebar = () => {
   const iconStyle = "text-gray-600 group-hover:text-blue-600 transition-colors";
 
   const navigation = [
+    // ✅ Dashboard luôn ở đầu
     {
       name: "Dashboard",
       href: "/",
       icon: <LayoutDashboard size={18} className={iconStyle} strokeWidth={1.8} />,
     },
+
+    // ✅ Customer Registration — chỉ SC Staff — nằm ngay sau Dashboard
+    ...(isScStaff
+      ? [
+        {
+          name: "Customer Registration",
+          href: "/customer-registration",
+          icon: <UserPlus size={18} className={iconStyle} strokeWidth={1.8} />,
+        },
+      ]
+      : []),
+
+    // ✅ Warranty Claims
     {
       name: "Warranty Claims",
       href: "/warranty-claims",
       icon: <ShieldCheck size={18} className={iconStyle} strokeWidth={1.8} />,
     },
 
-    // ✅ Repair Orders: icon mới (Wrench)
+    // ✅ Repair Orders
     {
       name: "Repair Orders",
       href: "/repair-orders",
       icon: <Wrench size={18} className={iconStyle} strokeWidth={1.8} />,
     },
 
-    // ✅ Vehicle Management: cho Admin + EVM Staff
+    // ✅ Vehicle Management (Admin + EVM)
     ...(isAdmin || isEvmStaff
       ? [
         {
@@ -56,7 +71,7 @@ const Sidebar = () => {
       ]
       : []),
 
-    // ✅ Claim Approval: cho Admin + EVM Staff
+    // ✅ Claim Approval (Admin + EVM)
     ...(isAdmin || isEvmStaff
       ? [
         {
@@ -67,7 +82,7 @@ const Sidebar = () => {
       ]
       : []),
 
-    // ✅ Supply Chain: CHỈ hiển thị cho Admin + EVM Staff
+    // ✅ Supply Chain (Admin + EVM)
     ...(isAdmin || isEvmStaff
       ? [
         {
@@ -78,14 +93,14 @@ const Sidebar = () => {
       ]
       : []),
 
-    // ✅ Analytics (cho tất cả)
+    // ✅ Analytics (tất cả)
     {
       name: "Analytics & Reports",
       href: "/analytics",
       icon: <BarChart3 size={18} className={iconStyle} strokeWidth={1.8} />,
     },
 
-    // ✅ Policy: cho Admin + EVM Staff
+    // ✅ Policy (Admin + EVM)
     ...(isAdmin || isEvmStaff
       ? [
         {
@@ -96,7 +111,7 @@ const Sidebar = () => {
       ]
       : []),
 
-    // ✅ User Management: chỉ Admin
+    // ✅ User Management (Admin)
     ...(isAdmin
       ? [
         {
@@ -132,7 +147,7 @@ const Sidebar = () => {
           </div>
         )}
 
-        {/* 🔹 Toggle Button */}
+        {/* Toggle Button */}
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="absolute -right-5 top-6 p-2 rounded-full shadow-lg border border-white/60 bg-white/50 backdrop-blur-sm transition-all duration-300 hover:scale-110 hover:shadow-[0_0_10px_rgba(59,130,246,0.4)]"

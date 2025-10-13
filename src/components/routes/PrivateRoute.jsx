@@ -25,13 +25,28 @@ const PrivateRoute = ({ children, allowedRoles = [] }) => {
     const hasAccess =
       allowedRoles.length === 0 || allowedRoles.includes(userRole);
 
-    // Quy định đặc biệt
+    // =============================
+    // 🔹 Quy định đặc biệt từng trang
+    // =============================
+
+    // ✅ Claim Approval — chỉ ADMIN + EVM_STAFF
     if (path.startsWith("/approvals")) {
       allowed = userRole === "ADMIN" || userRole === "EVM_STAFF";
     }
 
+    // ✅ Vehicle Management — chỉ ADMIN + EVM_STAFF
     if (path.startsWith("/vehicles")) {
       allowed = userRole === "ADMIN" || userRole === "EVM_STAFF";
+    }
+
+    // ✅ Supply Chain — chỉ ADMIN + EVM_STAFF
+    if (path.startsWith("/supply-chain")) {
+      allowed = userRole === "ADMIN" || userRole === "EVM_STAFF";
+    }
+
+    // ✅ Customer Registration — chỉ SC_STAFF
+    if (path.startsWith("/customer-registration")) {
+      allowed = userRole === "SC_STAFF";
     }
 
     // Nếu không đủ quyền
