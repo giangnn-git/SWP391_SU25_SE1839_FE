@@ -19,6 +19,8 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
     policyCode: [],
   });
   const [codesLoading, setCodesLoading] = useState(true);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [submissionData, setSubmissionData] = useState(null);
 
   // Fetch available part codes and policy codes
   useEffect(() => {
@@ -71,19 +73,36 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
       return;
     }
 
+    // Prepare data for confirmation
+    const policyData = {
+      partCode: formData.partCode,
+      policyCode: formData.policyCode,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+    };
+
+    // Get display names for confirmation
+    const partCodeDisplay =
+      availableCodes.partCode.find((code) => code === formData.partCode) ||
+      formData.partCode;
+    const policyCodeDisplay =
+      availableCodes.policyCode.find((code) => code === formData.policyCode) ||
+      formData.policyCode;
+
+    setSubmissionData({
+      ...policyData,
+      partCodeDisplay,
+      policyCodeDisplay,
+    });
+    setShowConfirmation(true);
+  };
+
+  const handleConfirmSubmit = async () => {
     setLoading(true);
     setError("");
 
     try {
-      // Prepare data for API
-      const policyData = {
-        partCode: formData.partCode,
-        policyCode: formData.policyCode,
-        startDate: formData.startDate,
-        endDate: formData.endDate,
-      };
-
-      await createPartPolicyApi(policyData);
+      await createPartPolicyApi(submissionData);
 
       // Reset form
       setFormData({
@@ -93,6 +112,9 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
         endDate: "",
       });
 
+      // Close confirmation and modal
+      setShowConfirmation(false);
+
       // Notify parent
       if (onSuccess) {
         onSuccess();
@@ -101,13 +123,98 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
       const errorMessage =
         err.response?.data?.message || "Failed to add part policy";
       setError(errorMessage);
+      setShowConfirmation(false);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleCancelConfirm = () => {
+    setShowConfirmation(false);
+    setSubmissionData(null);
+  };
+
   if (!showModal) return null;
 
+  // Confirmation Modal
+  if (showConfirmation && submissionData) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-lg w-full max-w-md">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <h3 className="text-lg font-semibold">Confirm Part Policy</h3>
+            <button
+              onClick={handleCancelConfirm}
+              className="text-gray-400 hover:text-gray-600 transition"
+              disabled={loading}
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Confirmation Content */}
+          <div className="p-6">
+            <div className="space-y-3 mb-6">
+              <p className="text-sm text-gray-600">
+                Please confirm the following details:
+              </p>
+
+              <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                <div className="flex justify-between">
+                  <span className="font-medium text-gray-700">Part Code:</span>
+                  <span>{submissionData.partCodeDisplay}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-gray-700">
+                    Policy Code:
+                  </span>
+                  <span>{submissionData.policyCodeDisplay}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-gray-700">Start Date:</span>
+                  <span>{submissionData.startDate}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-gray-700">End Date:</span>
+                  <span>{submissionData.endDate}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={handleCancelConfirm}
+                disabled={loading}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSubmit}
+                disabled={loading}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center"
+              >
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Adding...
+                  </>
+                ) : (
+                  "Confirm & Add"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Main Form Modal
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-lg w-full max-w-md">

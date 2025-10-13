@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { PlusCircle, Filter, Search } from "lucide-react";
-import { getAllPartPoliciesApi } from "../../../services/api.service";
+import {
+  getAllPartPoliciesApi,
+  // deletePartPolicyApi,
+} from "../../../services/api.service";
 import PartPolicyTable from "./PartPolicyTable";
 import ViewPartPolicyModal from "./ViewPartPolicy";
 import CreatePartPolicy from "./CreatePartPolicy";
@@ -15,11 +18,11 @@ const PartPolicyManagement = () => {
   const [selectedPolicy, setSelectedPolicy] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Filter, Search & Pagination - ĐÃ SỬA: Xóa filterPolicyId
+  // Filter, Search & Pagination
   const [filterPartName, setFilterPartName] = useState("");
   const [filterPartCode, setFilterPartCode] = useState("");
   const [filterPolicyCode, setFilterPolicyCode] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
+  const [filterStatus, setFilterStatus] = useState(""); // "available", "expired", or ""
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -139,6 +142,16 @@ const PartPolicyManagement = () => {
     }
   };
 
+  // Clear all filters
+  const clearAllFilters = () => {
+    setFilterPartName("");
+    setFilterPartCode("");
+    setFilterPolicyCode("");
+    setFilterStatus("");
+    setSearchTerm("");
+    setCurrentPage(1);
+  };
+
   // Clear messages
   useEffect(() => {
     if (success || error) {
@@ -153,6 +166,14 @@ const PartPolicyManagement = () => {
   const clearSearch = () => {
     setSearchTerm("");
   };
+
+  // Check if any filter is active
+  const isAnyFilterActive =
+    filterPartName ||
+    filterPartCode ||
+    filterPolicyCode ||
+    filterStatus ||
+    searchTerm;
 
   return (
     <div className="p-6">
@@ -244,24 +265,60 @@ const PartPolicyManagement = () => {
             ))}
           </select>
 
-          {/* Status Filter */}
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
-          >
-            <option value="">All Status</option>
-            <option value="available">Available</option>
-            <option value="expired">Expired</option>
-          </select>
-
-          {/* Search Results Info */}
-          {searchTerm && (
-            <div className="text-sm text-blue-600 ml-2">
-              Found {filteredPolicies.length} policies matching "{searchTerm}"
-            </div>
+          {/* Clear All Filters Button - GIỮ LẠI */}
+          {isAnyFilterActive && (
+            <button
+              onClick={clearAllFilters}
+              className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition text-gray-600"
+            >
+              Clear All
+            </button>
           )}
         </div>
+
+        {/* Status Filter Buttons */}
+        <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100">
+          <span className="text-sm font-medium text-gray-700">Status:</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setFilterStatus("")}
+              className={`px-3 py-1 text-sm rounded-md transition ${
+                filterStatus === ""
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setFilterStatus("available")}
+              className={`px-3 py-1 text-sm rounded-md transition ${
+                filterStatus === "available"
+                  ? "bg-green-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Available
+            </button>
+            <button
+              onClick={() => setFilterStatus("expired")}
+              className={`px-3 py-1 text-sm rounded-md transition ${
+                filterStatus === "expired"
+                  ? "bg-red-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Expired
+            </button>
+          </div>
+        </div>
+
+        {/* Search Results Info */}
+        {searchTerm && (
+          <div className="text-sm text-blue-600 mt-3">
+            Found {filteredPolicies.length} policies matching "{searchTerm}"
+          </div>
+        )}
       </div>
 
       {/* Messages */}
@@ -321,14 +378,14 @@ const PartPolicyManagement = () => {
         </div>
       )}
 
-      {/* Create Modal */}
+      {/* Create Modal - ĐÃ FIX: Gọi fetchPolicies khi success */}
       <CreatePartPolicy
         showModal={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSuccess={() => {
           setSuccess("Part policy created successfully!");
           setShowCreateModal(false);
-          fetchPolicies(); // Refresh list
+          fetchPolicies(); // Refresh list - ĐÃ FIX
         }}
       />
 
