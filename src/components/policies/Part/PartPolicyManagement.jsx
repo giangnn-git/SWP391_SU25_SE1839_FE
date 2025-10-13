@@ -15,14 +15,7 @@ const PartPolicyManagement = () => {
   const [selectedPolicy, setSelectedPolicy] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const [formData, setFormData] = useState({
-    partName: "",
-    policyId: "",
-    startDate: "",
-    endDate: "",
-  });
-
-  // Filter, Search & Pagination
+  // Filter, Search & Pagination - ĐÃ SỬA: Xóa filterPolicyId
   const [filterPartName, setFilterPartName] = useState("");
   const [filterPartCode, setFilterPartCode] = useState("");
   const [filterPolicyCode, setFilterPolicyCode] = useState("");
@@ -38,7 +31,6 @@ const PartPolicyManagement = () => {
       setError("");
       const response = await getAllPartPoliciesApi();
 
-      // Cập nhật theo API response mới
       const partPolicies =
         response.data?.data?.partPolicies || response.data?.data || [];
       setPolicies(partPolicies);
@@ -109,46 +101,13 @@ const PartPolicyManagement = () => {
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterPartName, filterPolicyId, filterStatus, searchTerm]);
-
-  // Create Policy
-  const handleCreatePolicy = async (policyData) => {
-    setActionLoading(true);
-    setError("");
-    try {
-      await createPartPolicyApi(policyData);
-      setSuccess("Part policy created successfully!");
-      setShowCreateModal(false);
-      fetchPolicies();
-    } catch (err) {
-      const errorMessage =
-        err.response?.data?.message || "Failed to add part policy.";
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // Edit Policy
-  const handleEditPolicy = async (id, policyData) => {
-    setActionLoading(true);
-    setError("");
-    try {
-      await updatePartPolicyApi(id, policyData);
-      setSuccess("Part policy updated successfully!");
-      setShowEditModal(false);
-      setSelectedPolicy(null);
-      fetchPolicies();
-    } catch (err) {
-      const errorMessage =
-        err.response?.data?.message || "Failed to update part policy.";
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setActionLoading(false);
-    }
-  };
+  }, [
+    filterPartName,
+    filterPartCode,
+    filterPolicyCode,
+    filterStatus,
+    searchTerm,
+  ]);
 
   // Handle View
   const handleView = (policy) => {
@@ -156,46 +115,28 @@ const PartPolicyManagement = () => {
     setShowViewModal(true);
   };
 
-  // Handle Edit
-  const handleEdit = (policy) => {
-    setSelectedPolicy(policy);
-    setFormData({
-      partName: policy.partName,
-      policyId: policy.policyId.toString(),
-      startDate: policy.startDate,
-      endDate: policy.endDate,
-    });
-    setShowEditModal(true);
-  };
-
-  // Handle Save (Create or Edit)
-  const handleSave = async () => {
-    const { partName, policyId, startDate, endDate } = formData;
-
-    if (!partName || !policyId || !startDate || !endDate) {
-      setError("Please fill in all fields before saving.");
+  // Handle Delete
+  const handleDelete = async (policy) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete part policy "${policy.partCode} - ${policy.partName}"?`
+      )
+    ) {
       return;
     }
 
-    if (new Date(startDate) >= new Date(endDate)) {
-      setError("End date must be after start date.");
-      return;
-    }
-
+    setActionLoading(true);
     try {
-      if (selectedPolicy) {
-        await handleEditPolicy(selectedPolicy.id, formData);
-      } else {
-        await handleCreatePolicy(formData);
-      }
-
-      setFormData({
-        partName: "",
-        policyId: "",
-        startDate: "",
-        endDate: "",
-      });
-    } catch (error) {}
+      await deletePartPolicyApi(policy.id);
+      setSuccess("Part policy deleted successfully!");
+      fetchPolicies(); // Refresh list
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message || "Failed to delete part policy.";
+      setError(errorMessage);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   // Clear messages
@@ -289,7 +230,7 @@ const PartPolicyManagement = () => {
             ))}
           </select>
 
-          {/* Policy ID */}
+          {/* Policy Code */}
           <select
             value={filterPolicyCode}
             onChange={(e) => setFilterPolicyCode(e.target.value)}
@@ -389,28 +330,6 @@ const PartPolicyManagement = () => {
           setShowCreateModal(false);
           fetchPolicies(); // Refresh list
         }}
-      />
-
-      {/* Edit Modal */}
-      <PartPolicyModal
-        showModal={showEditModal}
-        editing={true}
-        formData={formData}
-        actionLoading={actionLoading}
-        onClose={() => {
-          setShowEditModal(false);
-          setSelectedPolicy(null);
-          setFormData({
-            partName: "",
-            policyId: "",
-            startDate: "",
-            endDate: "",
-          });
-        }}
-        onSave={handleSave}
-        onFormDataChange={(field, value) =>
-          setFormData((prev) => ({ ...prev, [field]: value }))
-        }
       />
 
       {/* View Details Modal */}
