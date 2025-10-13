@@ -206,3 +206,9 @@ export const updateWarrantyClaimApi = async (id, updatedData) => {
 export const getAllWarrantyClaimsApi = () => {
   return axios.get("/api/api/claims");
 };
+
+
+// Get all registered vehicles (Customer Registration page)
+export const getAllVehiclesApi = () => {
+  return axios.get("/api/api/vehicles");
+};
