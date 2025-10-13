@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { UserPlus, Eye, X } from "lucide-react";
-import { getAllVehiclesApi } from "../services/api.service";
+import { getAllVehiclesApi, createCustomerApi } from "../services/api.service";
 
 const CustomerRegistration = () => {
     const [vehicles, setVehicles] = useState([]);
@@ -46,6 +46,7 @@ const CustomerRegistration = () => {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
+    // ✅ Submit form — call backend
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!formData.name || !formData.phoneNumber || !formData.vin) {
@@ -55,10 +56,14 @@ const CustomerRegistration = () => {
         }
 
         try {
-            console.log("Registering customer:", formData);
+            console.log("📤 Registering customer:", formData);
+            const response = await createCustomerApi(formData);
+            console.log("✅ API Response:", response.data);
+
             setSuccess("✅ Customer registered successfully!");
             setError("");
             setShowForm(false);
+
             setFormData({
                 name: "",
                 phoneNumber: "",
@@ -66,10 +71,12 @@ const CustomerRegistration = () => {
                 address: "",
                 vin: "",
             });
+
+            // 🔄 Refresh vehicle list
             fetchVehicles();
         } catch (err) {
             console.error("❌ Error registering customer:", err);
-            setError("Failed to register customer. Please try again.");
+            setError("❌ Failed to register customer. Please try again.");
         }
     };
 
@@ -148,10 +155,7 @@ const CustomerRegistration = () => {
                             </thead>
                             <tbody>
                                 {currentVehicles.map((v, i) => (
-                                    <tr
-                                        key={i}
-                                        className="border-b hover:bg-blue-50 transition-colors"
-                                    >
+                                    <tr key={i} className="border-b hover:bg-blue-50 transition-colors">
                                         <td className="px-4 py-3 align-middle font-medium">{v.vin}</td>
                                         <td className="px-4 py-3 align-middle">{v.modelName}</td>
                                         <td className="px-4 py-3 align-middle">{v.productYear}</td>
@@ -176,10 +180,7 @@ const CustomerRegistration = () => {
 
                                 {vehicles.length === 0 && (
                                     <tr>
-                                        <td
-                                            colSpan="5"
-                                            className="text-center text-gray-500 py-6 italic"
-                                        >
+                                        <td colSpan="5" className="text-center text-gray-500 py-6 italic">
                                             No vehicles found.
                                         </td>
                                     </tr>
@@ -245,9 +246,15 @@ const CustomerRegistration = () => {
                             Vehicle Details
                         </h2>
                         <div className="space-y-2 text-sm text-gray-700">
-                            <p><strong>VIN:</strong> {viewVehicle.vin}</p>
-                            <p><strong>Model:</strong> {viewVehicle.modelName}</p>
-                            <p><strong>Year:</strong> {viewVehicle.productYear}</p>
+                            <p>
+                                <strong>VIN:</strong> {viewVehicle.vin}
+                            </p>
+                            <p>
+                                <strong>Model:</strong> {viewVehicle.modelName}
+                            </p>
+                            <p>
+                                <strong>Year:</strong> {viewVehicle.productYear}
+                            </p>
                             <p>
                                 <strong>Customer:</strong>{" "}
                                 {viewVehicle.customerName === "N/A"
@@ -259,7 +266,7 @@ const CustomerRegistration = () => {
                 </div>
             )}
 
-            {/* Register Form Modal (same as before) */}
+            {/* Register Form Modal */}
             {showForm && (
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
                     <div className="bg-white rounded-xl shadow-xl p-8 w-[550px] border border-gray-200">
@@ -334,14 +341,21 @@ const CustomerRegistration = () => {
                                 <label className="block text-sm font-medium text-gray-700">
                                     Vehicle VIN *
                                 </label>
-                                <input
-                                    type="text"
+                                <select
                                     name="vin"
                                     value={formData.vin}
                                     onChange={handleChange}
                                     className="w-full mt-1 border rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
-                                    placeholder="e.g. RLGVF7DD2MS000008"
-                                />
+                                >
+                                    <option value="">-- Select available VIN --</option>
+                                    {vehicles
+                                        .filter((v) => v.customerName === "N/A") // 🔹 Chỉ lấy xe chưa có customer
+                                        .map((v, index) => (
+                                            <option key={index} value={v.vin}>
+                                                {v.vin} — {v.modelName} ({v.productYear})
+                                            </option>
+                                        ))}
+                                </select>
                             </div>
 
                             <div className="flex justify-end gap-4 pt-4">

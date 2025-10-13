@@ -212,3 +212,20 @@ export const getAllWarrantyClaimsApi = () => {
 export const getAllVehiclesApi = () => {
   return axios.get("/api/api/vehicles");
 };
+
+export const createCustomerApi = (customerData) => {
+  const URL_BACKEND = "/api/api/customers";
+  const data = {
+    name: customerData.name,
+    phoneNumber: customerData.phoneNumber,
+    email: customerData.email,
+    address: customerData.address,
+    vin: customerData.vin,
+  };
+
+  return axios.post(URL_BACKEND, data, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};
