@@ -22,6 +22,17 @@ const CustomerRegistration = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 6;
 
+    // ✅ Ẩn thông báo tự động sau 5 giây
+    useEffect(() => {
+        if (success || error) {
+            const timer = setTimeout(() => {
+                setSuccess("");
+                setError("");
+            }, 5000); // ⏱ 5 giây
+            return () => clearTimeout(timer);
+        }
+    }, [success, error]);
+
     // Fetch vehicles
     const fetchVehicles = async () => {
         try {
@@ -75,8 +86,11 @@ const CustomerRegistration = () => {
             // 🔄 Refresh vehicle list
             fetchVehicles();
         } catch (err) {
-            console.error("❌ Error registering customer:", err);
-            setError("❌ Failed to register customer. Please try again.");
+            console.error("❌ Error registering customer:", err.response?.data || err.message);
+            setError(
+                `❌ Failed to register customer: ${err.response?.data?.message || "Please try again."
+                }`
+            );
         }
     };
 
@@ -126,12 +140,12 @@ const CustomerRegistration = () => {
 
             {/* Messages */}
             {success && (
-                <div className="mb-4 p-3 bg-green-50 border border-green-300 text-green-700 rounded-md shadow-sm">
+                <div className="mb-4 p-3 bg-green-50 border border-green-300 text-green-700 rounded-md shadow-sm transition-all duration-300">
                     {success}
                 </div>
             )}
             {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-300 text-red-700 rounded-md shadow-sm">
+                <div className="mb-4 p-3 bg-red-50 border border-red-300 text-red-700 rounded-md shadow-sm transition-all duration-300">
                     {error}
                 </div>
             )}
@@ -337,6 +351,7 @@ const CustomerRegistration = () => {
                                 />
                             </div>
 
+                            {/* ✅ VIN select dropdown */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">
                                     Vehicle VIN *
@@ -349,7 +364,7 @@ const CustomerRegistration = () => {
                                 >
                                     <option value="">-- Select available VIN --</option>
                                     {vehicles
-                                        .filter((v) => v.customerName === "N/A") // 🔹 Chỉ lấy xe chưa có customer
+                                        .filter((v) => v.customerName === "N/A")
                                         .map((v, index) => (
                                             <option key={index} value={v.vin}>
                                                 {v.vin} — {v.modelName} ({v.productYear})
