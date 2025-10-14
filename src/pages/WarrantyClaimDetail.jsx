@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { Link } from "react-router-dom";
 
 import {
     ArrowLeft,
@@ -100,6 +101,16 @@ const ClaimDetail = () => {
                         <ArrowLeft size={18} />
                         Back to Claims
                     </button>
+
+                    {/* Breadcrumb */}
+                    <div className="text-sm text-gray-500 mb-2">
+                        <Link to="/" className="hover:underline text-blue-600">Dashboard</Link>
+                        <span className="mx-1">/</span>
+                        <Link to="/warranty-claims" className="hover:underline text-blue-600">Warranty Claims</Link>
+                        <span className="mx-1">/</span>
+                        <span className="text-gray-700 font-medium">Claim Detail</span>
+                    </div>
+
                     <h1 className="text-3xl font-bold text-gray-900">
                         Warranty Claim Details
                     </h1>

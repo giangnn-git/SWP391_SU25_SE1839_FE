@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { PlusCircle, Search } from "lucide-react";
+import { Link } from "react-router-dom";
+
 import axios from "../services/axios.customize";
 import RepairOrderModal from "../components/repairOrders/RepairOrderModal";
 import RepairOrderTable from "../components/repairOrders/RepairOrderTable";
@@ -61,9 +63,23 @@ const RepairOrdersManagement = () => {
 
     return (
         <div className="p-6">
+
+            {/* Breadcrumb */}
+            <div className="text-sm text-gray-500 mb-2">
+                <Link to="/" className="hover:underline text-blue-600">Dashboard</Link>
+                <span className="mx-1">/</span>
+                <Link to="/repair-orders" className="text-gray-700 font-medium">Repair Orders</Link>
+                <span className="mx-1"></span>
+            </div>
+
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold">Repair Orders Management</h2>
+
+                <div className="mb-6">
+                    <h1 className="text-2xl font-bold text-gray-900">Repair Orders Management</h1>
+                    <p className="text-gray-600 text-sm mt-1">Manage and track all repair orders</p>
+                </div>
+
                 <div className="flex items-center gap-4">
                     <div className="relative">
                         <Search
@@ -98,6 +114,7 @@ const RepairOrdersManagement = () => {
                 loading={loading}
                 error={error}
                 fetchRepairOrders={fetchRepairOrders}
+                setOrders={setOrders}
             />
 
             {/* Modal */}

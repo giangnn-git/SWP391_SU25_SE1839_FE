@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Loader, AlertCircle, Wrench, UserCog } from "lucide-react";
+import toast from "react-hot-toast";
+
 import axios from "../../services/axios.customize";
 
-const RepairOrderTable = ({ orders, loading, error, technicians = [] }) => {
+const RepairOrderTable = ({ orders, loading, error, technicians = [], fetchOrders, setOrders }) => {
     const [assigning, setAssigning] = useState(null);
     const [selectedTechs, setSelectedTechs] = useState({}); // lưu theo orderId
 
@@ -22,20 +24,29 @@ const RepairOrderTable = ({ orders, loading, error, technicians = [] }) => {
 
     const handleAssign = async (orderId) => {
         const tech = selectedTechs[orderId];
-        if (!tech) return alert("Please select a technician for this order.");
+        if (!tech) return toast.error("Please select a technician for this order.");
 
         try {
             setAssigning(orderId);
-            await axios.put(`/api/api/repairOrders/${orderId}`, { techinal: tech });
-            alert("Technician assigned successfully!");
-            window.location.reload();
+            const res = await axios.put(`/api/api/repairOrders/${orderId}`, { technicalName: tech });
+            toast.success("Technician assigned successfully!");
+
+            setOrders((prev) =>
+                prev.map((o) =>
+                    o.repairOrderId === orderId ? { ...o, techinal: tech } : o
+                )
+            );
+
+            if (fetchOrders) await fetchOrders();
         } catch (err) {
             console.error(err);
-            alert("Failed to assign technician.");
+            toast.error("Failed to assign technician.");
         } finally {
             setAssigning(null);
         }
     };
+
+
 
     if (loading) {
         return (
