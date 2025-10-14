@@ -7,7 +7,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { Navigate } from "react-router-dom";
-import { useCurrentUser } from "../hooks/useCurrentUser"; // ✅ hook lấy user hiện tại
+import { useCurrentUser } from "../hooks/useCurrentUser";
 import ViewPartModal from "../components/supply/ViewPartModal";
 import {
   getAllPartInventoriesApi,
@@ -17,42 +17,28 @@ import {
 
 const SupplyChain = () => {
   // =========================
-  // 🔐 Role-based access
+  //  HOOKS phải luôn ở đầu (luật React)
   // =========================
-  const { currentUser } = useCurrentUser();
-  const isAuthorized =
-    currentUser?.role === "ADMIN" || currentUser?.role === "EVM_STAFF";
+  const { currentUser, loading } = useCurrentUser();
 
-  // Nếu không có quyền → quay lại trang chủ
-  if (!isAuthorized) {
-    return <Navigate to="/" replace />;
-  }
-
-  // =========================
-  //  STATE
-  // =========================
   const [searchTerm, setSearchTerm] = useState("");
   const [filterWarehouse, setFilterWarehouse] = useState("");
   const [parts, setParts] = useState([]);
   const [selectedPart, setSelectedPart] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
   const [selectedServiceCenter, setSelectedServiceCenter] = useState("");
-
-  // ✅ danh sách trung tâm động
   const [serviceCenters, setServiceCenters] = useState([]);
 
-  // =========================
   //  FETCH API
-  // =========================
   const fetchPartInventories = async (serviceCenterId = null) => {
     try {
-      setLoading(true);
+      setLoadingData(true);
       setError("");
       setSuccess("");
       setShowSuccess(false);
@@ -63,9 +49,7 @@ const SupplyChain = () => {
 
       const data = response.data?.data || response.data;
 
-      if (!Array.isArray(data)) {
-        throw new Error("Invalid response format from API");
-      }
+      if (!Array.isArray(data)) throw new Error("Invalid response format from API");
 
       const formatted = data.map((item) => ({
         id: item.id,
@@ -86,11 +70,10 @@ const SupplyChain = () => {
       console.error("❌ Error fetching part inventories:", err);
       setError("Failed to load part inventories. Please try again.");
     } finally {
-      setLoading(false);
+      setLoadingData(false);
     }
   };
 
-  // ✅ Fetch Service Centers động từ BE
   const fetchServiceCenters = async () => {
     try {
       const res = await getAllPartInventoriesApi();
@@ -125,6 +108,35 @@ const SupplyChain = () => {
     }
   }, [selectedServiceCenter]);
 
+  //  Role-based access (đặt SAU hook)
+
+  if (loading) {
+    return (
+      <div className="p-6 text-center text-gray-600">
+        Loading user information...
+      </div>
+    );
+  }
+
+  const isAuthorized =
+    currentUser?.role?.toUpperCase() === "ADMIN" ||
+    currentUser?.role?.toUpperCase() === "EVM_STAFF";
+
+  if (!isAuthorized) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen text-center bg-gray-50 text-gray-700">
+        <div className="bg-white shadow-md rounded-lg p-8 max-w-md border border-gray-200">
+          <h2 className="text-xl font-semibold text-red-600 mb-2">
+            🚫 Access Denied
+          </h2>
+          <p className="text-sm text-gray-600">
+            You do not have permission to access this page.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // =========================
   //  FILTER & SEARCH
   // =========================
@@ -143,10 +155,7 @@ const SupplyChain = () => {
   // =========================
   const totalPages = Math.ceil(filteredParts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentParts = filteredParts.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
+  const currentParts = filteredParts.slice(startIndex, startIndex + itemsPerPage);
   const uniqueWarehouses = [...new Set(parts.map((p) => p.warehouse))];
 
   // =========================
@@ -178,7 +187,7 @@ const SupplyChain = () => {
       </div>
 
       {/* Notifications */}
-      {loading && (
+      {loadingData && (
         <div className="text-center text-gray-500 py-6">
           Loading inventory data...
         </div>
@@ -251,7 +260,7 @@ const SupplyChain = () => {
       </div>
 
       {/* Table */}
-      {!loading && (
+      {!loadingData && (
         <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
           <table className="min-w-full text-sm text-gray-700 border-separate border-spacing-y-1">
             <thead className="bg-gray-100 text-gray-900 font-semibold">

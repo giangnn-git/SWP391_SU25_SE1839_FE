@@ -12,7 +12,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
     });
     const [actionLoading, setActionLoading] = useState(false);
 
-    // ✅ Gửi claim
+    //  Gửi claim
     const handleCreateClaim = async () => {
         try {
             setActionLoading(true);
@@ -52,14 +52,14 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
         }
     };
 
-    // ✅ Upload và preview ảnh
+    //  Upload và preview ảnh
     const handleFileChange = (e) => {
         const newFiles = Array.from(e.target.files);
         const updatedFiles = [...formData.attachments, ...newFiles];
         setFormData({ ...formData, attachments: updatedFiles });
     };
 
-    // ✅ Xoá ảnh
+    //  Xoá ảnh
     const handleRemoveImage = (index) => {
         const updated = formData.attachments.filter((_, i) => i !== index);
         setFormData({ ...formData, attachments: updated });

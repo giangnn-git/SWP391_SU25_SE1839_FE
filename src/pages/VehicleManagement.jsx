@@ -12,7 +12,7 @@ const VehicleManagement = () => {
     const [showViewModal, setShowViewModal] = useState(false);
     const [selectedVehicle, setSelectedVehicle] = useState(null);
 
-    // ✅ Fetch data từ API
+    //  Fetch data từ API
     const fetchVehicles = async () => {
         try {
             setLoading(true);
@@ -32,7 +32,7 @@ const VehicleManagement = () => {
         fetchVehicles();
     }, []);
 
-    // ✅ Filter + Search logic
+    //  Filter + Search logic
     const filteredVehicles = vehicles.filter((v) => {
         const matchesSearch =
             v.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -139,7 +139,7 @@ const VehicleManagement = () => {
                                             </span>
                                         </td>
 
-                                        {/* 👁 View Button */}
+                                        {/*  View Button */}
                                         <td className="py-3 px-4 text-center">
                                             <div className="flex justify-center">
                                                 <button

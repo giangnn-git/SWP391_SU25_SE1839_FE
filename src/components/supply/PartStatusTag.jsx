@@ -10,7 +10,7 @@ const PartStatusTag = ({ status }) => {
     const base =
         "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium tracking-wide border transition-all duration-200";
 
-    // ✅ Available
+    //  Available
     if (status === "Available")
         return (
             <span
@@ -22,7 +22,7 @@ const PartStatusTag = ({ status }) => {
             </span>
         );
 
-    // ✅ Low Stock
+    //  Low Stock
     if (status === "Low stock")
         return (
             <span
@@ -34,7 +34,7 @@ const PartStatusTag = ({ status }) => {
             </span>
         );
 
-    // ✅ Critical (with pulse animation)
+    //  Critical (with pulse animation)
     if (status === "Critical")
         return (
             <span
@@ -48,7 +48,7 @@ const PartStatusTag = ({ status }) => {
             </span>
         );
 
-    // ✅ Unknown / default fallback
+    //  Unknown / default fallback
     return (
         <span
             className={`${base} bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100`}

@@ -73,7 +73,7 @@ const WarrantyPolicyTable = ({
               {/* Action Column */}
               <td className="py-3 px-4 text-center align-middle">
                 <div className="flex items-center justify-center gap-2">
-                  {/* ✅ EDIT */}
+                  {/*  EDIT */}
                   <button
                     onClick={() => onEdit(policy)}
                     className="flex items-center justify-center w-9 h-9 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm disabled:opacity-50"
@@ -83,7 +83,7 @@ const WarrantyPolicyTable = ({
                     ✏️
                   </button>
 
-                  {/* ✅ DELETE (truyền toàn bộ policy thay vì chỉ id) */}
+                  {/*  DELETE (truyền toàn bộ policy thay vì chỉ id) */}
                   <button
                     onClick={() => onDelete(policy)}
                     className="flex items-center justify-center w-9 h-9 rounded-md bg-red-500 hover:bg-red-600 text-white transition shadow-sm disabled:opacity-50"

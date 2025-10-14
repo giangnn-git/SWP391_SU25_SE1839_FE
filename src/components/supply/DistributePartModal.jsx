@@ -9,7 +9,7 @@ const DistributePartModal = ({ part, onClose }) => {
     const [feedback, setFeedback] = useState({ type: "", message: "" });
     const [fadeOut, setFadeOut] = useState(false);
 
-    // ✅ Tự động ẩn thông báo sau 2.5s
+    //  Tự động ẩn thông báo sau 2.5s
     useEffect(() => {
         if (feedback.message) {
             const timer = setTimeout(() => {
@@ -24,7 +24,7 @@ const DistributePartModal = ({ part, onClose }) => {
     }, [feedback]);
 
     const handleConfirm = () => {
-        // ✅ Kiểm tra nhập liệu
+        //  Kiểm tra nhập liệu
         if (!center || !amount) {
             setFeedback({ type: "error", message: "Please select a service center and enter quantity." });
             return;
@@ -43,17 +43,17 @@ const DistributePartModal = ({ part, onClose }) => {
             return;
         }
 
-        // ✅ Hiển thị thông báo thành công
+        //  Hiển thị thông báo thành công
         setFeedback({
             type: "success",
             message: `✅ Successfully distributed ${amount} units of ${part.name} to ${center}.`,
         });
 
-        // ✅ Reset form sau khi thành công
+        //  Reset form sau khi thành công
         setCenter("");
         setAmount("");
 
-        // ✅ Tự đóng modal sau một chút delay (mượt hơn UX)
+        //  Tự đóng modal sau một chút delay (mượt hơn UX)
         setTimeout(() => {
             onClose();
         }, 1800);

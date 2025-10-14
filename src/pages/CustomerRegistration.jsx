@@ -18,17 +18,17 @@ const CustomerRegistration = () => {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(true);
 
-    // 🔹 Pagination state
+    //  Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 6;
 
-    // ✅ Ẩn thông báo tự động sau 5 giây
+    //  Ẩn thông báo tự động sau 5 giây
     useEffect(() => {
         if (success || error) {
             const timer = setTimeout(() => {
                 setSuccess("");
                 setError("");
-            }, 5000); // ⏱ 5 giây
+            }, 5000);
             return () => clearTimeout(timer);
         }
     }, [success, error]);
@@ -57,7 +57,7 @@ const CustomerRegistration = () => {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    // ✅ Submit form — call backend
+    //  Submit form — call backend
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!formData.name || !formData.phoneNumber || !formData.vin) {
@@ -83,7 +83,7 @@ const CustomerRegistration = () => {
                 vin: "",
             });
 
-            // 🔄 Refresh vehicle list
+            //  Refresh vehicle list
             fetchVehicles();
         } catch (err) {
             console.error("❌ Error registering customer:", err.response?.data || err.message);
@@ -94,7 +94,7 @@ const CustomerRegistration = () => {
         }
     };
 
-    // 🔹 Pagination logic
+    //  Pagination logic
     const totalPages = Math.ceil(vehicles.length / itemsPerPage);
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -203,7 +203,7 @@ const CustomerRegistration = () => {
                         </table>
                     </div>
 
-                    {/* 🔹 Pagination */}
+                    {/*  Pagination */}
                     {totalPages > 1 && (
                         <div className="flex justify-center items-center gap-2 mt-6">
                             <button
@@ -351,7 +351,7 @@ const CustomerRegistration = () => {
                                 />
                             </div>
 
-                            {/* ✅ VIN select dropdown */}
+                            {/*  VIN select dropdown */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">
                                     Vehicle VIN *

@@ -15,7 +15,7 @@ import ChangePasswordPage from "./pages/ChangePassword.jsx";
 import Profiles from "./pages/Profiles.jsx";
 import ClaimApproval from "./pages/ClaimApproval.jsx";
 import VehicleManagement from "./pages/VehicleManagement.jsx";
-import CustomerRegistration from "./pages/CustomerRegistration.jsx"; // ✅ Thêm trang đăng ký Customer (SC_STAFF)
+import CustomerRegistration from "./pages/CustomerRegistration.jsx";
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -40,7 +40,7 @@ const router = createBrowserRouter([
         element: <RepairOrders />,
       },
 
-      // ✅ Customer Registration — chỉ SC_STAFF có quyền
+      //  Customer Registration — chỉ SC_STAFF có quyền
       {
         path: "customer-registration",
         element: (

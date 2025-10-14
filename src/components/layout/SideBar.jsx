@@ -13,7 +13,7 @@ import {
   Users,
   PanelLeft,
   PanelRight,
-  UserPlus, // ✅ icon cho Customer Registration
+  UserPlus,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -24,18 +24,18 @@ const Sidebar = () => {
   const isEvmStaff = currentUser?.role === "EVM_STAFF";
   const isScStaff = currentUser?.role === "SC_STAFF";
 
-  // ✅ Style đồng bộ cho icon
+  //  Style đồng bộ cho icon
   const iconStyle = "text-gray-600 group-hover:text-blue-600 transition-colors";
 
   const navigation = [
-    // ✅ Dashboard luôn ở đầu
+    //  Dashboard luôn ở đầu
     {
       name: "Dashboard",
       href: "/",
       icon: <LayoutDashboard size={18} className={iconStyle} strokeWidth={1.8} />,
     },
 
-    // ✅ Customer Registration — chỉ SC Staff — nằm ngay sau Dashboard
+    //  Customer Registration — chỉ SC Staff — nằm ngay sau Dashboard
     ...(isScStaff
       ? [
         {
@@ -46,21 +46,21 @@ const Sidebar = () => {
       ]
       : []),
 
-    // ✅ Warranty Claims
+    //  Warranty Claims
     {
       name: "Warranty Claims",
       href: "/warranty-claims",
       icon: <ShieldCheck size={18} className={iconStyle} strokeWidth={1.8} />,
     },
 
-    // ✅ Repair Orders
+    //  Repair Orders
     {
       name: "Repair Orders",
       href: "/repair-orders",
       icon: <Wrench size={18} className={iconStyle} strokeWidth={1.8} />,
     },
 
-    // ✅ Vehicle Management (Admin + EVM)
+    //  Vehicle Management (Admin + EVM)
     ...(isAdmin || isEvmStaff
       ? [
         {
@@ -71,7 +71,7 @@ const Sidebar = () => {
       ]
       : []),
 
-    // ✅ Claim Approval (Admin + EVM)
+    //  Claim Approval (Admin + EVM)
     ...(isAdmin || isEvmStaff
       ? [
         {
@@ -82,7 +82,7 @@ const Sidebar = () => {
       ]
       : []),
 
-    // ✅ Supply Chain (Admin + EVM)
+    //  Supply Chain (Admin + EVM)
     ...(isAdmin || isEvmStaff
       ? [
         {
@@ -93,14 +93,14 @@ const Sidebar = () => {
       ]
       : []),
 
-    // ✅ Analytics (tất cả)
+    //  Analytics (tất cả)
     {
       name: "Analytics & Reports",
       href: "/analytics",
       icon: <BarChart3 size={18} className={iconStyle} strokeWidth={1.8} />,
     },
 
-    // ✅ Policy (Admin + EVM)
+    //  Policy (Admin + EVM)
     ...(isAdmin || isEvmStaff
       ? [
         {
@@ -111,7 +111,7 @@ const Sidebar = () => {
       ]
       : []),
 
-    // ✅ User Management (Admin)
+    //  User Management (Admin)
     ...(isAdmin
       ? [
         {
