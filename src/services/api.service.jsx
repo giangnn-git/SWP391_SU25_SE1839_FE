@@ -134,6 +134,16 @@ export const getVehicleDetailApi = (vehicleId) => {
   return axios.get(`/api/api/model/detail/${vehicleId}`);
 };
 
+// {Campaign API}
+
+export const getAllCampaignsApi = () => {
+  return axios.get("/api/api/campaigns");
+};
+
+export const createCampaignApi = (campaignData) => {
+  return axios.post("/api/api/campaigns", campaignData);
+};
+
 // {Claim API}
 
 // READ (Lấy tất cả claims)
@@ -197,7 +207,7 @@ export const getPartInventoryByServiceCenterIdApi = (serviceCenterId) => {
   return axios.get(`/api/part-inventory/service-center/${serviceCenterId}`);
 };
 
-// {Misunderstand API}
+// {Warranty API}
 
 export const updateWarrantyClaimApi = async (id, updatedData) => {
   return axios.put(`/api/claims/${id}`, updatedData);

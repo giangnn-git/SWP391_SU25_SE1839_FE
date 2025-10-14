@@ -15,6 +15,7 @@ import ChangePasswordPage from "./pages/ChangePassword.jsx";
 import Profiles from "./pages/Profiles.jsx";
 import ClaimApproval from "./pages/ClaimApproval.jsx";
 import VehicleManagement from "./pages/VehicleManagement.jsx";
+import CampaignManagement from "./pages/CampaignManagement.jsx";
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -102,6 +103,14 @@ const router = createBrowserRouter([
         element: (
           <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
             <ClaimApproval />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: "campaigns",
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+            <CampaignManagement />
           </PrivateRoute>
         ),
       },
