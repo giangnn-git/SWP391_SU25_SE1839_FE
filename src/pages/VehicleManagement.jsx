@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, Filter, Car, Eye, Loader2 } from "lucide-react"; // ✅ Bỏ PlusCircle
+import { Search, Filter, Car, Eye, Loader2 } from "lucide-react"; 
 import ViewVehicleModal from "../components/vehicles/ViewVehicleModal";
 import { getAllModelsApi } from "../services/api.service";
 
@@ -61,7 +61,7 @@ const VehicleManagement = () => {
             <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm flex flex-wrap gap-3 items-center">
                 <Filter size={18} className="text-gray-600" />
 
-                {/* 🔹 Filter by Production Status */}
+                {/*  Filter by Production Status */}
                 <select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
@@ -72,7 +72,7 @@ const VehicleManagement = () => {
                     <option value="out">Discontinued</option>
                 </select>
 
-                {/* 🔹 Search Box */}
+                {/*  Search Box */}
                 <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <Search size={18} className="text-gray-400" />

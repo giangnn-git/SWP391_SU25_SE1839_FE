@@ -41,7 +41,7 @@ const PartStatusTag = ({ status }) => {
                 className={`${base} bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:scale-[1.03] relative overflow-hidden`}
                 title="Critical shortage. Immediate action required."
             >
-                {/* 🔴 Pulse effect behind icon */}
+                {/*  Pulse effect behind icon */}
                 <span className="absolute inset-0 rounded-md bg-red-100 animate-pulse-slow opacity-60"></span>
                 <XCircle size={12} className="text-red-700 relative z-10" />
                 <span className="relative z-10">Out of Stock</span>
