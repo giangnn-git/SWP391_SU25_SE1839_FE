@@ -10,7 +10,7 @@ const PartStatusTag = ({ status }) => {
     const base =
         "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium tracking-wide border transition-all duration-200";
 
-    // ✅ Available
+    //  Available
     if (status === "Available")
         return (
             <span
@@ -22,7 +22,7 @@ const PartStatusTag = ({ status }) => {
             </span>
         );
 
-    // ✅ Low Stock
+    //  Low Stock
     if (status === "Low stock")
         return (
             <span
@@ -34,21 +34,21 @@ const PartStatusTag = ({ status }) => {
             </span>
         );
 
-    // ✅ Critical (with pulse animation)
+    //  Critical (with pulse animation)
     if (status === "Critical")
         return (
             <span
                 className={`${base} bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:scale-[1.03] relative overflow-hidden`}
                 title="Critical shortage. Immediate action required."
             >
-                {/* 🔴 Pulse effect behind icon */}
+                {/*  Pulse effect behind icon */}
                 <span className="absolute inset-0 rounded-md bg-red-100 animate-pulse-slow opacity-60"></span>
                 <XCircle size={12} className="text-red-700 relative z-10" />
                 <span className="relative z-10">Out of Stock</span>
             </span>
         );
 
-    // ✅ Unknown / default fallback
+    //  Unknown / default fallback
     return (
         <span
             className={`${base} bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100`}

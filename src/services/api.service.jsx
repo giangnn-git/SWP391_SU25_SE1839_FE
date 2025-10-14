@@ -204,7 +204,7 @@ export const getAllPartInventoriesApi = () => {
 };
 
 export const getPartInventoryByServiceCenterIdApi = (serviceCenterId) => {
-  return axios.get(`/api/part-inventory/service-center/${serviceCenterId}`);
+  return axios.get(`/api/api/part-inventory/service-center/${serviceCenterId}`);
 };
 
 // {Warranty API}
@@ -215,4 +215,27 @@ export const updateWarrantyClaimApi = async (id, updatedData) => {
 
 export const getAllWarrantyClaimsApi = () => {
   return axios.get("/api/api/claims");
+};
+
+
+// Get all registered vehicles (Customer Registration page)
+export const getAllVehiclesApi = () => {
+  return axios.get("/api/api/vehicles");
+};
+
+export const createCustomerApi = (customerData) => {
+  const URL_BACKEND = "/api/api/customers";
+  const data = {
+    name: customerData.name,
+    phoneNumber: customerData.phoneNumber,
+    email: customerData.email,
+    address: customerData.address,
+    vin: customerData.vin,
+  };
+
+  return axios.post(URL_BACKEND, data, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 };

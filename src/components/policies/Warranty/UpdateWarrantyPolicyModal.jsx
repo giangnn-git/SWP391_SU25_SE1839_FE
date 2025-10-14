@@ -15,7 +15,7 @@ const UpdateWarrantyPolicyModal = ({
     mileageLimit: "",
   });
 
-  // ✅ Load dữ liệu từ policy
+  //  Load dữ liệu từ policy
   useEffect(() => {
     if (policy) {
       setFormData({
@@ -40,7 +40,7 @@ const UpdateWarrantyPolicyModal = ({
     }));
   };
 
-  // ✅ Kiểm tra xem form có thay đổi gì không
+  //  Kiểm tra xem form có thay đổi gì không
   const isChanged =
     formData.name !== (policy?.name || "") ||
     formData.description !== (policy?.description || "") ||
@@ -50,7 +50,7 @@ const UpdateWarrantyPolicyModal = ({
     (policy?.mileageLimit?.toString().replace(" km", "").replace(/,/g, "") ||
       "");
 
-  // ✅ Gửi request update
+  //  Gửi request update
   const handleSubmit = async () => {
     if (!policy?.id) {
       console.error("Invalid policy ID.");
@@ -77,7 +77,7 @@ const UpdateWarrantyPolicyModal = ({
 
       await updatePolicyApi(policy.id, apiData);
 
-      // ✅ Gọi callback để hiển thị thông báo ở UI cha
+      //  Gọi callback để hiển thị thông báo ở UI cha
       if (onUpdated) onUpdated();
       onClose();
     } catch (error) {

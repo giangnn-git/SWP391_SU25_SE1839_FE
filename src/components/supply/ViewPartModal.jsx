@@ -19,40 +19,35 @@ const ViewPartModal = ({ part, onClose }) => {
                 <div className="space-y-3 text-sm text-gray-700">
                     <div>
                         <p className="font-semibold text-gray-900">Part Code:</p>
-                        <p className="text-gray-700">{part.code}</p>
+                        <p className="text-gray-700">{part.code || "N/A"}</p>
                     </div>
 
                     <div>
                         <p className="font-semibold text-gray-900">Name:</p>
-                        <p className="text-gray-700">{part.name}</p>
+                        <p className="text-gray-700">{part.name || "N/A"}</p>
                     </div>
 
                     <div>
-                        <p className="font-semibold text-gray-900">Model:</p>
-                        <p className="text-gray-700">{part.model}</p>
+                        <p className="font-semibold text-gray-900">Category:</p>
+                        <p className="text-gray-700">{part.category || "-"}</p>
                     </div>
 
                     <div>
                         <p className="font-semibold text-gray-900">Quantity:</p>
-                        <p className="text-gray-700">{part.quantity}</p>
+                        <p className="text-gray-700">{part.quantity ?? 0}</p>
                     </div>
 
                     <div>
                         <p className="font-semibold text-gray-900">Warehouse:</p>
-                        <p className="text-gray-700">{part.location}</p>
+                        <p className="text-gray-700">
+                            {part.warehouse || "Unknown Warehouse"}
+                        </p>
                     </div>
 
                     <div>
-                        <p className="font-semibold text-gray-900">Status:</p>
-                        <p
-                            className={`${part.status === "Critical"
-                                ? "text-red-600 font-medium"
-                                : part.status === "Low stock"
-                                    ? "text-orange-500 font-medium"
-                                    : "text-green-600 font-medium"
-                                }`}
-                        >
-                            {part.status}
+                        <p className="font-semibold text-gray-900">Address:</p>
+                        <p className="text-gray-700">
+                            {part.address || "Unknown Address"}
                         </p>
                     </div>
                 </div>

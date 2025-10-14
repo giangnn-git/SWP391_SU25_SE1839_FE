@@ -20,10 +20,10 @@ const DeleteWarrantyPolicyModal = ({
         try {
             setLoading(true);
 
-            // ✅ Gọi API xóa
+            //  Gọi API xóa
             const response = await deletePolicyApi(policy.id);
 
-            // ✅ Nếu BE trả 200 hoặc 204 => Xóa thành công
+            //  Nếu BE trả 200 hoặc 204 => Xóa thành công
             if (response.status === 200 || response.status === 204) {
                 if (onDeleted) onDeleted(); // callback để cập nhật UI
                 onClose();
@@ -36,14 +36,14 @@ const DeleteWarrantyPolicyModal = ({
         } catch (error) {
             console.error("Delete failed:", error);
 
-            // ✅ Nếu BE ném lỗi 500 (policy vẫn được liên kết với part policy)
+            //  Nếu BE ném lỗi 500 (policy vẫn được liên kết với part policy)
             if (error.response?.status === 500) {
                 console.error(
                     error.response?.data?.message ||
                     "Cannot delete policy because it is still linked with active part policies."
                 );
             } else {
-                // ✅ Các lỗi khác (404, 401, timeout, network...)
+                //  Các lỗi khác (404, 401, timeout, network...)
                 console.error(
                     error.response?.data?.message ||
                     "Failed to delete policy. Please try again."

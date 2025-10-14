@@ -16,6 +16,7 @@ import Profiles from "./pages/Profiles.jsx";
 import ClaimApproval from "./pages/ClaimApproval.jsx";
 import VehicleManagement from "./pages/VehicleManagement.jsx";
 import CampaignManagement from "./pages/CampaignManagement.jsx";
+import CustomerRegistration from "./pages/CustomerRegistration.jsx";
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -38,6 +39,16 @@ const router = createBrowserRouter([
       {
         path: "repair-orders",
         element: <RepairOrders />,
+      },
+
+      //  Customer Registration — chỉ SC_STAFF có quyền
+      {
+        path: "customer-registration",
+        element: (
+          <PrivateRoute allowedRoles={["SC_STAFF"]}>
+            <CustomerRegistration />
+          </PrivateRoute>
+        ),
       },
 
       //  Vehicle Management — ADMIN only

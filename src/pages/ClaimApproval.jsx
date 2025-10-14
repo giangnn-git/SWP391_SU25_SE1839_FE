@@ -7,7 +7,7 @@ const ClaimApproval = () => {
     const [search, setSearch] = useState("");
     const [status, setStatus] = useState("All");
 
-    // 🔹 Dummy data (replace with API later)
+    //  Dummy data (replace with API later)
     const claims = [
         {
             id: "WC-2024-001",
@@ -41,7 +41,7 @@ const ClaimApproval = () => {
         },
     ];
 
-    // 🔹 Filtering logic
+    //  Filtering logic
     const filteredClaims = claims.filter((claim) => {
         const matchesSearch =
             claim.id.toLowerCase().includes(search.toLowerCase()) ||

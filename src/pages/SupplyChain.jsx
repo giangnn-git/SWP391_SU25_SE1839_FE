@@ -1,43 +1,44 @@
 import React, { useState, useEffect } from "react";
 import {
-  PlusCircle,
   Search,
   Warehouse,
   Filter,
   Eye,
   RotateCcw,
 } from "lucide-react";
-import CreatePartModal from "../components/supply/CreatePartModal";
+import { Navigate } from "react-router-dom";
+import { useCurrentUser } from "../hooks/useCurrentUser";
 import ViewPartModal from "../components/supply/ViewPartModal";
 import {
   getAllPartInventoriesApi,
   getPartInventoryByServiceCenterIdApi,
+  getServiceCentersApi,
 } from "../services/api.service";
 
 const SupplyChain = () => {
   // =========================
-  //  STATE
+  //  HOOKS phải luôn ở đầu (luật React)
   // =========================
+  const { currentUser, loading } = useCurrentUser();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterWarehouse, setFilterWarehouse] = useState("");
   const [parts, setParts] = useState([]);
   const [selectedPart, setSelectedPart] = useState(null);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
   const [selectedServiceCenter, setSelectedServiceCenter] = useState("");
+  const [serviceCenters, setServiceCenters] = useState([]);
 
-  // =========================
   //  FETCH API
-  // =========================
   const fetchPartInventories = async (serviceCenterId = null) => {
     try {
-      setLoading(true);
+      setLoadingData(true);
       setError("");
       setSuccess("");
       setShowSuccess(false);
@@ -48,9 +49,7 @@ const SupplyChain = () => {
 
       const data = response.data?.data || response.data;
 
-      if (!Array.isArray(data)) {
-        throw new Error("Invalid response format from API");
-      }
+      if (!Array.isArray(data)) throw new Error("Invalid response format from API");
 
       const formatted = data.map((item) => ({
         id: item.id,
@@ -64,18 +63,42 @@ const SupplyChain = () => {
       }));
 
       setParts(formatted);
-      setSuccess(" Inventory data loaded successfully!");
+      setSuccess("Inventory data loaded successfully!");
       setShowSuccess(true);
-
-      //  Ẩn sau 3 giây
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (err) {
-      console.error(" Error fetching part inventories:", err);
+      console.error("❌ Error fetching part inventories:", err);
       setError("Failed to load part inventories. Please try again.");
     } finally {
-      setLoading(false);
+      setLoadingData(false);
     }
   };
+
+  const fetchServiceCenters = async () => {
+    try {
+      const res = await getAllPartInventoriesApi();
+      const data = res.data?.data || [];
+      const uniqueCenters = [
+        ...new Map(
+          data.map((item) => [
+            item.serviceCenterId,
+            {
+              id: item.serviceCenterId,
+              name: item.serviceCenterName,
+              address: item.serviceCenterAddress,
+            },
+          ])
+        ).values(),
+      ];
+      setServiceCenters(uniqueCenters);
+    } catch (err) {
+      console.error("❌ Error loading service centers:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchServiceCenters();
+  }, []);
 
   useEffect(() => {
     if (selectedServiceCenter) {
@@ -84,6 +107,35 @@ const SupplyChain = () => {
       fetchPartInventories();
     }
   }, [selectedServiceCenter]);
+
+  //  Role-based access (đặt SAU hook)
+
+  if (loading) {
+    return (
+      <div className="p-6 text-center text-gray-600">
+        Loading user information...
+      </div>
+    );
+  }
+
+  const isAuthorized =
+    currentUser?.role?.toUpperCase() === "ADMIN" ||
+    currentUser?.role?.toUpperCase() === "EVM_STAFF";
+
+  if (!isAuthorized) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen text-center bg-gray-50 text-gray-700">
+        <div className="bg-white shadow-md rounded-lg p-8 max-w-md border border-gray-200">
+          <h2 className="text-xl font-semibold text-red-600 mb-2">
+            🚫 Access Denied
+          </h2>
+          <p className="text-sm text-gray-600">
+            You do not have permission to access this page.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // =========================
   //  FILTER & SEARCH
@@ -103,22 +155,8 @@ const SupplyChain = () => {
   // =========================
   const totalPages = Math.ceil(filteredParts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentParts = filteredParts.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
+  const currentParts = filteredParts.slice(startIndex, startIndex + itemsPerPage);
   const uniqueWarehouses = [...new Set(parts.map((p) => p.warehouse))];
-
-  // =========================
-  //  ADD NEW PART (local only)
-  // =========================
-  const handleAddPart = (newPart) => {
-    setParts([...parts, { ...newPart, id: Date.now() }]);
-    setShowAddModal(false);
-    setSuccess("✅ New part added (local only, not synced to API).");
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
-  };
 
   // =========================
   //  UI RENDER
@@ -145,19 +183,11 @@ const SupplyChain = () => {
             <RotateCcw size={18} className="mr-2" />
             Refresh
           </button>
-
-          <button
-            className="flex items-center bg-black text-white hover:bg-gray-800 px-4 py-2 rounded-md transition-all shadow-sm"
-            onClick={() => setShowAddModal(true)}
-          >
-            <PlusCircle size={18} className="mr-2" />
-            Add New Part
-          </button>
         </div>
       </div>
 
-      {/*  Notifications */}
-      {loading && (
+      {/* Notifications */}
+      {loadingData && (
         <div className="text-center text-gray-500 py-6">
           Loading inventory data...
         </div>
@@ -186,9 +216,11 @@ const SupplyChain = () => {
             className="border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
           >
             <option value="">All Service Centers</option>
-            <option value="1">HCM Service Center</option>
-            <option value="2">Hanoi Service Center</option>
-            <option value="3">Danang Service Center</option>
+            {serviceCenters.map((sc) => (
+              <option key={sc.id} value={sc.id}>
+                {sc.name} – {sc.address}
+              </option>
+            ))}
           </select>
 
           <select
@@ -228,7 +260,7 @@ const SupplyChain = () => {
       </div>
 
       {/* Table */}
-      {!loading && (
+      {!loadingData && (
         <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
           <table className="min-w-full text-sm text-gray-700 border-separate border-spacing-y-1">
             <thead className="bg-gray-100 text-gray-900 font-semibold">
@@ -316,14 +348,7 @@ const SupplyChain = () => {
         </div>
       )}
 
-      {/* Modals */}
-      {showAddModal && (
-        <CreatePartModal
-          onClose={() => setShowAddModal(false)}
-          onSubmit={handleAddPart}
-        />
-      )}
-
+      {/* View Modal */}
       {showViewModal && selectedPart && (
         <ViewPartModal
           part={selectedPart}
