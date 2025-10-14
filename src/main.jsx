@@ -10,7 +10,7 @@ import Dashboard from "./pages/Dashboard.jsx";
 import ManageUsers from "./pages/ManageUsers.jsx";
 import WarrantyClaims from "./pages/WarrantyClaims.jsx";
 import RepairOrders from "./pages/RepairOrders.jsx";
-// import PartPolicyManagement from "./pages/PartPolicyManagement.jsx";
+import ClaimDetail from "./pages/WarrantyClaimDetail.jsx";
 import ProfilePage from "./pages/Profiles.jsx";
 import ChangePasswordPage from "./pages/ChangePassword.jsx";
 import Profiles from "./pages/Profiles.jsx";
@@ -32,6 +32,10 @@ const router = createBrowserRouter([
       {
         path: "warranty-claims", // only admin access
         element: <WarrantyClaims />,
+      },
+      {
+        path: "claim/:id",
+        element: <ClaimDetail />,
       },
 
       {

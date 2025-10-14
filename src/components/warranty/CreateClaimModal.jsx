@@ -12,7 +12,6 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
     });
     const [actionLoading, setActionLoading] = useState(false);
 
-    // ✅ Gửi claim
     const handleCreateClaim = async () => {
         try {
             setActionLoading(true);
@@ -46,20 +45,18 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
             onClose();
         } catch (err) {
             console.error(err);
-            alert("❌ Failed to create claim!");
+            alert("Failed to create claim!");
         } finally {
             setActionLoading(false);
         }
     };
 
-    // ✅ Upload và preview ảnh
     const handleFileChange = (e) => {
         const newFiles = Array.from(e.target.files);
         const updatedFiles = [...formData.attachments, ...newFiles];
         setFormData({ ...formData, attachments: updatedFiles });
     };
 
-    // ✅ Xoá ảnh
     const handleRemoveImage = (index) => {
         const updated = formData.attachments.filter((_, i) => i !== index);
         setFormData({ ...formData, attachments: updated });
@@ -69,7 +66,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl shadow-xl p-6 w-[500px] max-h-[90vh] overflow-y-auto">
                 <h3 className="text-xl font-semibold mb-4 text-gray-800">
-                    🧾 Create New Claim
+                    Create New Claim
                 </h3>
 
                 <div className="flex flex-col gap-4">

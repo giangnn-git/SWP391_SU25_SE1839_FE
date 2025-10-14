@@ -16,11 +16,11 @@ const LoginPage = () => {
     e.preventDefault();
     setError("");
     setLoading(true);
-    // localStorage.clear()
+    localStorage.clear()
+
 
     try {
       const res = await userLoginApi(user, password);
-
       const token = res.data?.data?.token;
       const id = res.data?.data?.id;
       const name = res.data?.data?.name;
@@ -57,6 +57,7 @@ const LoginPage = () => {
     } finally {
       setLoading(false);
     }
+
   };
 
   const handleForgotPassword = () => {

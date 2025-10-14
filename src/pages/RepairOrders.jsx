@@ -3,39 +3,41 @@ import { PlusCircle, Search } from "lucide-react";
 import axios from "../services/axios.customize";
 import RepairOrderModal from "../components/repairOrders/RepairOrderModal";
 import RepairOrderTable from "../components/repairOrders/RepairOrderTable";
+import RepairOrderSummary from "../components/repairOrders/RepairOrderSummary";
+
 
 const RepairOrdersManagement = () => {
     const [orders, setOrders] = useState([]);
+    const [sor, setSor] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
 
-    // ✅ Fetch repair orders
     const fetchRepairOrders = async () => {
         try {
             setLoading(true);
             const res = await axios.get("/api/api/repairOrders");
-            // 🔹 Giả định BE trả về dạng { data: { repairOrders: [...] } }
             setOrders(res.data?.data?.fors || []);
+            setSor(res.data?.data?.sor || []);
         } catch (err) {
             console.error(err);
-            setError("Không thể tải danh sách Repair Orders!");
+            setError("Can not load Repair Orders!");
         } finally {
             setLoading(false);
         }
     };
 
+
+
     useEffect(() => {
         fetchRepairOrders();
     }, []);
 
-    // ✅ Khi tạo mới, thêm order vào đầu danh sách
     const handleOrderCreated = (newOrder) => {
         setOrders((prev) => [newOrder, ...prev]);
     };
 
-    // ✅ Tìm kiếm theo modelName hoặc VIN
     const filteredOrders = orders.filter((o) =>
         searchTerm
             ? o.modelName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -47,7 +49,7 @@ const RepairOrdersManagement = () => {
         <div className="p-6">
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold">🛠 Repair Orders Management</h2>
+                <h2 className="text-xl font-semibold">Repair Orders Management</h2>
                 <div className="flex items-center gap-4">
                     <div className="relative">
                         <Search
@@ -68,10 +70,12 @@ const RepairOrdersManagement = () => {
                         onClick={() => setShowCreateModal(true)}
                     >
                         <PlusCircle size={18} className="mr-2" />
-                        Thêm Repair Order
+                     
                     </button> */}
                 </div>
             </div>
+
+            <RepairOrderSummary sor={sor} loading={loading} error={error} />
 
             {/* Table */}
             <RepairOrderTable

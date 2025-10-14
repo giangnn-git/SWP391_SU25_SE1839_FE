@@ -80,72 +80,7 @@ export const getServiceCentersApi = () => {
 
 //
 
-// ✅ CREATE (Tạo claim)
-export const createClaimApi = async (
-  vin,
-  mileage,
-  priority,
-  partClaims,
-  description,
-  attachments
-) => {
-  const data = {
-    vin,
-    mileage,
-    priority,
-    partClaims,
-    description,
-    attachments
-  };
 
-  return axios.post("/api/claims", data);
-};
-
-//
-export const createWarrantyClaimApi = (data) => {
-  return axios.post("/api/api/claims", data, {
-    // headers: {
-    //   "Content-Type": "application/json",
-    // },
-  });
-};
-
-export const updateWarrantyClaimApi = async (id, updatedData) => {
-  return axios.put(`/api/claims/${id}`, updatedData);
-};
-
-export const getAllWarrantyClaimsApi = () => {
-  return axios.get("/api/api/claims");
-};
-
-//
-// READ (Lấy tất cả claims)
-export const getAllClaimsApi = async () => {
-  return axios.get("/api/claims");
-};
-
-// READ (Lấy claim theo ID)
-export const getClaimByIdApi = async (id) => {
-  return axios.get(`/api/claims/${id}`);
-};
-
-// UPDATE (Cập nhật claim)
-export const updateClaimApi = async (id, updatedData) => {
-  return axios.put(`/api/claims/${id}`, updatedData);
-};
-
-// DELETE (Xóa claim)
-export const deleteClaimApi = async (id) => {
-  return axios.delete(`/api/claims/${id}`);
-};
-//   return axios.get("/api/api/servicecenters");
-// };
-// 
-// export const changePasswordApi = async (id, passwordData) => {
-//   const URL_BACKEND = `/api/auth/${id}/change-password`;
-//change pass
-
-//{ Policy Warranty }
 
 //get all policy
 export const getAllWarrantyApi = () => {
