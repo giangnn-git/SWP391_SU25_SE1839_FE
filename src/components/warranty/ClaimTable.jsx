@@ -122,7 +122,7 @@ const ClaimTable = ({ claims = [], loading, error }) => {
 
                                         <td className="px-6 py-4">
                                             <div className="space-y-1">
-                                                <div className="text-sm font-medium text-gray-900">
+                                                <div className="text-sm font-medium text-gray-900 font-mono bg-gray-100 px-2 py-1 rounded">
                                                     {claim.vin}
                                                 </div>
                                                 <div className="text-xs text-gray-500">

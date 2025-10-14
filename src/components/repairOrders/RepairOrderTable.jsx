@@ -4,7 +4,7 @@ import axios from "../../services/axios.customize";
 
 const RepairOrderTable = ({ orders, loading, error, technicians = [] }) => {
     const [assigning, setAssigning] = useState(null);
-    const [selectedTech, setSelectedTech] = useState("");
+    const [selectedTechs, setSelectedTechs] = useState({}); // lưu theo orderId
 
     const getProgressColor = (progress) => {
         if (progress >= 80) return "bg-green-100";
@@ -21,30 +21,27 @@ const RepairOrderTable = ({ orders, loading, error, technicians = [] }) => {
     };
 
     const handleAssign = async (orderId) => {
-        if (!selectedTech) return alert("Please select a technician.");
+        const tech = selectedTechs[orderId];
+        if (!tech) return alert("Please select a technician for this order.");
+
         try {
             setAssigning(orderId);
-            await axios.put(`/api/repair-orders/${orderId}/assign`, {
-                technician: selectedTech,
-            });
+            await axios.put(`/api/api/repairOrders/${orderId}`, { techinal: tech });
             alert("Technician assigned successfully!");
-            window.location.reload(); // refresh sau khi cập nhật
+            window.location.reload();
         } catch (err) {
             console.error(err);
             alert("Failed to assign technician.");
         } finally {
             setAssigning(null);
-            setSelectedTech("");
         }
     };
 
     if (loading) {
         return (
             <div className="flex items-center justify-center py-16 bg-white rounded-lg border border-gray-200">
-                <div className="text-center">
-                    <Loader className="animate-spin h-10 w-10 text-blue-600 mx-auto mb-3" />
-                    <p className="text-gray-600 font-medium">Loading repair orders...</p>
-                </div>
+                <Loader className="animate-spin h-10 w-10 text-blue-600 mx-auto mb-3" />
+                <p className="text-gray-600 font-medium">Loading repair orders...</p>
             </div>
         );
     }
@@ -63,7 +60,6 @@ const RepairOrderTable = ({ orders, loading, error, technicians = [] }) => {
 
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            {/* Header */}
             <div className="px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center gap-2">
                     <Wrench size={20} className="text-blue-600" />
@@ -74,7 +70,6 @@ const RepairOrderTable = ({ orders, loading, error, technicians = [] }) => {
                 </p>
             </div>
 
-            {/* Table */}
             <div className="overflow-x-auto">
                 <table className="w-full">
                     <thead>
@@ -93,7 +88,7 @@ const RepairOrderTable = ({ orders, loading, error, technicians = [] }) => {
                         {orders.length > 0 ? (
                             orders.map((order) => (
                                 <tr key={order.repairOrderId} className="hover:bg-blue-50 transition-colors duration-150">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                    <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                                         RO-{String(order.repairOrderId).padStart(3, "0")}
                                     </td>
                                     <td className="px-6 py-4 text-sm text-gray-700 font-medium">{order.modelName}</td>
@@ -120,17 +115,22 @@ const RepairOrderTable = ({ orders, loading, error, technicians = [] }) => {
                                         </div>
                                     </td>
 
-                                    {/* Action: Assign Technician */}
+                                    {/* Assign technician */}
                                     <td className="px-6 py-4 text-center">
                                         <div className="flex items-center justify-center gap-2">
                                             <select
                                                 className="border border-gray-300 rounded-md px-2 py-1 text-sm"
-                                                value={selectedTech}
-                                                onChange={(e) => setSelectedTech(e.target.value)}
+                                                value={selectedTechs[order.repairOrderId] || ""}
+                                                onChange={(e) =>
+                                                    setSelectedTechs((prev) => ({
+                                                        ...prev,
+                                                        [order.repairOrderId]: e.target.value,
+                                                    }))
+                                                }
                                             >
                                                 <option value="">Select Tech</option>
-                                                {technicians.map((tech) => (
-                                                    <option key={tech.id} value={tech.name}>
+                                                {technicians.map((tech, idx) => (
+                                                    <option key={idx} value={tech.name}>
                                                         {tech.name}
                                                     </option>
                                                 ))}

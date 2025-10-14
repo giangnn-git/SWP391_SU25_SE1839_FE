@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+
 import {
     ArrowLeft,
     Image as ImageIcon,
@@ -44,11 +46,11 @@ const ClaimDetail = () => {
             await axios.put(`/api/api/claims/${id}`, {
                 changeStatus: selectedStatus,
             });
-            alert("Status updated successfully!");
+            toast.success("Status updated successfully!");
             fetchDetail();
         } catch (err) {
             console.error("Failed to update status:", err);
-            alert("Failed to update status");
+            toast.error("Failed to update status");
         } finally {
             setUpdating(false);
         }

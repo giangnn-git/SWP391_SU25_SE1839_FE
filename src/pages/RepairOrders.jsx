@@ -8,7 +8,9 @@ import RepairOrderSummary from "../components/repairOrders/RepairOrderSummary";
 
 const RepairOrdersManagement = () => {
     const [orders, setOrders] = useState([]);
+    const [technicians, setTechnicians] = useState([]);
     const [sor, setSor] = useState({});
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -28,10 +30,22 @@ const RepairOrdersManagement = () => {
         }
     };
 
+    const fetchTechnicians = async () => {
+        try {
+            const res = await axios.get(
+                "/api/auth/techinicals"
+            );
+            setTechnicians(res.data?.data?.technicians || []);
+        } catch (err) {
+            console.error("Error fetching technicians:", err);
+            setError("Failed to load technicians.");
+        }
+    };
 
 
     useEffect(() => {
         fetchRepairOrders();
+        fetchTechnicians();
     }, []);
 
     const handleOrderCreated = (newOrder) => {
@@ -80,6 +94,7 @@ const RepairOrdersManagement = () => {
             {/* Table */}
             <RepairOrderTable
                 orders={filteredOrders}
+                technicians={technicians}
                 loading={loading}
                 error={error}
                 fetchRepairOrders={fetchRepairOrders}
