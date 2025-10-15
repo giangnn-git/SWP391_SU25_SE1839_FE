@@ -20,7 +20,7 @@ const CampaignManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
 
-  //  Format date  (dd/mm/yyyy)
+  // Format date (dd/mm/yyyy)
   const formatDate = (dateArray) => {
     if (!dateArray || dateArray.length !== 3) return "N/A";
     const [year, month, day] = dateArray;
@@ -29,14 +29,14 @@ const CampaignManagement = () => {
       .padStart(2, "0")}/${year}`;
   };
 
-  //  Check campaign status với format dd/mm/yyyy
+  // Check campaign status với format dd/mm/yyyy
   const getCampaignStatus = (campaign) => {
     const today = new Date();
 
     // Convert dd/mm/yyyy to Date object
     const parseDDMMYYYY = (dateStr) => {
       const [day, month, year] = dateStr.split("/").map(Number);
-      return new Date(year, month - 1, day); // month - 1 vì Date month bắt đầu từ 0
+      return new Date(year, month - 1, day);
     };
 
     const startDate = parseDDMMYYYY(formatDate(campaign.startDate));
@@ -77,6 +77,26 @@ const CampaignManagement = () => {
   useEffect(() => {
     fetchCampaigns();
   }, []);
+
+  // Handle campaign creation success
+  const handleCampaignCreated = (newCampaign) => {
+    // Format the new campaign to match existing structure
+    const formattedCampaign = {
+      ...newCampaign,
+      status: getCampaignStatus(newCampaign),
+      formattedStartDate: formatDate(newCampaign.startDate),
+      formattedEndDate: formatDate(newCampaign.endDate),
+      formattedProduceFrom: formatDate(newCampaign.produceDateFrom),
+      formattedProduceTo: formatDate(newCampaign.produceDateTo),
+    };
+
+    // Add new campaign to the list
+    setCampaigns((prev) => [formattedCampaign, ...prev]);
+    setShowCreateModal(false);
+
+    // Show success message (you can add a toast notification here)
+    console.log("Campaign created successfully:", formattedCampaign);
+  };
 
   // Statistics với real data
   const stats = {
@@ -128,7 +148,7 @@ const CampaignManagement = () => {
         </div>
       </div>
 
-      {/* OVERVIEW CARDS  */}
+      {/* OVERVIEW CARDS */}
       <div className="grid grid-cols-4 gap-5 mb-6">
         <CampaignOverviewCard
           title="Total Campaigns"
@@ -202,10 +222,12 @@ const CampaignManagement = () => {
         onRefresh={fetchCampaigns}
       />
 
+      {/* Create Campaign Modal */}
       {showCreateModal && (
         <CreateCampaignModal
+          isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
-          onSubmit={() => {}} // Will implement later
+          onCampaignCreated={handleCampaignCreated}
         />
       )}
     </div>

@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Eye, Edit, Calendar, Car, Hash } from "lucide-react";
+import { Eye, Edit, Calendar, Car, Hash, Plus } from "lucide-react"; // Thêm Plus icon
 import ViewCampaignModal from "./ViewCampaignModal";
 
-const CampaignTable = ({ campaigns, loading, onRefresh }) => {
+const CampaignTable = ({ campaigns, loading, onRefresh, onCreateCampaign }) => {
+  // Thêm onCreateCampaign prop
   const [selectedCampaign, setSelectedCampaign] = useState(null);
 
   const getStatusBadge = (status) => {
@@ -47,20 +48,22 @@ const CampaignTable = ({ campaigns, loading, onRefresh }) => {
   return (
     <>
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {/* Table Header */}
+        {/* Table Header - ĐÃ SỬA Ở ĐÂY */}
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
               <Calendar size={20} className="text-orange-600" />
               Campaign List
             </h3>
-            <div className="text-sm text-gray-600">
-              Showing {campaigns.length} campaigns
+            <div className="flex items-center gap-3">
+              <div className="text-sm text-gray-600">
+                Showing {campaigns.length} campaigns
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Table Content */}
+        {/* Table Content (giữ nguyên phần còn lại) */}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -195,7 +198,7 @@ const CampaignTable = ({ campaigns, loading, onRefresh }) => {
         </div>
       </div>
 
-      {/*  View Campaign Modal */}
+      {/* View Campaign Modal */}
       {selectedCampaign && (
         <ViewCampaignModal
           campaign={selectedCampaign}

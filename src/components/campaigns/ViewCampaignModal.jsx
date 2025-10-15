@@ -306,9 +306,6 @@ const ViewCampaignModal = ({ campaign, onClose }) => {
           >
             Close
           </button>
-          <button className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium">
-            Edit Campaign
-          </button>
         </div>
       </div>
     </div>
