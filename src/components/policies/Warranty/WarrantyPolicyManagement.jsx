@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { PlusCircle, Filter, Search } from "lucide-react";
+import {
+  PlusCircle,
+  Filter,
+  Search,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 import {
   getAllWarrantyApi,
   createWarrantyPolicyApi,
@@ -17,6 +23,8 @@ const WarrantyPolicyManagement = () => {
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState("");
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -31,14 +39,14 @@ const WarrantyPolicyManagement = () => {
     mileageLimit: "",
   });
 
-  // ✅ Filter, Search & Pagination
+  //  Filter, Search & Pagination
   const [filterDuration, setFilterDuration] = useState("");
   const [filterMileage, setFilterMileage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // ✅ Fetch policies from API
+  //  Fetch policies from API
   const fetchPolicies = async () => {
     try {
       setLoading(true);
@@ -69,10 +77,12 @@ const WarrantyPolicyManagement = () => {
     fetchPolicies();
   }, []);
 
-  // ✅ CREATE
+  //  CREATE
   const handleCreatePolicy = async (policyData) => {
     try {
       setActionLoading(true);
+      setError(null);
+      setSuccess("");
 
       const apiData = {
         name: policyData.name,
@@ -83,10 +93,11 @@ const WarrantyPolicyManagement = () => {
 
       await createWarrantyPolicyApi(apiData);
       await fetchPolicies();
-      alert("✅ Policy created successfully!");
+      setSuccess("✅ Policy created successfully!");
+      setShowCreateModal(false);
     } catch (error) {
       console.error("Error creating policy:", error);
-      alert(
+      setError(
         error.response?.data?.message ||
           "Failed to create policy. Please try again."
       );
@@ -95,27 +106,27 @@ const WarrantyPolicyManagement = () => {
     }
   };
 
-  // ✅ UPDATE (open modal)
+  //  UPDATE (open modal)
   const handleEdit = (policy) => {
     const selected = policy.originalData || policy;
     setSelectedPolicy(selected);
     setShowUpdateModal(true);
   };
 
-  // ✅ DELETE (open modal)
+  //  DELETE (open modal)
   const handleDelete = (policy) => {
     const selected = policy.originalData || policy;
     setSelectedPolicy(selected);
     setShowDeleteModal(true);
   };
 
-  // ✅ VIEW
+  //  VIEW
   const handleView = (policy) => {
     setSelectedPolicy(policy);
     setShowViewModal(true);
   };
 
-  // ✅ Filter, Search, Pagination
+  //  Filter, Search, Pagination
   const filteredPolicies = policies.filter((policy) => {
     const matchesSearch = searchTerm
       ? policy.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -153,7 +164,18 @@ const WarrantyPolicyManagement = () => {
     setSearchTerm("");
   };
 
-  if (error) {
+  //  Clear message after timeout
+  useEffect(() => {
+    if (error || success) {
+      const timer = setTimeout(() => {
+        setError(null);
+        setSuccess("");
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, success]);
+
+  if (error && !policies.length) {
     return (
       <div className="p-6 flex justify-center items-center h-64">
         <div className="text-lg text-red-600">{error}</div>
@@ -209,6 +231,20 @@ const WarrantyPolicyManagement = () => {
           </button>
         </div>
       </div>
+
+      {/*  Message Area (đã thêm icon chuyên nghiệp) */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-300 text-red-700 rounded-md shadow-sm flex items-center gap-2">
+          <XCircle size={18} className="text-red-600" />
+          <span className="font-medium">{error}</span>
+        </div>
+      )}
+      {success && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-300 text-green-700 rounded-md shadow-sm flex items-center gap-2">
+          <CheckCircle2 size={18} className="text-green-600" />
+          <span className="font-medium">{success}</span>
+        </div>
+      )}
 
       {/* Filter Bar */}
       <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
@@ -294,7 +330,7 @@ const WarrantyPolicyManagement = () => {
         </div>
       )}
 
-      {/* ✅ Create */}
+      {/*  Create */}
       <CreateEditWarrantyPolicyModal
         showModal={showCreateModal}
         editing={false}
@@ -307,28 +343,34 @@ const WarrantyPolicyManagement = () => {
         }
       />
 
-      {/* ✅ View */}
+      {/*  View */}
       <ViewWarrantyPolicyModal
         showModal={showViewModal}
         selectedPolicy={selectedPolicy}
         onClose={() => setShowViewModal(false)}
       />
 
-      {/* ✅ Update */}
+      {/*  Update */}
       <UpdateWarrantyPolicyModal
         showModal={showUpdateModal}
         policy={selectedPolicy}
         onClose={() => setShowUpdateModal(false)}
-        onUpdated={fetchPolicies}
+        onUpdated={() => {
+          fetchPolicies();
+          setSuccess("✅ Policy updated successfully!");
+        }}
         updatePolicyApi={updateWarrantyPolicyApi}
       />
 
-      {/* ✅ Delete */}
+      {/*  Delete */}
       <DeleteWarrantyPolicyModal
         showModal={showDeleteModal}
         policy={selectedPolicy}
         onClose={() => setShowDeleteModal(false)}
-        onDeleted={fetchPolicies}
+        onDeleted={() => {
+          fetchPolicies();
+          setSuccess("🗑️ Policy deleted successfully!");
+        }}
         deletePolicyApi={deleteWarrantyPolicyApi}
       />
     </div>

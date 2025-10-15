@@ -75,12 +75,19 @@ export const toggleUserStatusApi = (userId, isActive) => {
 
 //get all SC
 export const getServiceCentersApi = () => {
-  return axios.get("/api/servicecenters");
+  return axios.get("/api/api/servicecenters");
 };
 
 //
-
-
+//
+export const createWarrantyClaimApi = (data) => {
+  return axios.post("/api/api/claims", data, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};
+//{ Policy Warranty }
 
 //get all policy
 export const getAllWarrantyApi = () => {
@@ -112,12 +119,123 @@ export const getPartPolicyByIdApi = (policyId) => {
   return axios.get(`/api/api/part-policies/${policyId}`);
 };
 
+//add part policy
+export const createPartPolicyApi = (partPolicyData) => {
+  return axios.post("/api/api/part-policy", partPolicyData);
+};
+
+// Get available part codes and policy codes
+export const getPartPolicyCodesApi = () => {
+  return axios.get("/api/api/part-policy/code");
+};
+
+// { vehicle storage API}
+export const getVehicleDetailApi = (vehicleId) => {
+  return axios.get(`/api/api/model/detail/${vehicleId}`);
+};
+
+// {Campaign API}
+
+export const getAllCampaignsApi = () => {
+  return axios.get("/api/api/campaigns");
+};
+
+export const createCampaignApi = (campaignData) => {
+  return axios.post("/api/api/campaigns", campaignData);
+};
+
+// {Claim API}
+
+// READ (Lấy tất cả claims)
+export const getAllClaimsApi = async () => {
+  return axios.get("/api/claims");
+};
+
+// READ (Lấy claim theo ID)
+export const getClaimByIdApi = async (id) => {
+  return axios.get(`/api/claims/${id}`);
+};
+
+// UPDATE (Cập nhật claim)
+export const updateClaimApi = async (id, updatedData) => {
+  return axios.put(`/api/claims/${id}`, updatedData);
+};
+
+// DELETE (Xóa claim)
+export const deleteClaimApi = async (id) => {
+  return axios.delete(`/api/claims/${id}`);
+};
+
+//  CREATE  claim
+export const createClaimApi = async (
+  vin,
+  mileage,
+  priority,
+  partClaims,
+  description,
+  attachments
+) => {
+  const data = {
+    vin,
+    mileage,
+    priority,
+    partClaims,
+    description,
+    attachments,
+  };
+
+  return axios.post("/api/claims", data);
+};
 
 //{repairOrders API}
 
 export const getAllRepairOrdersApi = () => {
   return axios.get("/api/api/repairOrders");
-}
-export const createPartPolicyApi = (partPolicyData) => {
-  return axios.post("/api/api/part-policies", partPolicyData);
-}
+};
+
+//get Vehicle Management
+export const getAllModelsApi = () => {
+  return axios.get("/api/api/models");
+};
+
+//get SupplyChain
+export const getAllPartInventoriesApi = () => {
+  return axios.get("/api/api/part-inventories");
+};
+
+export const getPartInventoryByServiceCenterIdApi = (serviceCenterId) => {
+  return axios.get(`/api/api/part-inventory/service-center/${serviceCenterId}`);
+};
+
+// {Warranty API}
+
+export const updateWarrantyClaimApi = async (id, updatedData) => {
+  return axios.put(`/api/claims/${id}`, updatedData);
+};
+
+export const getAllWarrantyClaimsApi = () => {
+  return axios.get("/api/api/claims");
+};
+
+
+// Get all registered vehicles (Customer Registration page)
+export const getAllVehiclesApi = () => {
+  return axios.get("/api/api/vehicles");
+};
+
+export const createCustomerApi = (customerData) => {
+  const URL_BACKEND = "/api/api/customers";
+  const data = {
+    name: customerData.name,
+    phoneNumber: customerData.phoneNumber,
+    email: customerData.email,
+    address: customerData.address,
+    vin: customerData.vin,
+  };
+
+  return axios.post(URL_BACKEND, data, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};

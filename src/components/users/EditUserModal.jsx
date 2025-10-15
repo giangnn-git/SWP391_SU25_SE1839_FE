@@ -1,7 +1,14 @@
 import { useState, useEffect } from "react";
 import { useServiceCenters } from "../../hooks/useServiceCenters";
 
-const EditUserModal = ({ user, isOpen, onClose, onSave, loading }) => {
+const EditUserModal = ({
+  user,
+  isOpen,
+  onClose,
+  onSave,
+  loading,
+  isEditingOwnProfile = false,
+}) => {
   const { serviceCenters, loading: scLoading } = useServiceCenters();
   const [formData, setFormData] = useState({
     email: "",
@@ -19,7 +26,7 @@ const EditUserModal = ({ user, isOpen, onClose, onSave, loading }) => {
         name: user.name || "",
         phoneNumber: user.phoneNumber || "",
         role: user.role || "",
-        serviceCenterId: user.serviceCenterId || "",
+        serviceCenterId: user.serviceCenterId?.toString() || "",
         status: user.status || "ACTIVE",
       });
     }
@@ -27,7 +34,19 @@ const EditUserModal = ({ user, isOpen, onClose, onSave, loading }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(user.id, formData);
+
+    const payload = {
+      email: formData.email,
+      name: formData.name,
+      phoneNumber: formData.phoneNumber,
+      role: formData.role,
+      serviceCenterId: formData.serviceCenterId
+        ? parseInt(formData.serviceCenterId)
+        : null,
+      status: formData.status,
+    };
+
+    onSave(user.id, payload);
   };
 
   const handleChange = (field, value) => {
@@ -39,7 +58,9 @@ const EditUserModal = ({ user, isOpen, onClose, onSave, loading }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-bold mb-4">Edit User</h2>
+        <h2 className="text-xl font-bold mb-4">
+          {isEditingOwnProfile ? "Edit Profile" : "Edit User"}
+        </h2>
 
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
@@ -82,41 +103,26 @@ const EditUserModal = ({ user, isOpen, onClose, onSave, loading }) => {
                 onChange={(e) => handleChange("phoneNumber", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
+                maxLength={10}
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Must be exactly 10 digits
+              </p>
             </div>
 
-            {/* Role */}
+            {/*   SERVICE CENTER  */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Role *
-              </label>
-              <select
-                value={formData.role}
-                onChange={(e) => handleChange("role", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                <option value="">Select Role</option>
-                <option value="STAFF">TECHNICIAN</option>
-                <option value="ADMIN">ADMIN</option>
-                <option value="SC_STAFF">SC_STAFF</option>
-                <option value="EVM_STAFF">EVM_STAFF</option>
-              </select>
-            </div>
-
-            {/* Service Center */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Service Center *
+                Service Center {!isEditingOwnProfile && "*"}
               </label>
               <select
                 value={formData.serviceCenterId || ""}
                 onChange={(e) =>
-                  handleChange("serviceCenterId", parseInt(e.target.value))
+                  handleChange("serviceCenterId", e.target.value)
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={scLoading}
-                required
+                required={!isEditingOwnProfile} // Chỉ bắt buộc khi admin edit user
               >
                 <option value="">Select Service Center</option>
                 {serviceCenters.map((sc) => (
@@ -132,9 +138,34 @@ const EditUserModal = ({ user, isOpen, onClose, onSave, loading }) => {
               )}
             </div>
 
-            {/* Status */}
+            {/* ✅ CHỈ hiển thị Role khi Admin Edit User */}
+            {!isEditingOwnProfile && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Role *
+                </label>
+                <select
+                  value={formData.role}
+                  onChange={(e) => handleChange("role", e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">Select Role</option>
+                  <option value="TECHNICIAN">TECHNICIAN</option>
+                  <option value="ADMIN">ADMIN</option>
+                  <option value="SC_STAFF">SC_STAFF</option>
+                  <option value="EVM_STAFF">EVM_STAFF</option>
+                </select>
+              </div>
+            )}
+
+            {/* Status - Ẩn UI nhưng vẫn gửi data */}
             <div className="hidden">
-              <input type="hidden" value={formData.status} readOnly />
+              <input
+                type="hidden"
+                value={formData.status}
+                onChange={(e) => handleChange("status", e.target.value)}
+              />
             </div>
           </div>
 

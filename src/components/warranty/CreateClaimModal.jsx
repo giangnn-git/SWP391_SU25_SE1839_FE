@@ -49,6 +49,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
         return Object.keys(newErrors).length === 0;
     };
 
+    //  Gửi claim
     const handleCreateClaim = async () => {
         if (!validateForm()) return;
 
@@ -89,12 +90,14 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
         }
     };
 
+    //  Upload và preview ảnh
     const handleFileChange = (e) => {
         const newFiles = Array.from(e.target.files);
         const updatedFiles = [...formData.attachments, ...newFiles];
         setFormData({ ...formData, attachments: updatedFiles });
     };
 
+    //  Xoá ảnh
     const handleRemoveImage = (index) => {
         const updated = formData.attachments.filter((_, i) => i !== index);
         setFormData({ ...formData, attachments: updated });

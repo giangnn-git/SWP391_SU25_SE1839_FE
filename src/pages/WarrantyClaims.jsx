@@ -147,8 +147,8 @@ const WarrantyClaimsManagement = () => {
                 error={error}
                 currentPage={currentPage}
                 setCurrentPage={setCurrentPage}
+                fetchClaims={fetchClaims}
             />
-
             {/* Modal */}
             {showCreateModal && (
                 <CreateClaimModal
@@ -157,6 +157,7 @@ const WarrantyClaimsManagement = () => {
                 />
             )}
         </div>
+
     );
 };
 

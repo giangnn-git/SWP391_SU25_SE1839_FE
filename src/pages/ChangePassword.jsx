@@ -86,7 +86,7 @@ const ChangePasswordPage = () => {
 
       setSuccess("Password changed successfully!");
 
-      // ✅ UPDATE LOCAL STORAGE
+      //  UPDATE LOCAL STORAGE
       storage.set("requiresPasswordChange", false);
 
       setTimeout(() => {

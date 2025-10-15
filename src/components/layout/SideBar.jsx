@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   ShieldCheck,
   Car,
+  Wrench,
   CheckCircle2,
   PackageSearch,
   BarChart3,
@@ -12,24 +13,138 @@ import {
   Users,
   ChevronLeft,
   ChevronRight,
+  PanelLeft,
+  PanelRight,
+  AlertTriangle,
+  UserPlus,
 } from "lucide-react";
 
 const Sidebar = () => {
   const { currentUser, loading } = useCurrentUser();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   const isAdmin = currentUser?.role === "ADMIN";
   const isEvmStaff = currentUser?.role === "EVM_STAFF";
+  const isScStaff = currentUser?.role === "SC_STAFF";
+
+  //  Style đồng bộ cho icon
+  const iconStyle = "text-gray-600 group-hover:text-blue-600 transition-colors";
 
   const navigation = [
-    { name: "Dashboard", href: "/", icon: <LayoutDashboard size={18} /> },
-    { name: "Warranty Claims", href: "/warranty-claims", icon: <ShieldCheck size={18} /> },
-    { name: "Repair Orders", href: "/repair-orders", icon: <Car size={18} /> },
-    { name: "Claim Approval", href: "/approvals", icon: <CheckCircle2 size={18} /> },
-    { name: "Supply Chain", href: "/supply-chain", icon: <PackageSearch size={18} /> },
-    { name: "Analytics & Reports", href: "/analytics", icon: <BarChart3 size={18} /> },
-    ...(isAdmin || isEvmStaff ? [{ name: "Policy", href: "/policy", icon: <FileText size={18} /> }] : []),
-    ...(isAdmin ? [{ name: "User Management", href: "/manage-users", icon: <Users size={18} /> }] : []),
+    //  Dashboard luôn ở đầu
+    {
+      name: "Dashboard",
+      href: "/",
+      icon: (
+        <LayoutDashboard size={18} className={iconStyle} strokeWidth={1.8} />
+      ),
+    },
+
+    //  Customer Registration — chỉ SC Staff — nằm ngay sau Dashboard
+    ...(isScStaff
+      ? [
+        {
+          name: "Customer Registration",
+          href: "/customer-registration",
+          icon: (
+            <UserPlus size={18} className={iconStyle} strokeWidth={1.8} />
+          ),
+        },
+      ]
+      : []),
+
+    //  Warranty Claims
+    {
+      name: "Warranty Claims",
+      href: "/warranty-claims",
+      icon: <ShieldCheck size={18} className={iconStyle} strokeWidth={1.8} />,
+    },
+
+    //  Repair Orders
+    {
+      name: "Repair Orders",
+      href: "/repair-orders",
+      icon: <Wrench size={18} className={iconStyle} strokeWidth={1.8} />,
+    },
+
+    //  Vehicle Management (Admin + EVM)
+    ...(isAdmin || isEvmStaff
+      ? [
+        {
+          name: "Vehicle Management",
+          href: "/vehicles",
+          icon: <Car size={18} className={iconStyle} strokeWidth={1.8} />,
+        },
+      ]
+      : []),
+
+    //  Claim Approval (Admin + EVM)
+    ...(isAdmin || isEvmStaff
+      ? [
+        {
+          name: "Claim Approval",
+          href: "/approvals",
+          icon: (
+            <CheckCircle2 size={18} className={iconStyle} strokeWidth={1.8} />
+          ),
+        },
+      ]
+      : []),
+
+    //  CAMPAIGN MANAGEMENT - Thêm vào đây
+    ...(isAdmin || isEvmStaff
+      ? [
+        {
+          name: "Campaign Management",
+          href: "/campaigns",
+          icon: (
+            <AlertTriangle
+              size={18}
+              className={iconStyle}
+              strokeWidth={1.8}
+            />
+          ),
+        },
+      ]
+      : []),
+
+    //  Supply Chain
+    {
+      name: "Supply Chain",
+      href: "/supply-chain",
+      icon: <PackageSearch size={18} className={iconStyle} strokeWidth={1.8} />,
+    },
+
+    // //  Analytics
+    // {
+    //   name: "Analytics & Reports",
+    //   href: "/analytics",
+    //   icon: <BarChart3 size={18} className={iconStyle} strokeWidth={1.8} />,
+    // },
+
+    //  Policy
+    ...(isAdmin || isEvmStaff
+      ? [
+        {
+          name: "Policy",
+          href: "/policy",
+          icon: (
+            <FileText size={18} className={iconStyle} strokeWidth={1.8} />
+          ),
+        },
+      ]
+      : []),
+
+    //  User Management
+    ...(isAdmin
+      ? [
+        {
+          name: "User Management",
+          href: "/manage-users",
+          icon: <Users size={18} className={iconStyle} strokeWidth={1.8} />,
+        },
+      ]
+      : []),
   ];
 
   if (loading)
@@ -41,54 +156,84 @@ const Sidebar = () => {
 
   return (
     <div
-      className={`bg-white/80 backdrop-blur-md shadow-xl border-r border-gray-200 h-full flex flex-col transition-all duration-300 ${isCollapsed ? "w-20" : "w-64"
+      className={`transition-all duration-500 bg-white/50 backdrop-blur-xl border-r border-gray-200/70 shadow-lg h-full flex flex-col ${collapsed ? "w-20" : "w-64"
         }`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100">
-        {!isCollapsed && (
+      <div className="relative p-6 border-b border-gray-200/60 bg-gradient-to-r from-blue-50/60 to-blue-100/40 flex items-center justify-between backdrop-blur-md">
+        {!collapsed && (
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">⚡ EV Warranty</h1>
-            <p className="text-xs text-gray-600">Management System</p>
+            <h1 className="text-xl font-semibold text-gray-900 mb-1 tracking-tight flex items-center gap-2">
+              ⚡ EV Warranty
+            </h1>
+            <p className="text-sm text-gray-600">Management System</p>
           </div>
         )}
+
+        {/* Toggle Button */}
         <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-1.5 rounded-md hover:bg-gray-100 transition"
+          onClick={() => setCollapsed(!collapsed)}
+          className="absolute -right-5 top-6 p-2 rounded-full shadow-lg border border-white/60 bg-white/50 backdrop-blur-sm transition-all duration-300 hover:scale-110 hover:shadow-[0_0_10px_rgba(59,130,246,0.4)]"
+          style={{
+            boxShadow:
+              "0 0 10px rgba(96,165,250,0.25), inset 0 0 5px rgba(255,255,255,0.2)",
+          }}
         >
-          {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          {collapsed ? (
+            <PanelRight size={18} className="text-blue-600" />
+          ) : (
+            <PanelLeft size={18} className="text-blue-600" />
+          )}
         </button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 overflow-y-auto">
-        <ul className="space-y-1">
-          {navigation.map((item) => (
-            <li key={item.name}>
-              <NavLink
-                to={item.href}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-all duration-150 
-                  ${isActive
-                    ? "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 font-medium border-r-2 border-blue-600"
-                    : "text-gray-700 hover:bg-gray-50 hover:text-blue-600"}`
-                }
-              >
-                <div className="p-1.5 rounded-md bg-gray-100 text-gray-600">{item.icon}</div>
-                {!isCollapsed && <span>{item.name}</span>}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
+      <nav className="flex-1 p-4 overflow-y-auto">
+        <div className="mb-6">
+          {!collapsed && (
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+              Main Menu
+            </h3>
+          )}
+          <ul className="space-y-1">
+            {navigation.map((item) => (
+              <li key={item.name} title={collapsed ? item.name : ""}>
+                <NavLink
+                  to={item.href}
+                  className={({ isActive }) =>
+                    isActive
+                      ? "flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-all duration-150 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-r-2 border-blue-600 font-medium shadow-sm"
+                      : "flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-all duration-150 text-gray-700 hover:bg-white/60 hover:text-blue-600 hover:shadow-sm"
+                  }
+                >
+                  <div
+                    className={`p-1.5 rounded-md transition-all duration-300 ${item.isActive
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-gray-100/70 text-gray-600 group-hover:bg-blue-50"
+                      }`}
+                  >
+                    {item.icon}
+                  </div>
+                  {!collapsed && <span>{item.name}</span>}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </div>
       </nav>
 
       {/* Footer */}
-      {!isCollapsed && (
-        <div className="p-4 border-t border-gray-200 text-center text-xs text-gray-600">
-          <p>EV Motors Corp</p>
-          <p className="mt-1 text-gray-400 capitalize">{currentUser?.role?.toLowerCase()}</p>
-        </div>
-      )}
+      <div
+        className={`p-4 border-t border-gray-200/70 bg-white/40 backdrop-blur-lg text-center ${collapsed ? "text-[10px]" : ""
+          }`}
+      >
+        <p className="text-xs text-gray-700 font-medium">EV Motors Corp</p>
+        {!collapsed && (
+          <p className="text-xs text-gray-400 mt-1 capitalize">
+            {currentUser?.role?.toLowerCase()}
+          </p>
+        )}
+      </div>
     </div>
   );
 };

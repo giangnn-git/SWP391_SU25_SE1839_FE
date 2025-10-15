@@ -21,8 +21,14 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
       newErrors.email = "Email is invalid";
 
     if (!formData.name.trim()) newErrors.name = "Name is required";
-    if (!formData.phoneNumber.trim())
+
+    //  VALIDATE PHONE NUMBER
+    if (!formData.phoneNumber.trim()) {
       newErrors.phoneNumber = "Phone number is required";
+    } else if (!/^\d{10}$/.test(formData.phoneNumber.replace(/\s/g, ""))) {
+      newErrors.phoneNumber = "Phone number must be exactly 10 digits";
+    }
+
     if (!formData.role) newErrors.role = "Please select a role";
     if (!formData.serviceCenterId)
       newErrors.serviceCenterId = "Service Center is required";
@@ -43,11 +49,30 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
     onSubmit(submitData);
   };
 
+  const handlePhoneChange = (value) => {
+    // only nums and auto del special char
+    const cleanedValue = value.replace(/[^\d]/g, "");
+
+    // limit 10 nums
+    const limitedValue = cleanedValue.slice(0, 10);
+
+    setFormData((prev) => ({ ...prev, phoneNumber: limitedValue }));
+
+    // Clear error khi user nhập
+    if (errors.phoneNumber) {
+      setErrors((prev) => ({ ...prev, phoneNumber: "" }));
+    }
+  };
+
   const handleChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
+    if (field === "phoneNumber") {
+      handlePhoneChange(value);
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+      // Clear error when user starts typing
+      if (errors[field]) {
+        setErrors((prev) => ({ ...prev, [field]: "" }));
+      }
     }
   };
 
@@ -88,8 +113,9 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
               type="email"
               value={formData.email}
               onChange={(e) => handleChange("email", e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.email ? "border-red-500" : "border-gray-300"
-                }`}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.email ? "border-red-500" : "border-gray-300"
+              }`}
               placeholder="Enter user email"
               disabled={loading}
             />
@@ -107,8 +133,9 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
               type="text"
               value={formData.name}
               onChange={(e) => handleChange("name", e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.name ? "border-red-500" : "border-gray-300"
-                }`}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.name ? "border-red-500" : "border-gray-300"
+              }`}
               placeholder="Enter user name"
               disabled={loading}
             />
@@ -126,17 +153,23 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
               type="tel"
               value={formData.phoneNumber}
               onChange={(e) => handleChange("phoneNumber", e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.phoneNumber ? "border-red-500" : "border-gray-300"
-                }`}
-              placeholder="Enter phone number"
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.phoneNumber ? "border-red-500" : "border-gray-300"
+              }`}
+              placeholder="Enter 10-digit phone number"
               disabled={loading}
+              maxLength={10}
             />
             {errors.phoneNumber && (
               <p className="mt-1 text-sm text-red-600">{errors.phoneNumber}</p>
             )}
+
+            {/* <p className="mt-1 text-xs text-gray-500">
+              Must be exactly 10 digits (0-9)
+            </p> */}
           </div>
 
-          {/* Role Field - ĐÃ SỬA */}
+          {/* Role Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Role *
@@ -144,8 +177,9 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
             <select
               value={formData.role}
               onChange={(e) => handleChange("role", e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.role ? "border-red-500" : "border-gray-300"
-                }`}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.role ? "border-red-500" : "border-gray-300"
+              }`}
               disabled={loading}
             >
               <option value="">Select a role</option>
@@ -158,6 +192,7 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
               <p className="mt-1 text-sm text-red-600">{errors.role}</p>
             )}
           </div>
+
           {/* Service Center Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -168,8 +203,9 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
               onChange={(e) =>
                 handleChange("serviceCenterId", parseInt(e.target.value))
               }
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.serviceCenterId ? "border-red-500" : "border-gray-300"
-                }`}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.serviceCenterId ? "border-red-500" : "border-gray-300"
+              }`}
               disabled={loading || scLoading}
               required
             >

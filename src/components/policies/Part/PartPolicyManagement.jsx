@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { PlusCircle, Filter, Search } from "lucide-react";
-import { getAllPartPoliciesApi } from "../../../services/api.service";
+import {
+  getAllPartPoliciesApi,
+  // deletePartPolicyApi,
+} from "../../../services/api.service";
 import PartPolicyTable from "./PartPolicyTable";
-import PartPolicyModal from "./PartPolicyModal";
 import ViewPartPolicyModal from "./ViewPartPolicy";
 import CreatePartPolicy from "./CreatePartPolicy";
 
@@ -13,20 +15,14 @@ const PartPolicyManagement = () => {
   const [success, setSuccess] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedPolicy, setSelectedPolicy] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const [formData, setFormData] = useState({
-    partName: "",
-    policyId: "",
-    startDate: "",
-    endDate: "",
-  });
-
   // Filter, Search & Pagination
   const [filterPartName, setFilterPartName] = useState("");
-  const [filterPolicyId, setFilterPolicyId] = useState("");
+  const [filterPartCode, setFilterPartCode] = useState("");
+  const [filterPolicyCode, setFilterPolicyCode] = useState("");
+  const [filterStatus, setFilterStatus] = useState(""); // "available", "expired", or ""
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -38,8 +34,8 @@ const PartPolicyManagement = () => {
       setError("");
       const response = await getAllPartPoliciesApi();
 
-      // Transform API data
-      const partPolicies = response.data?.data?.partPolicies || [];
+      const partPolicies =
+        response.data?.data?.partPolicies || response.data?.data || [];
       setPolicies(partPolicies);
     } catch (err) {
       console.error("Error fetching part policies:", err);
@@ -56,20 +52,38 @@ const PartPolicyManagement = () => {
   // Filter and Search logic
   const filteredPolicies = policies.filter((policy) => {
     const matchesSearch = searchTerm
-      ? policy.partName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        policy.policyId.toString().includes(searchTerm) ||
-        policy.id.toString().includes(searchTerm)
+      ? policy.partName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        policy.partCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        policy.policyCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        policy.id?.toString().includes(searchTerm)
       : true;
 
     const matchesPart = filterPartName
       ? policy.partName === filterPartName
       : true;
 
-    const matchesPolicy = filterPolicyId
-      ? policy.policyId.toString() === filterPolicyId
+    const matchesPartCode = filterPartCode
+      ? policy.partCode === filterPartCode
       : true;
 
-    return matchesSearch && matchesPart && matchesPolicy;
+    const matchesPolicyCode = filterPolicyCode
+      ? policy.policyCode === filterPolicyCode
+      : true;
+
+    const matchesStatus =
+      filterStatus === ""
+        ? true
+        : filterStatus === "available"
+        ? new Date(policy.endDate) > new Date()
+        : new Date(policy.endDate) <= new Date();
+
+    return (
+      matchesSearch &&
+      matchesPart &&
+      matchesPartCode &&
+      matchesPolicyCode &&
+      matchesStatus
+    );
   });
 
   // Pagination logic
@@ -82,53 +96,21 @@ const PartPolicyManagement = () => {
 
   // Generate dynamic dropdown options
   const availableParts = [...new Set(policies.map((p) => p.partName))];
-  const availablePolicies = [
-    ...new Set(policies.map((p) => p.policyId.toString())),
-  ];
+  const availablePartCodes = [...new Set(policies.map((p) => p.partCode))];
+  const availablePolicyCodes = [
+    ...new Set(policies.map((p) => p.policyCode)),
+  ].sort();
 
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterPartName, filterPolicyId, searchTerm]);
-
-  // Create Policy
-  const handleCreatePolicy = async (policyData) => {
-    setActionLoading(true);
-    setError("");
-    try {
-      await createPartPolicyApi(policyData);
-      setSuccess("Part policy created successfully!");
-      setShowCreateModal(false);
-      fetchPolicies();
-    } catch (err) {
-      const errorMessage =
-        err.response?.data?.message || "Failed to create part policy.";
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // Edit Policy
-  const handleEditPolicy = async (id, policyData) => {
-    setActionLoading(true);
-    setError("");
-    try {
-      await updatePartPolicyApi(id, policyData);
-      setSuccess("Part policy updated successfully!");
-      setShowEditModal(false);
-      setSelectedPolicy(null);
-      fetchPolicies();
-    } catch (err) {
-      const errorMessage =
-        err.response?.data?.message || "Failed to update part policy.";
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setActionLoading(false);
-    }
-  };
+  }, [
+    filterPartName,
+    filterPartCode,
+    filterPolicyCode,
+    filterStatus,
+    searchTerm,
+  ]);
 
   // Handle View
   const handleView = (policy) => {
@@ -136,49 +118,38 @@ const PartPolicyManagement = () => {
     setShowViewModal(true);
   };
 
-  // Handle Edit
-  const handleEdit = (policy) => {
-    setSelectedPolicy(policy);
-    setFormData({
-      partName: policy.partName,
-      policyId: policy.policyId.toString(),
-      startDate: policy.startDate,
-      endDate: policy.endDate,
-    });
-    setShowEditModal(true);
+  // Handle Delete
+  const handleDelete = async (policy) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete part policy "${policy.partCode} - ${policy.partName}"?`
+      )
+    ) {
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      await deletePartPolicyApi(policy.id);
+      setSuccess("Part policy deleted successfully!");
+      fetchPolicies(); // Refresh list
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message || "Failed to delete part policy.";
+      setError(errorMessage);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  // Handle Save (Create or Edit)
-  const handleSave = async () => {
-    const { partName, policyId, startDate, endDate } = formData;
-
-    if (!partName || !policyId || !startDate || !endDate) {
-      setError("Please fill in all fields before saving.");
-      return;
-    }
-
-    // Validate dates
-    if (new Date(startDate) >= new Date(endDate)) {
-      setError("End date must be after start date.");
-      return;
-    }
-
-    try {
-      if (selectedPolicy) {
-        await handleEditPolicy(selectedPolicy.id, formData);
-      } else {
-        // Create new policy
-        await handleCreatePolicy(formData);
-      }
-
-      // Reset form
-      setFormData({
-        partName: "",
-        policyId: "",
-        startDate: "",
-        endDate: "",
-      });
-    } catch (error) {}
+  // Clear all filters
+  const clearAllFilters = () => {
+    setFilterPartName("");
+    setFilterPartCode("");
+    setFilterPolicyCode("");
+    setFilterStatus("");
+    setSearchTerm("");
+    setCurrentPage(1);
   };
 
   // Clear messages
@@ -196,6 +167,14 @@ const PartPolicyManagement = () => {
     setSearchTerm("");
   };
 
+  // Check if any filter is active
+  const isAnyFilterActive =
+    filterPartName ||
+    filterPartCode ||
+    filterPolicyCode ||
+    filterStatus ||
+    searchTerm;
+
   return (
     <div className="p-6">
       {/* Header với Search Bar */}
@@ -212,7 +191,7 @@ const PartPolicyManagement = () => {
             </div>
             <input
               type="text"
-              placeholder="Search by part name, policy ID, or ID..."
+              placeholder="Search by part name, code, or policy code..."
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -243,6 +222,22 @@ const PartPolicyManagement = () => {
       <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-3 text-gray-700 font-medium">
           <Filter size={18} className="text-gray-600" />
+
+          {/* Part Code */}
+          <select
+            value={filterPartCode}
+            onChange={(e) => setFilterPartCode(e.target.value)}
+            className="border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+          >
+            <option value="">All Part Codes</option>
+            {availablePartCodes.map((code, i) => (
+              <option key={i} value={code}>
+                {code}
+              </option>
+            ))}
+          </select>
+
+          {/* Part Name */}
           <select
             value={filterPartName}
             onChange={(e) => setFilterPartName(e.target.value)}
@@ -256,26 +251,74 @@ const PartPolicyManagement = () => {
             ))}
           </select>
 
+          {/* Policy Code */}
           <select
-            value={filterPolicyId}
-            onChange={(e) => setFilterPolicyId(e.target.value)}
+            value={filterPolicyCode}
+            onChange={(e) => setFilterPolicyCode(e.target.value)}
             className="border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
           >
-            <option value="">All Policy IDs</option>
-            {availablePolicies.map((policy, i) => (
-              <option key={i} value={policy}>
-                {policy}
+            <option value="">All Policy Codes</option>
+            {availablePolicyCodes.map((code, i) => (
+              <option key={i} value={code}>
+                {code}
               </option>
             ))}
           </select>
 
-          {/* Search Results Info */}
-          {searchTerm && (
-            <div className="text-sm text-blue-600 ml-2">
-              Found {filteredPolicies.length} policies matching "{searchTerm}"
-            </div>
+          {/* Clear All Filters Button - GIỮ LẠI */}
+          {isAnyFilterActive && (
+            <button
+              onClick={clearAllFilters}
+              className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition text-gray-600"
+            >
+              Clear All
+            </button>
           )}
         </div>
+
+        {/* Status Filter Buttons */}
+        <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100">
+          <span className="text-sm font-medium text-gray-700">Status:</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setFilterStatus("")}
+              className={`px-3 py-1 text-sm rounded-md transition ${
+                filterStatus === ""
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setFilterStatus("available")}
+              className={`px-3 py-1 text-sm rounded-md transition ${
+                filterStatus === "available"
+                  ? "bg-green-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Available
+            </button>
+            <button
+              onClick={() => setFilterStatus("expired")}
+              className={`px-3 py-1 text-sm rounded-md transition ${
+                filterStatus === "expired"
+                  ? "bg-red-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Expired
+            </button>
+          </div>
+        </div>
+
+        {/* Search Results Info */}
+        {searchTerm && (
+          <div className="text-sm text-blue-600 mt-3">
+            Found {filteredPolicies.length} policies matching "{searchTerm}"
+          </div>
+        )}
       </div>
 
       {/* Messages */}
@@ -295,7 +338,7 @@ const PartPolicyManagement = () => {
         policies={currentPolicies}
         loading={loading}
         onView={handleView}
-        onEdit={handleEdit}
+        onDelete={handleDelete}
         actionLoading={actionLoading}
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}
@@ -335,46 +378,15 @@ const PartPolicyManagement = () => {
         </div>
       )}
 
-      {/* Create Modal */}
+      {/* Create Modal - ĐÃ FIX: Gọi fetchPolicies khi success */}
       <CreatePartPolicy
         showModal={showCreateModal}
-        onClose={() => {
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={() => {
+          setSuccess("Part policy created successfully!");
           setShowCreateModal(false);
-          setFormData({
-            partName: "",
-            policyId: "",
-            startDate: "",
-            endDate: "",
-          });
+          fetchPolicies(); // Refresh list - ĐÃ FIX
         }}
-        onSave={handleSave}
-        formData={formData}
-        onFormDataChange={(field, value) =>
-          setFormData((prev) => ({ ...prev, [field]: value }))
-        }
-        actionLoading={actionLoading}
-      />
-
-      {/* Edit Modal */}
-      <PartPolicyModal
-        showModal={showEditModal}
-        editing={true}
-        formData={formData}
-        actionLoading={actionLoading}
-        onClose={() => {
-          setShowEditModal(false);
-          setSelectedPolicy(null);
-          setFormData({
-            partName: "",
-            policyId: "",
-            startDate: "",
-            endDate: "",
-          });
-        }}
-        onSave={handleSave}
-        onFormDataChange={(field, value) =>
-          setFormData((prev) => ({ ...prev, [field]: value }))
-        }
       />
 
       {/* View Details Modal */}
