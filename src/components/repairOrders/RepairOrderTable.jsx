@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Loader, AlertCircle, Wrench, UserCog } from "lucide-react";
 import toast from "react-hot-toast";
-
+import { useNavigate } from "react-router-dom";
 import axios from "../../services/axios.customize";
 
 const RepairOrderTable = ({ orders, loading, error, technicians = [], fetchOrders, setOrders }) => {
     const [assigning, setAssigning] = useState(null);
     const [selectedTechs, setSelectedTechs] = useState({}); // lưu theo orderId
+    const navigate = useNavigate();
 
     const getProgressColor = (progress) => {
         if (progress >= 80) return "bg-green-100";
@@ -126,36 +127,15 @@ const RepairOrderTable = ({ orders, loading, error, technicians = [], fetchOrder
                                         </div>
                                     </td>
 
-                                    {/* Assign technician */}
                                     <td className="px-6 py-4 text-center">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <select
-                                                className="border border-gray-300 rounded-md px-2 py-1 text-sm"
-                                                value={selectedTechs[order.repairOrderId] || ""}
-                                                onChange={(e) =>
-                                                    setSelectedTechs((prev) => ({
-                                                        ...prev,
-                                                        [order.repairOrderId]: e.target.value,
-                                                    }))
-                                                }
-                                            >
-                                                <option value="">Select Tech</option>
-                                                {technicians.map((tech, idx) => (
-                                                    <option key={idx} value={tech.name}>
-                                                        {tech.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <button
-                                                onClick={() => handleAssign(order.repairOrderId)}
-                                                className="bg-blue-600 text-white text-sm px-3 py-1 rounded hover:bg-blue-700 flex items-center gap-1"
-                                                disabled={assigning === order.repairOrderId}
-                                            >
-                                                <UserCog size={16} />
-                                                {assigning === order.repairOrderId ? "Saving..." : "Assign"}
-                                            </button>
-                                        </div>
+                                        <button
+                                            onClick={() => navigate(`/repair-orders/${order.repairOrderId}`)}
+                                            className="bg-blue-600 text-white px-4 py-1.5 rounded hover:bg-blue-700 text-sm font-medium"
+                                        >
+                                            View Detail
+                                        </button>
                                     </td>
+
                                 </tr>
                             ))
                         ) : (

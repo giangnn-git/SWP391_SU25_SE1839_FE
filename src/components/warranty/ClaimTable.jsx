@@ -158,7 +158,7 @@ const ClaimTable = ({ claims = [], loading, error }) => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-center">
                                             <button
-                                                className="text-blue-600 hover:text-blue-700 hover:underline text-sm font-medium transition-colors"
+                                                className="bg-blue-600 text-white px-4 py-1.5 rounded hover:bg-blue-700 text-sm font-medium"
                                                 onClick={() => navigate(`/claim/${claim.id}`)}
                                             >
                                                 View Details

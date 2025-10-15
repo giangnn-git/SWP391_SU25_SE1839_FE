@@ -11,6 +11,7 @@ import ManageUsers from "./pages/ManageUsers.jsx";
 import WarrantyClaims from "./pages/WarrantyClaims.jsx";
 import RepairOrders from "./pages/RepairOrders.jsx";
 import ClaimDetail from "./pages/WarrantyClaimDetail.jsx";
+import RepairOrderDetail from "./pages/RepairOrderDetail.jsx";
 import ProfilePage from "./pages/Profiles.jsx";
 import ChangePasswordPage from "./pages/ChangePassword.jsx";
 import Profiles from "./pages/Profiles.jsx";
@@ -42,6 +43,11 @@ const router = createBrowserRouter([
         path: "repair-orders",
         element: <RepairOrders />,
       },
+      {
+        path: "repair-orders/:id",
+        element: <RepairOrderDetail />,
+      },
+
       {
         path: "supply-chain", // chỉ admin + evm staff mới truy cập được
         path: "manage-users", // Only Admin access

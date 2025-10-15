@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
-import { Link } from "react-router-dom";
 
 import {
     ArrowLeft,
@@ -27,6 +26,7 @@ const ClaimDetail = () => {
         fetchDetail();
     }, [id]);
 
+    // Fetch claim detail
     const fetchDetail = async () => {
         try {
             const res = await axios.get(`/api/api/claims/${id}`);
@@ -40,13 +40,12 @@ const ClaimDetail = () => {
         }
     };
 
+    // Update claim status
     const handleStatusUpdate = async () => {
         if (!selectedStatus) return;
         try {
             setUpdating(true);
-            await axios.put(`/api/api/claims/${id}`, {
-                changeStatus: selectedStatus,
-            });
+            await axios.put(`/api/api/claims/${id}`, { changeStatus: selectedStatus });
             toast.success("Status updated successfully!");
             fetchDetail();
         } catch (err) {
@@ -55,6 +54,13 @@ const ClaimDetail = () => {
         } finally {
             setUpdating(false);
         }
+    };
+
+    // Helper: format date array [year, month, day, hour?, minute?] to DD/MM/YYYY or DD/MM/YYYY HH:mm
+    const formatDateTime = (dateArray) => {
+        if (!Array.isArray(dateArray) || dateArray.length < 3) return "–";
+        const [year, month, day,] = dateArray;
+        return `${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}/${year} `;
     };
 
     if (loading)
@@ -111,9 +117,7 @@ const ClaimDetail = () => {
                         <span className="text-gray-700 font-medium">Claim Detail</span>
                     </div>
 
-                    <h1 className="text-3xl font-bold text-gray-900">
-                        Warranty Claim Details
-                    </h1>
+                    <h1 className="text-3xl font-bold text-gray-900">Warranty Claim Details</h1>
                     <p className="text-gray-600 mt-1">
                         Claim ID:{" "}
                         <span className="font-semibold text-gray-900">
@@ -133,7 +137,7 @@ const ClaimDetail = () => {
                         <InfoItem label="Status" value={fcr?.currentStatus} />
                         <InfoItem
                             label="Claim Date"
-                            value={Array.isArray(fcr?.claimDate) ? fcr.claimDate.join("-") : "–"}
+                            value={formatDateTime(fcr?.claimDate)}
                         />
                     </div>
 
@@ -159,7 +163,7 @@ const ClaimDetail = () => {
                     </div>
                 </div>
 
-                {/* ✅ Claim Status (Update Section) */}
+                {/* Claim Status (Update Section) */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
                     <div className="flex items-center gap-2 mb-4">
                         <RefreshCcw size={20} className="text-blue-600" />
@@ -221,18 +225,10 @@ const ClaimDetail = () => {
                                 <tbody className="divide-y divide-gray-100">
                                     {partCLiam.map((part, i) => (
                                         <tr key={i} className="hover:bg-gray-50">
-                                            <td className="py-3 px-4 text-sm text-gray-900 font-medium">
-                                                {part.name}
-                                            </td>
-                                            <td className="py-3 px-4 text-sm text-gray-700">
-                                                {part.category}
-                                            </td>
-                                            <td className="py-3 px-4 text-sm text-gray-700">
-                                                {part.description}
-                                            </td>
-                                            <td className="py-3 px-4 text-sm text-gray-700 text-right font-semibold">
-                                                {part.quantity}
-                                            </td>
+                                            <td className="py-3 px-4 text-sm text-gray-900 font-medium">{part.name}</td>
+                                            <td className="py-3 px-4 text-sm text-gray-700">{part.category}</td>
+                                            <td className="py-3 px-4 text-sm text-gray-700">{part.description}</td>
+                                            <td className="py-3 px-4 text-sm text-gray-700 text-right font-semibold">{part.quantity}</td>
                                         </tr>
                                     ))}
                                 </tbody>

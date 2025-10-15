@@ -5,6 +5,7 @@ import CreateClaimModal from "../components/warranty/CreateClaimModal";
 import ClaimTable from "../components/warranty/ClaimTable";
 import ClaimSummary from "../components/warranty/ClaimSummary";
 import { Link } from "react-router-dom";
+
 const WarrantyClaimsManagement = () => {
     const [claims, setClaims] = useState([]);
     const [scr, setScr] = useState(null);
@@ -14,6 +15,7 @@ const WarrantyClaimsManagement = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [priorityFilter, setPriorityFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("all");
+    const [currentPage, setCurrentPage] = useState(1); // pagination state
 
     const fetchClaims = async () => {
         try {
@@ -35,8 +37,23 @@ const WarrantyClaimsManagement = () => {
     }, []);
 
     const handleClaimCreated = (newClaim) => {
-        setClaims((prev) => [newClaim, ...prev]);
+        if (!newClaim?.id) return;
+
+        const formattedClaim = {
+            id: newClaim.id,
+            vin: newClaim.vin || "",
+            description: newClaim.description || "",
+            priority: newClaim.priority?.toLowerCase() || "normal",
+            currentStatus: newClaim.currentStatus || "pending",
+            claimDate: newClaim.claimDate || null,
+            senderName: newClaim.senderName || "",
+            userName: newClaim.userName || ""
+        };
+
+        setClaims(prev => [formattedClaim, ...prev]);
+        setCurrentPage(1);
     };
+
 
     // Filter search + priority + status
     const filteredClaims = claims.filter((c) => {
@@ -57,13 +74,11 @@ const WarrantyClaimsManagement = () => {
 
     return (
         <div className="p-6 bg-gray-50 min-h-screen">
-
             {/* Breadcrumb */}
             <div className="text-sm text-gray-500 mb-2">
                 <Link to="/" className="hover:underline text-blue-600">Dashboard</Link>
                 <span className="mx-1">/</span>
                 <Link to="/warranty-claims" className="text-gray-700 font-medium">Warranty Claims</Link>
-                <span className="mx-1"></span>
             </div>
 
             {/* Title */}
@@ -98,7 +113,6 @@ const WarrantyClaimsManagement = () => {
                     >
                         <option value="all">All Priorities</option>
                         <option value="high">High</option>
-                        {/* <option value="medium">Medium</option> */}
                         <option value="normal">Normal</option>
                     </select>
 
@@ -131,7 +145,8 @@ const WarrantyClaimsManagement = () => {
                 claims={filteredClaims}
                 loading={loading}
                 error={error}
-                fetchClaims={fetchClaims}
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
             />
 
             {/* Modal */}
