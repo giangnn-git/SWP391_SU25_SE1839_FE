@@ -17,6 +17,7 @@ import {
   getAllPartInventoriesApi,
   getPartInventoryByServiceCenterIdApi,
 } from "../services/api.service";
+import { AlertTriangle } from "lucide-react";
 
 const SupplyChain = () => {
   const { currentUser, loading } = useCurrentUser();
@@ -31,7 +32,7 @@ const SupplyChain = () => {
   const [success, setSuccess] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [viewMode, setViewMode] = useState("table"); // "table" | "card"
+  const [viewMode, setViewMode] = useState("table");
   const itemsPerPage = 6;
   const [selectedServiceCenter, setSelectedServiceCenter] = useState("");
   const [serviceCenters, setServiceCenters] = useState([]);
@@ -112,7 +113,9 @@ const SupplyChain = () => {
   // =========================
   if (loading)
     return (
-      <div className="p-6 text-center text-gray-600">Loading user information...</div>
+      <div className="p-6 text-center text-gray-600">
+        Loading user information...
+      </div>
     );
 
   const isAuthorized =
@@ -123,7 +126,9 @@ const SupplyChain = () => {
     return (
       <div className="flex flex-col items-center justify-center h-screen text-center bg-gray-50 text-gray-700">
         <div className="bg-white shadow-md rounded-lg p-8 max-w-md border border-gray-200">
-          <h2 className="text-xl font-semibold text-red-600 mb-2">🚫 Access Denied</h2>
+          <h2 className="text-xl font-semibold text-red-600 mb-2">
+            🚫 Access Denied
+          </h2>
           <p className="text-sm text-gray-600">
             You do not have permission to access this page.
           </p>
@@ -147,7 +152,10 @@ const SupplyChain = () => {
 
   const totalPages = Math.ceil(filteredParts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentParts = filteredParts.slice(startIndex, startIndex + itemsPerPage);
+  const currentParts = filteredParts.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
   const uniqueWarehouses = [...new Set(parts.map((p) => p.warehouse))];
 
   const getQuantityColor = (qty) => {
@@ -157,7 +165,7 @@ const SupplyChain = () => {
   };
 
   // =========================
-  //  EXPORT CSV (mock)
+  //  EXPORT CSV
   // =========================
   const handleExportCSV = () => {
     const csvContent =
@@ -176,9 +184,6 @@ const SupplyChain = () => {
     link.click();
   };
 
-  // =========================
-  //  DASHBOARD SUMMARY
-  // =========================
   const totalQuantity = parts.reduce((sum, p) => sum + (p.quantity || 0), 0);
 
   // =========================
@@ -219,6 +224,7 @@ const SupplyChain = () => {
       </div>
 
       {/* Dashboard Summary */}
+      {/* Dashboard Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6 animate-fadeInScale">
         {/* Total Warehouses */}
         <div className="group relative overflow-hidden bg-white rounded-2xl border border-blue-100 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
@@ -254,17 +260,22 @@ const SupplyChain = () => {
           <div className="h-1 bg-green-400/70 w-0 group-hover:w-full transition-all duration-700"></div>
         </div>
 
-        {/* Total Quantity */}
-        <div className="group relative overflow-hidden bg-white rounded-2xl border border-orange-100 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        {/* Low Stock Items */}
+        <div
+          className={`group relative overflow-hidden bg-white rounded-2xl border ${parts.filter((p) => p.quantity < 100).length > 0
+            ? "border-orange-200 shadow-lg animate-pulse"
+            : "border-gray-100"
+            } shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1`}
+        >
           <div className="absolute inset-0 bg-gradient-to-br from-orange-50/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           <div className="relative flex items-center gap-4 p-5">
             <div className="p-3 rounded-xl bg-orange-50 text-orange-600 group-hover:bg-orange-100 transition-all duration-300">
-              <Table size={28} strokeWidth={1.8} />
+              <AlertTriangle size={28} strokeWidth={1.8} />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Total Quantity</p>
+              <p className="text-sm font-medium text-gray-500">Low Stock Items</p>
               <h2 className="text-3xl font-bold text-gray-800 tracking-tight">
-                {totalQuantity}
+                {parts.filter((p) => p.quantity < 100).length}
               </h2>
             </div>
           </div>
@@ -341,17 +352,31 @@ const SupplyChain = () => {
         </div>
       </div>
 
-      {/* Table / Card */}
+      {/* TABLE VIEW */}
       {!loadingData && viewMode === "table" && (
         <div className="overflow-x-auto bg-white rounded-2xl shadow-md border border-gray-100 animate-fadeIn">
           <table className="min-w-full text-sm text-gray-700 border-separate border-spacing-y-1">
             <thead className="bg-gradient-to-r from-blue-50 to-blue-100 text-gray-900 font-semibold shadow-sm">
               <tr>
-                {["Code", "Name", "Category", "Warehouse", "Address", "Qty", "Actions"].map(
-                  (h) => (
-                    <th key={h} className="py-3 px-4 text-left">{h}</th>
-                  )
-                )}
+                {[
+                  "Code",
+                  "Name",
+                  "Category",
+                  "Warehouse",
+                  "Address",
+                  "Quantity",
+                  "Actions",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className={`py-3 px-4 ${["Quantity", "Actions"].includes(h)
+                      ? "text-center"
+                      : "text-left"
+                      }`}
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -360,19 +385,21 @@ const SupplyChain = () => {
                   key={part.id}
                   className="bg-white hover:bg-blue-50/50 transition-all duration-150 border border-gray-100 hover:shadow-sm"
                 >
-                  <td className="py-3 px-4 font-medium text-gray-800">{part.code}</td>
-                  <td className="py-3 px-4">{part.name}</td>
-                  <td className="py-3 px-4">{part.category}</td>
-                  <td className="py-3 px-4">{part.warehouse}</td>
-                  <td className="py-3 px-4">{part.address}</td>
+                  <td className="h-12 px-4 align-middle font-medium text-gray-800">
+                    {part.code}
+                  </td>
+                  <td className="h-12 px-4 align-middle">{part.name}</td>
+                  <td className="h-12 px-4 align-middle">{part.category}</td>
+                  <td className="h-12 px-4 align-middle">{part.warehouse}</td>
+                  <td className="h-12 px-4 align-middle">{part.address}</td>
                   <td
-                    className={`py-3 px-4 text-center font-semibold ${getQuantityColor(
+                    className={`h-12 px-4 text-center align-middle font-semibold ${getQuantityColor(
                       part.quantity
                     )}`}
                   >
                     {part.quantity}
                   </td>
-                  <td className="py-3 px-4 text-center">
+                  <td className="h-12 px-4 text-center align-middle">
                     <button
                       onClick={() => {
                         setSelectedPart(part);
@@ -386,6 +413,17 @@ const SupplyChain = () => {
                   </td>
                 </tr>
               ))}
+
+              {currentParts.length === 0 && (
+                <tr>
+                  <td
+                    colSpan="7"
+                    className="text-center py-6 text-gray-500 italic"
+                  >
+                    No parts found.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
