@@ -5,6 +5,9 @@ import {
   Search,
   CheckCircle2,
   XCircle,
+  Shield,
+  RotateCcw,
+  X,
 } from "lucide-react";
 import {
   getAllWarrantyApi,
@@ -39,14 +42,14 @@ const WarrantyPolicyManagement = () => {
     mileageLimit: "",
   });
 
-  //  Filter, Search & Pagination
+  // Filter, Search & Pagination
   const [filterDuration, setFilterDuration] = useState("");
   const [filterMileage, setFilterMileage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  //  Fetch policies from API
+  // Fetch policies from API
   const fetchPolicies = async () => {
     try {
       setLoading(true);
@@ -77,7 +80,7 @@ const WarrantyPolicyManagement = () => {
     fetchPolicies();
   }, []);
 
-  //  CREATE
+  // CREATE
   const handleCreatePolicy = async (policyData) => {
     try {
       setActionLoading(true);
@@ -93,7 +96,7 @@ const WarrantyPolicyManagement = () => {
 
       await createWarrantyPolicyApi(apiData);
       await fetchPolicies();
-      setSuccess("✅ Policy created successfully!");
+      setSuccess("Policy created successfully!");
       setShowCreateModal(false);
     } catch (error) {
       console.error("Error creating policy:", error);
@@ -106,27 +109,27 @@ const WarrantyPolicyManagement = () => {
     }
   };
 
-  //  UPDATE (open modal)
+  // UPDATE (open modal)
   const handleEdit = (policy) => {
     const selected = policy.originalData || policy;
     setSelectedPolicy(selected);
     setShowUpdateModal(true);
   };
 
-  //  DELETE (open modal)
+  // DELETE (open modal)
   const handleDelete = (policy) => {
     const selected = policy.originalData || policy;
     setSelectedPolicy(selected);
     setShowDeleteModal(true);
   };
 
-  //  VIEW
+  // VIEW
   const handleView = (policy) => {
     setSelectedPolicy(policy);
     setShowViewModal(true);
   };
 
-  //  Filter, Search, Pagination
+  // Filter, Search, Pagination
   const filteredPolicies = policies.filter((policy) => {
     const matchesSearch = searchTerm
       ? policy.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -164,7 +167,13 @@ const WarrantyPolicyManagement = () => {
     setSearchTerm("");
   };
 
-  //  Clear message after timeout
+  const clearFilters = () => {
+    setFilterDuration("");
+    setFilterMileage("");
+    setSearchTerm("");
+  };
+
+  // Clear message after timeout
   useEffect(() => {
     if (error || success) {
       const timer = setTimeout(() => {
@@ -177,12 +186,14 @@ const WarrantyPolicyManagement = () => {
 
   if (error && !policies.length) {
     return (
-      <div className="p-6 flex justify-center items-center h-64">
-        <div className="text-lg text-red-600">{error}</div>
+      <div className="p-6 flex flex-col items-center justify-center h-64 bg-white rounded-xl border border-gray-200">
+        <XCircle size={48} className="text-red-400 mb-4" />
+        <div className="text-lg text-red-600 mb-4">{error}</div>
         <button
           onClick={fetchPolicies}
-          className="ml-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
         >
+          <RotateCcw size={16} />
           Retry
         </button>
       </div>
@@ -191,97 +202,151 @@ const WarrantyPolicyManagement = () => {
 
   return (
     <div className="p-6">
-      {/* Header with Search Bar */}
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold flex items-center gap-2">
-          🛡️ Warranty Policy Management
-        </h2>
-
-        <div className="flex items-center gap-4">
-          {/* Search Bar */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={18} className="text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search policies..."
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            {searchTerm && (
-              <button
-                onClick={clearSearch}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-              >
-                ×
-              </button>
-            )}
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg">
+            <Shield size={28} className="text-white" />
           </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Warranty Policy Management
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Manage and organize your vehicle warranty policies
+            </p>
+          </div>
+        </div>
 
-          {/* Add New */}
+        <div className="flex items-center gap-3">
+          {/* Refresh Button */}
           <button
-            className="flex items-center bg-black text-white hover:bg-gray-800 px-4 py-2 rounded-md transition shadow-sm disabled:opacity-50"
+            onClick={fetchPolicies}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            disabled={loading}
+          >
+            <RotateCcw size={18} className={loading ? "animate-spin" : ""} />
+            Refresh
+          </button>
+
+          {/* Add New Policy Button */}
+          <button
+            className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50"
             onClick={() => setShowCreateModal(true)}
             disabled={actionLoading}
           >
-            <PlusCircle size={18} className="mr-2" />
-            {actionLoading ? "Processing..." : "Add New Policy"}
+            <PlusCircle size={18} />
+            {actionLoading ? "Processing..." : "New Policy"}
           </button>
         </div>
       </div>
 
-      {/*  Message Area (đã thêm icon chuyên nghiệp) */}
+      {/* Message Area */}
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-300 text-red-700 rounded-md shadow-sm flex items-center gap-2">
-          <XCircle size={18} className="text-red-600" />
-          <span className="font-medium">{error}</span>
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
+          <XCircle size={20} className="text-red-500 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-red-700 font-medium">{error}</p>
+          </div>
+          <button
+            onClick={() => setError(null)}
+            className="text-red-500 hover:text-red-700 transition-colors"
+          >
+            <X size={16} />
+          </button>
         </div>
       )}
+
       {success && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-300 text-green-700 rounded-md shadow-sm flex items-center gap-2">
-          <CheckCircle2 size={18} className="text-green-600" />
-          <span className="font-medium">{success}</span>
+        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
+          <CheckCircle2 size={20} className="text-green-500 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-green-700 font-medium">{success}</p>
+          </div>
+          <button
+            onClick={() => setSuccess("")}
+            className="text-green-500 hover:text-green-700 transition-colors"
+          >
+            <X size={16} />
+          </button>
         </div>
       )}
 
-      {/* Filter Bar */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
-        <div className="flex flex-wrap items-center gap-3 text-gray-700 font-medium">
-          <Filter size={18} className="text-gray-600" />
-          <select
-            value={filterDuration}
-            onChange={(e) => setFilterDuration(e.target.value)}
-            className="border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
-          >
-            <option value="">All Duration Periods</option>
-            {availableDurations.map((duration, i) => (
-              <option key={i} value={duration}>
-                {duration}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={filterMileage}
-            onChange={(e) => setFilterMileage(e.target.value)}
-            className="border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
-          >
-            <option value="">All Mileage Limits</option>
-            {availableMileages.map((mileage, i) => (
-              <option key={i} value={mileage}>
-                {mileage}
-              </option>
-            ))}
-          </select>
-
-          {searchTerm && (
-            <div className="text-sm text-blue-600 ml-2">
-              Found {filteredPolicies.length} policies matching "{searchTerm}"
+      {/* Search and Filter Bar */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6 shadow-sm">
+        <div className="flex flex-wrap items-center gap-4">
+          {/* Search Bar */}
+          <div className="flex-1 min-w-[300px]">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search size={18} className="text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search policies by name or description..."
+                className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              {searchTerm && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              )}
             </div>
-          )}
+          </div>
+
+          {/* Filters */}
+          <div className="flex items-center gap-3">
+            <Filter size={18} className="text-gray-500" />
+
+            <select
+              value={filterDuration}
+              onChange={(e) => setFilterDuration(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+            >
+              <option value="">All Durations</option>
+              {availableDurations.map((duration, i) => (
+                <option key={i} value={duration}>
+                  {duration}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filterMileage}
+              onChange={(e) => setFilterMileage(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+            >
+              <option value="">All Mileages</option>
+              {availableMileages.map((mileage, i) => (
+                <option key={i} value={mileage}>
+                  {mileage}
+                </option>
+              ))}
+            </select>
+
+            {(filterDuration || filterMileage || searchTerm) && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                <X size={14} />
+                Clear
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Search Results Info */}
+        {searchTerm && (
+          <div className="mt-3 text-sm text-green-600">
+            Found {filteredPolicies.length} policies matching "{searchTerm}"
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -299,28 +364,31 @@ const WarrantyPolicyManagement = () => {
 
       {/* Pagination */}
       {filteredPolicies.length > 0 && (
-        <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
-          <span>
-            Showing {startIndex + 1}–
-            {Math.min(startIndex + itemsPerPage, filteredPolicies.length)} of{" "}
-            {filteredPolicies.length} items
-            {searchTerm && (
-              <span className="text-blue-600 ml-2">for "{searchTerm}"</span>
-            )}
-          </span>
-          <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+          <div className="text-sm text-gray-600">
+            Showing <span className="font-semibold">{startIndex + 1}</span>–
+            <span className="font-semibold">
+              {Math.min(startIndex + itemsPerPage, filteredPolicies.length)}
+            </span>{" "}
+            of <span className="font-semibold">{filteredPolicies.length}</span>{" "}
+            policies
+          </div>
+
+          <div className="flex items-center gap-2">
             <button
-              className="px-3 py-1 border rounded-md hover:bg-gray-100 disabled:opacity-50"
+              className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
               disabled={currentPage === 1}
             >
-              Prev
+              Previous
             </button>
-            <span className="px-2 font-medium">
+
+            <div className="flex items-center gap-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium">
               Page {currentPage} of {totalPages || 1}
-            </span>
+            </div>
+
             <button
-              className="px-3 py-1 border rounded-md hover:bg-gray-100 disabled:opacity-50"
+              className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
               disabled={currentPage === totalPages || totalPages === 0}
             >
@@ -330,7 +398,7 @@ const WarrantyPolicyManagement = () => {
         </div>
       )}
 
-      {/*  Create */}
+      {/* Modals */}
       <CreateEditWarrantyPolicyModal
         showModal={showCreateModal}
         editing={false}
@@ -343,33 +411,30 @@ const WarrantyPolicyManagement = () => {
         }
       />
 
-      {/*  View */}
       <ViewWarrantyPolicyModal
         showModal={showViewModal}
         selectedPolicy={selectedPolicy}
         onClose={() => setShowViewModal(false)}
       />
 
-      {/*  Update */}
       <UpdateWarrantyPolicyModal
         showModal={showUpdateModal}
         policy={selectedPolicy}
         onClose={() => setShowUpdateModal(false)}
         onUpdated={() => {
           fetchPolicies();
-          setSuccess("✅ Policy updated successfully!");
+          setSuccess("Policy updated successfully!");
         }}
         updatePolicyApi={updateWarrantyPolicyApi}
       />
 
-      {/*  Delete */}
       <DeleteWarrantyPolicyModal
         showModal={showDeleteModal}
         policy={selectedPolicy}
         onClose={() => setShowDeleteModal(false)}
         onDeleted={() => {
           fetchPolicies();
-          setSuccess("🗑️ Policy deleted successfully!");
+          setSuccess("Policy deleted successfully!");
         }}
         deletePolicyApi={deleteWarrantyPolicyApi}
       />

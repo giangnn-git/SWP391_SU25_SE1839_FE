@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import {
+  X,
+  Plus,
+  Calendar,
+  FileText,
+  CheckCircle2,
+  Settings,
+} from "lucide-react";
 import {
   createPartPolicyApi,
   getPartPolicyCodesApi,
@@ -43,6 +50,14 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
 
     if (showModal) {
       fetchAvailableCodes();
+      // Reset form when modal opens
+      setFormData({
+        partCode: "",
+        policyCode: "",
+        startDate: "",
+        endDate: "",
+      });
+      setError("");
     }
   }, [showModal]);
 
@@ -52,6 +67,8 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
       ...prev,
       [name]: value,
     }));
+    // Clear error when user starts typing
+    if (error) setError("");
   };
 
   const handleSubmit = async (e) => {
@@ -139,56 +156,75 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
   // Confirmation Modal
   if (showConfirmation && submissionData) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl shadow-lg w-full max-w-md">
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h3 className="text-lg font-semibold">Confirm Part Policy</h3>
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-blue-50">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 size={20} className="text-blue-600" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                Confirm Policy
+              </h3>
+            </div>
             <button
               onClick={handleCancelConfirm}
-              className="text-gray-400 hover:text-gray-600 transition"
+              className="p-1 hover:bg-white rounded transition-colors text-gray-500 hover:text-gray-700"
               disabled={loading}
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
 
           {/* Confirmation Content */}
-          <div className="p-6">
-            <div className="space-y-3 mb-6">
-              <p className="text-sm text-gray-600">
-                Please confirm the following details:
+          <div className="p-4">
+            <div className="space-y-4 mb-4">
+              <p className="text-sm text-gray-600 text-center">
+                Please confirm the policy details:
               </p>
 
-              <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                <div className="flex justify-between">
-                  <span className="font-medium text-gray-700">Part Code:</span>
-                  <span>{submissionData.partCodeDisplay}</span>
+              <div className="bg-gray-50 rounded-lg p-4 space-y-3 border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-gray-700 text-sm">
+                    Part Code:
+                  </span>
+                  <span className="font-mono text-blue-600 font-semibold">
+                    {submissionData.partCodeDisplay}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="font-medium text-gray-700">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-gray-700 text-sm">
                     Policy Code:
                   </span>
-                  <span>{submissionData.policyCodeDisplay}</span>
+                  <span className="font-mono text-green-600 font-semibold">
+                    {submissionData.policyCodeDisplay}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="font-medium text-gray-700">Start Date:</span>
-                  <span>{submissionData.startDate}</span>
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-gray-700 text-sm">
+                    Start Date:
+                  </span>
+                  <span className="text-gray-900 font-medium">
+                    {submissionData.startDate}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="font-medium text-gray-700">End Date:</span>
-                  <span>{submissionData.endDate}</span>
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-gray-700 text-sm">
+                    End Date:
+                  </span>
+                  <span className="text-gray-900 font-medium">
+                    {submissionData.endDate}
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <button
                 type="button"
                 onClick={handleCancelConfirm}
                 disabled={loading}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -196,15 +232,18 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
                 type="button"
                 onClick={handleConfirmSubmit}
                 disabled={loading}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center"
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                     Adding...
                   </>
                 ) : (
-                  "Confirm & Add"
+                  <>
+                    <CheckCircle2 size={16} />
+                    Confirm
+                  </>
                 )}
               </button>
             </div>
@@ -216,30 +255,41 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
 
   // Main Form Modal
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-lg w-full max-w-md">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold">Add Part Policy</h3>
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-blue-50">
+          <div className="flex items-center gap-2">
+            <Settings size={20} className="text-blue-600" />
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Add Part Policy
+              </h3>
+              <p className="text-xs text-gray-600 mt-1">
+                Create new part warranty policy
+              </p>
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition"
+            className="p-1 hover:bg-white rounded transition-colors text-gray-500 hover:text-gray-700"
             disabled={loading}
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6">
+        <form onSubmit={handleSubmit} className="p-4">
           <div className="space-y-4">
             {/* Part Code Dropdown */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                <FileText size={14} className="text-blue-500" />
                 Part Code *
               </label>
               {codesLoading ? (
-                <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 animate-pulse">
+                <div className="w-full px-3 py-3 border border-gray-300 rounded-lg bg-gray-100 animate-pulse text-gray-500">
                   Loading part codes...
                 </div>
               ) : (
@@ -249,7 +299,7 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
                   onChange={handleChange}
                   required
                   disabled={loading}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:bg-gray-100 disabled:opacity-50"
                 >
                   <option value="">Select Part Code</option>
                   {availableCodes.partCode.map((code) => (
@@ -263,11 +313,12 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
 
             {/* Policy Code Dropdown */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                <FileText size={14} className="text-green-500" />
                 Policy Code *
               </label>
               {codesLoading ? (
-                <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 animate-pulse">
+                <div className="w-full px-3 py-3 border border-gray-300 rounded-lg bg-gray-100 animate-pulse text-gray-500">
                   Loading policy codes...
                 </div>
               ) : (
@@ -277,7 +328,7 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
                   onChange={handleChange}
                   required
                   disabled={loading}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:bg-gray-100 disabled:opacity-50"
                 >
                   <option value="">Select Policy Code</option>
                   {availableCodes.policyCode.map((code) => (
@@ -290,9 +341,10 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
             </div>
 
             {/* Date Range */}
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Calendar size={14} className="text-blue-500" />
                   Start Date *
                 </label>
                 <input
@@ -302,12 +354,13 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
                   onChange={handleChange}
                   required
                   disabled={loading}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:bg-gray-100 disabled:opacity-50"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Calendar size={14} className="text-red-500" />
                   End Date *
                 </label>
                 <input
@@ -317,7 +370,7 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
                   onChange={handleChange}
                   required
                   disabled={loading}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:bg-gray-100 disabled:opacity-50"
                 />
               </div>
             </div>
@@ -325,33 +378,39 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
             {/* Error Message */}
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-700 text-sm">{error}</p>
+                <p className="text-red-700 text-sm flex items-center gap-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  {error}
+                </p>
               </div>
             )}
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 pt-6">
+          <div className="flex gap-2 pt-6">
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || codesLoading}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center"
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                   Adding...
                 </>
               ) : (
-                "Add Policy"
+                <>
+                  <Plus size={16} />
+                  Add Policy
+                </>
               )}
             </button>
           </div>

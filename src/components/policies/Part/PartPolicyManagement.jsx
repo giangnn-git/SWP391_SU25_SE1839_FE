@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { PlusCircle, Filter, Search } from "lucide-react";
 import {
-  getAllPartPoliciesApi,
-  // deletePartPolicyApi,
-} from "../../../services/api.service";
+  PlusCircle,
+  Filter,
+  Search,
+  RotateCcw,
+  X,
+  Settings,
+} from "lucide-react";
+import { getAllPartPoliciesApi } from "../../../services/api.service";
 import PartPolicyTable from "./PartPolicyTable";
 import ViewPartPolicyModal from "./ViewPartPolicy";
 import CreatePartPolicy from "./CreatePartPolicy";
@@ -118,30 +122,6 @@ const PartPolicyManagement = () => {
     setShowViewModal(true);
   };
 
-  // Handle Delete
-  const handleDelete = async (policy) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete part policy "${policy.partCode} - ${policy.partName}"?`
-      )
-    ) {
-      return;
-    }
-
-    setActionLoading(true);
-    try {
-      await deletePartPolicyApi(policy.id);
-      setSuccess("Part policy deleted successfully!");
-      fetchPolicies(); // Refresh list
-    } catch (err) {
-      const errorMessage =
-        err.response?.data?.message || "Failed to delete part policy.";
-      setError(errorMessage);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
   // Clear all filters
   const clearAllFilters = () => {
     setFilterPartName("");
@@ -177,114 +157,167 @@ const PartPolicyManagement = () => {
 
   return (
     <div className="p-6">
-      {/* Header với Search Bar */}
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold flex items-center gap-2">
-          📘 Part Policy Management
-        </h2>
-
-        <div className="flex items-center gap-4">
-          {/* Search Bar */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={18} className="text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search by part name, code, or policy code..."
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            {searchTerm && (
-              <button
-                onClick={clearSearch}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-              >
-                ×
-              </button>
-            )}
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
+            <Settings size={28} className="text-white" />
           </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Part Policy Management
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Manage part-specific warranty policies and components
+            </p>
+          </div>
+        </div>
 
-          {/* Add New Button */}
+        <div className="flex items-center gap-3">
+          {/* Refresh Button */}
           <button
-            className="flex items-center bg-black text-white hover:bg-gray-800 px-4 py-2 rounded-md transition shadow-sm disabled:opacity-50"
+            onClick={fetchPolicies}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            disabled={loading}
+          >
+            <RotateCcw size={18} className={loading ? "animate-spin" : ""} />
+            Refresh
+          </button>
+
+          {/* Add New Policy Button */}
+          <button
+            className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50"
             onClick={() => setShowCreateModal(true)}
             disabled={actionLoading}
           >
-            <PlusCircle size={18} className="mr-2" />
-            {actionLoading ? "Processing..." : "Add New Policy"}
+            <PlusCircle size={18} />
+            New Policy
           </button>
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
-        <div className="flex flex-wrap items-center gap-3 text-gray-700 font-medium">
-          <Filter size={18} className="text-gray-600" />
-
-          {/* Part Code */}
-          <select
-            value={filterPartCode}
-            onChange={(e) => setFilterPartCode(e.target.value)}
-            className="border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+      {/* Message Area */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
+          <div className="w-3 h-3 bg-red-500 rounded-full flex-shrink-0"></div>
+          <div className="flex-1">
+            <p className="text-red-700 font-medium">{error}</p>
+          </div>
+          <button
+            onClick={() => setError("")}
+            className="text-red-500 hover:text-red-700 transition-colors"
           >
-            <option value="">All Part Codes</option>
-            {availablePartCodes.map((code, i) => (
-              <option key={i} value={code}>
-                {code}
-              </option>
-            ))}
-          </select>
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
-          {/* Part Name */}
-          <select
-            value={filterPartName}
-            onChange={(e) => setFilterPartName(e.target.value)}
-            className="border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+      {success && (
+        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
+          <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
+          <div className="flex-1">
+            <p className="text-green-700 font-medium">{success}</p>
+          </div>
+          <button
+            onClick={() => setSuccess("")}
+            className="text-green-500 hover:text-green-700 transition-colors"
           >
-            <option value="">All Part Names</option>
-            {availableParts.map((part, i) => (
-              <option key={i} value={part}>
-                {part}
-              </option>
-            ))}
-          </select>
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
-          {/* Policy Code */}
-          <select
-            value={filterPolicyCode}
-            onChange={(e) => setFilterPolicyCode(e.target.value)}
-            className="border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
-          >
-            <option value="">All Policy Codes</option>
-            {availablePolicyCodes.map((code, i) => (
-              <option key={i} value={code}>
-                {code}
-              </option>
-            ))}
-          </select>
+      {/* Search and Filter Bar */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6 shadow-sm">
+        <div className="flex flex-wrap items-center gap-4">
+          {/* Search Bar */}
+          <div className="flex-1 min-w-[300px]">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search size={18} className="text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search by part name, code, or policy code..."
+                className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              {searchTerm && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          </div>
 
-          {/* Clear All Filters Button - GIỮ LẠI */}
-          {isAnyFilterActive && (
-            <button
-              onClick={clearAllFilters}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition text-gray-600"
+          {/* Filters */}
+          <div className="flex items-center gap-3">
+            <Filter size={18} className="text-gray-500" />
+
+            <select
+              value={filterPartCode}
+              onChange={(e) => setFilterPartCode(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             >
-              Clear All
-            </button>
-          )}
+              <option value="">All Part Codes</option>
+              {availablePartCodes.map((code, i) => (
+                <option key={i} value={code}>
+                  {code}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filterPartName}
+              onChange={(e) => setFilterPartName(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              <option value="">All Part Names</option>
+              {availableParts.map((part, i) => (
+                <option key={i} value={part}>
+                  {part}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filterPolicyCode}
+              onChange={(e) => setFilterPolicyCode(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              <option value="">All Policy Codes</option>
+              {availablePolicyCodes.map((code, i) => (
+                <option key={i} value={code}>
+                  {code}
+                </option>
+              ))}
+            </select>
+
+            {isAnyFilterActive && (
+              <button
+                onClick={clearAllFilters}
+                className="flex items-center gap-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                <X size={14} />
+                Clear
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Status Filter Buttons */}
-        <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100">
+        <div className="flex items-center gap-4 mt-4 pt-4 border-t border-gray-100">
           <span className="text-sm font-medium text-gray-700">Status:</span>
           <div className="flex gap-2">
             <button
               onClick={() => setFilterStatus("")}
-              className={`px-3 py-1 text-sm rounded-md transition ${
+              className={`px-4 py-2 text-sm rounded-lg transition-all ${
                 filterStatus === ""
-                  ? "bg-blue-600 text-white"
+                  ? "bg-blue-600 text-white shadow-sm"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
@@ -292,9 +325,9 @@ const PartPolicyManagement = () => {
             </button>
             <button
               onClick={() => setFilterStatus("available")}
-              className={`px-3 py-1 text-sm rounded-md transition ${
+              className={`px-4 py-2 text-sm rounded-lg transition-all ${
                 filterStatus === "available"
-                  ? "bg-green-600 text-white"
+                  ? "bg-green-600 text-white shadow-sm"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
@@ -302,9 +335,9 @@ const PartPolicyManagement = () => {
             </button>
             <button
               onClick={() => setFilterStatus("expired")}
-              className={`px-3 py-1 text-sm rounded-md transition ${
+              className={`px-4 py-2 text-sm rounded-lg transition-all ${
                 filterStatus === "expired"
-                  ? "bg-red-600 text-white"
+                  ? "bg-red-600 text-white shadow-sm"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
@@ -315,30 +348,17 @@ const PartPolicyManagement = () => {
 
         {/* Search Results Info */}
         {searchTerm && (
-          <div className="text-sm text-blue-600 mt-3">
+          <div className="mt-3 text-sm text-blue-600">
             Found {filteredPolicies.length} policies matching "{searchTerm}"
           </div>
         )}
       </div>
-
-      {/* Messages */}
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-700">{error}</p>
-        </div>
-      )}
-      {success && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-green-700">{success}</p>
-        </div>
-      )}
 
       {/* Table Component */}
       <PartPolicyTable
         policies={currentPolicies}
         loading={loading}
         onView={handleView}
-        onDelete={handleDelete}
         actionLoading={actionLoading}
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}
@@ -347,28 +367,31 @@ const PartPolicyManagement = () => {
 
       {/* Pagination */}
       {filteredPolicies.length > 0 && (
-        <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
-          <span>
-            Showing {startIndex + 1}–
-            {Math.min(startIndex + itemsPerPage, filteredPolicies.length)} of{" "}
-            {filteredPolicies.length} items
-            {searchTerm && (
-              <span className="text-blue-600 ml-2">for "{searchTerm}"</span>
-            )}
-          </span>
-          <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+          <div className="text-sm text-gray-600">
+            Showing <span className="font-semibold">{startIndex + 1}</span>–
+            <span className="font-semibold">
+              {Math.min(startIndex + itemsPerPage, filteredPolicies.length)}
+            </span>{" "}
+            of <span className="font-semibold">{filteredPolicies.length}</span>{" "}
+            policies
+          </div>
+
+          <div className="flex items-center gap-2">
             <button
-              className="px-3 py-1 border rounded-md hover:bg-gray-100 disabled:opacity-50"
+              className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
               disabled={currentPage === 1}
             >
-              Prev
+              Previous
             </button>
-            <span className="px-2 font-medium">
+
+            <div className="flex items-center gap-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium">
               Page {currentPage} of {totalPages || 1}
-            </span>
+            </div>
+
             <button
-              className="px-3 py-1 border rounded-md hover:bg-gray-100 disabled:opacity-50"
+              className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
               disabled={currentPage === totalPages || totalPages === 0}
             >
@@ -378,14 +401,14 @@ const PartPolicyManagement = () => {
         </div>
       )}
 
-      {/* Create Modal - ĐÃ FIX: Gọi fetchPolicies khi success */}
+      {/* Create Modal */}
       <CreatePartPolicy
         showModal={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSuccess={() => {
           setSuccess("Part policy created successfully!");
           setShowCreateModal(false);
-          fetchPolicies(); // Refresh list - ĐÃ FIX
+          fetchPolicies();
         }}
       />
 
