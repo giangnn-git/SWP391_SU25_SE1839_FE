@@ -91,7 +91,7 @@ const Sidebar = () => {
       ]
       : []),
 
-    //  CAMPAIGN MANAGEMENT - Thêm vào đây
+    //  CAMPAIGN MANAGEMENT
     ...(isAdmin || isEvmStaff
       ? [
         {
@@ -108,12 +108,22 @@ const Sidebar = () => {
       ]
       : []),
 
-    //  Supply Chain
-    {
-      name: "Supply Chain",
-      href: "/supply-chain",
-      icon: <PackageSearch size={18} className={iconStyle} strokeWidth={1.8} />,
-    },
+    //  Supply Chain — ẨN với SC_STAFF
+    ...(isAdmin || isEvmStaff
+      ? [
+        {
+          name: "Supply Chain",
+          href: "/supply-chain",
+          icon: (
+            <PackageSearch
+              size={18}
+              className={iconStyle}
+              strokeWidth={1.8}
+            />
+          ),
+        },
+      ]
+      : []),
 
     // //  Analytics
     // {
@@ -128,9 +138,7 @@ const Sidebar = () => {
         {
           name: "Policy",
           href: "/policy",
-          icon: (
-            <FileText size={18} className={iconStyle} strokeWidth={1.8} />
-          ),
+          icon: <FileText size={18} className={iconStyle} strokeWidth={1.8} />,
         },
       ]
       : []),
