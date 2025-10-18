@@ -11,6 +11,7 @@ import { getAllPartPoliciesApi } from "../../../services/api.service";
 import PartPolicyTable from "./PartPolicyTable";
 import ViewPartPolicyModal from "./ViewPartPolicy";
 import CreatePartPolicy from "./CreatePartPolicy";
+import { updatePartPolicyStatusApi } from "../../../services/api.service";
 
 const PartPolicyManagement = () => {
   const [policies, setPolicies] = useState([]);
@@ -120,6 +121,45 @@ const PartPolicyManagement = () => {
   const handleView = (policy) => {
     setSelectedPolicy(policy);
     setShowViewModal(true);
+  };
+
+  // Handle status toggle
+  // Handle status toggle - FIXED VERSION (không cần payload)
+  const handleStatusToggle = async (partPolicyId) => {
+    setActionLoading(true);
+    try {
+      console.log("🔍 Toggling policy status for ID:", partPolicyId);
+
+      // Gọi API không cần payload
+      await updatePartPolicyStatusApi(partPolicyId);
+
+      // Update local state - toggle trạng thái hiện tại
+      setPolicies((prev) =>
+        prev.map((policy) =>
+          policy.id === partPolicyId
+            ? {
+                ...policy,
+                active: !policy.active, // Toggle trạng thái hiện tại
+                status: policy.status === "ACTIVE" ? "INACTIVE" : "ACTIVE", // Toggle status string
+              }
+            : policy
+        )
+      );
+
+      // Lấy policy hiện tại để hiển thị message chính xác
+      const currentPolicy = policies.find((p) => p.id === partPolicyId);
+      const newStatus = !currentPolicy?.active;
+
+      setSuccess(
+        `Policy ${newStatus ? "activated" : "deactivated"} successfully!`
+      );
+    } catch (err) {
+      console.error("❌ Error updating policy status:", err);
+      console.log("🔍 Error details:", err.response?.data);
+      setError("Failed to update policy status. Please try again.");
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   // Clear all filters
@@ -359,6 +399,7 @@ const PartPolicyManagement = () => {
         policies={currentPolicies}
         loading={loading}
         onView={handleView}
+        onStatusToggle={handleStatusToggle}
         actionLoading={actionLoading}
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}

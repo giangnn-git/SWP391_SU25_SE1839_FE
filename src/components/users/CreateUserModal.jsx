@@ -163,10 +163,6 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit, loading }) => {
             {errors.phoneNumber && (
               <p className="mt-1 text-sm text-red-600">{errors.phoneNumber}</p>
             )}
-
-            {/* <p className="mt-1 text-xs text-gray-500">
-              Must be exactly 10 digits (0-9)
-            </p> */}
           </div>
 
           {/* Role Field */}

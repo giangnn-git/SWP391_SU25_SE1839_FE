@@ -69,13 +69,14 @@ const ManageUsers = () => {
     setCreateLoading(true);
     setError("");
     try {
-      await createUserApi(
-        userData.email,
-        userData.name,
-        userData.password,
-        userData.phoneNumber,
-        userData.role
-      );
+      await createUserApi({
+        email: userData.email,
+        name: userData.name,
+        phoneNumber: userData.phoneNumber,
+        role: userData.role,
+        serviceCenterId: userData.serviceCenterId,
+      });
+
       setSuccess("User created successfully!");
       setIsCreateModalOpen(false);
       loadUsers();
@@ -83,7 +84,7 @@ const ManageUsers = () => {
       setError(
         "Failed to create user: " + (err.response?.data?.message || err.message)
       );
-      throw err;
+      throw err; // re-throw để modal có thể xử lý
     } finally {
       setCreateLoading(false);
     }

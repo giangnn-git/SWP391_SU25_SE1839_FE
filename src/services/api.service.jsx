@@ -129,6 +129,11 @@ export const getPartPolicyCodesApi = () => {
   return axios.get("/api/api/part-policy/code");
 };
 
+// { Part Policy Status }
+export const updatePartPolicyStatusApi = (partPolicyId) => {
+  return axios.put(`/api/api/part-policy/status/${partPolicyId}`);
+};
+
 // { vehicle storage API}
 export const getVehicleDetailApi = (vehicleId) => {
   return axios.get(`/api/api/model/detail/${vehicleId}`);
@@ -216,7 +221,6 @@ export const updateWarrantyClaimApi = async (id, updatedData) => {
 export const getAllWarrantyClaimsApi = () => {
   return axios.get("/api/api/claims");
 };
-
 
 // Get all registered vehicles (Customer Registration page)
 export const getAllVehiclesApi = () => {

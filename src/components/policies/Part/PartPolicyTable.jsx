@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Eye,
   Trash2,
   FileText,
   Calendar,
   Clock,
-  AlertCircle,
+  ToggleLeft,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 
 const formatDate = (dateString) => {
@@ -20,7 +22,7 @@ const formatDate = (dateString) => {
     });
   } catch (error) {
     console.error("Error formatting date:", error);
-    return dateString; // Fallback to original string if error
+    return dateString;
   }
 };
 
@@ -29,11 +31,14 @@ const PartPolicyTable = ({
   loading,
   onView,
   onDelete,
+  onStatusToggle,
   actionLoading,
   currentPage,
   itemsPerPage,
   totalItems,
 }) => {
+  const [statusLoading, setStatusLoading] = useState({});
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -60,6 +65,20 @@ const PartPolicyTable = ({
       </div>
     );
   }
+
+  // Handle status toggle - SỬA LẠI: chỉ truyền policyId
+  const handleStatusToggle = async (policy) => {
+    if (!onStatusToggle) return;
+
+    setStatusLoading((prev) => ({ ...prev, [policy.id]: true }));
+
+    try {
+      // Chỉ truyền policyId, không truyền status
+      await onStatusToggle(policy.id);
+    } finally {
+      setStatusLoading((prev) => ({ ...prev, [policy.id]: false }));
+    }
+  };
 
   return (
     <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
@@ -93,7 +112,13 @@ const PartPolicyTable = ({
             <th className="py-4 px-6 text-left text-xs uppercase tracking-wider">
               <div className="flex items-center gap-2">
                 <Clock size={16} className="text-gray-500" />
-                Status
+                Coverage Status
+              </div>
+            </th>
+            <th className="py-4 px-6 text-left text-xs uppercase tracking-wider">
+              <div className="flex items-center gap-2">
+                <ToggleLeft size={16} className="text-gray-500" />
+                Policy Status
               </div>
             </th>
             <th className="py-4 px-6 text-center text-xs uppercase tracking-wider">
@@ -103,7 +128,11 @@ const PartPolicyTable = ({
         </thead>
         <tbody className="divide-y divide-gray-100">
           {policies.map((policy) => {
-            const isActive = new Date(policy.endDate) >= new Date();
+            // SỬA LẠI: Coverage status dựa trên endDate
+            const isCoverageActive = new Date(policy.endDate) >= new Date();
+
+            // SỬA LẠI: Policy status dựa trên field status từ BE
+            const isPolicyActive = policy.status === "ACTIVE";
 
             return (
               <tr
@@ -161,16 +190,16 @@ const PartPolicyTable = ({
                   </div>
                 </td>
 
-                {/* Status Column */}
+                {/* Coverage Status Column - SỬA LẠI */}
                 <td className="py-4 px-6">
                   <div
                     className={`inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-semibold ${
-                      isActive
+                      isCoverageActive
                         ? "bg-green-100 text-green-700 border border-green-200"
                         : "bg-red-100 text-red-700 border border-red-200"
                     }`}
                   >
-                    {isActive ? (
+                    {isCoverageActive ? (
                       <>
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                         Active
@@ -181,6 +210,44 @@ const PartPolicyTable = ({
                         Expired
                       </>
                     )}
+                  </div>
+                </td>
+
+                {/* Policy Status Column - SỬA LẠI: Dùng trực tiếp field status */}
+                <td className="py-4 px-6">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => handleStatusToggle(policy)}
+                      disabled={statusLoading[policy.id] || actionLoading}
+                      className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                        isPolicyActive
+                          ? "bg-green-600 hover:bg-green-700"
+                          : "bg-gray-300 hover:bg-gray-400"
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      <span
+                        className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${
+                          isPolicyActive ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      {statusLoading[policy.id] ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      ) : isPolicyActive ? (
+                        <CheckCircle size={16} className="text-green-600" />
+                      ) : (
+                        <XCircle size={16} className="text-gray-400" />
+                      )}
+                      <span
+                        className={`text-sm font-medium ${
+                          isPolicyActive ? "text-green-700" : "text-gray-500"
+                        }`}
+                      >
+                        {policy.status} {/* Hiển thị trực tiếp từ BE */}
+                      </span>
+                    </div>
                   </div>
                 </td>
 
@@ -196,23 +263,6 @@ const PartPolicyTable = ({
                       <Eye size={18} />
                       <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
                         View Details
-                      </div>
-                    </button>
-
-                    {/* Delete Button */}
-                    <button
-                      onClick={() => onDelete(policy)}
-                      className="group relative flex items-center justify-center w-10 h-10 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition-all duration-200 shadow-sm hover:shadow-md border border-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Delete Policy"
-                      disabled={actionLoading}
-                    >
-                      {actionLoading ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-                      ) : (
-                        <Trash2 size={18} />
-                      )}
-                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                        Delete Policy
                       </div>
                     </button>
                   </div>

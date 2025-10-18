@@ -378,10 +378,10 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
             {/* Error Message */}
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-700 text-sm flex items-center gap-2">
+                <div className="text-red-700 text-sm flex items-center gap-2">
                   <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                   {error}
-                </p>
+                </div>
               </div>
             )}
           </div>

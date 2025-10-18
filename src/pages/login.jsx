@@ -22,7 +22,7 @@ const LoginPage = () => {
       const res = await userLoginApi(user, password);
       const token = res.data?.data?.token;
       const id = res.data?.data?.id;
-      const name = res.data?.data?.name;
+      const name = res.data?.data?.token?.name;
       const phone = res.data?.data?.phoneNumber;
       const scid = res.data?.data?.serviceCenterId;
 
@@ -59,7 +59,6 @@ const LoginPage = () => {
     } finally {
       setLoading(false);
     }
-
   };
 
   const handleForgotPassword = () => {

@@ -15,7 +15,6 @@ import RepairOrderDetail from "./pages/RepairOrderDetail.jsx";
 import ProfilePage from "./pages/Profiles.jsx";
 import ChangePasswordPage from "./pages/ChangePassword.jsx";
 import Profiles from "./pages/Profiles.jsx";
-import ClaimApproval from "./pages/ClaimApproval.jsx";
 import VehicleManagement from "./pages/VehicleManagement.jsx";
 import CampaignManagement from "./pages/CampaignManagement.jsx";
 import CustomerRegistration from "./pages/CustomerRegistration.jsx";
@@ -122,15 +121,6 @@ const router = createBrowserRouter([
         ),
       },
 
-      //  Route for Claim Approval (ADMIN + EVM_STAFF)
-      {
-        path: "approvals",
-        element: (
-          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
-            <ClaimApproval />
-          </PrivateRoute>
-        ),
-      },
       {
         path: "campaigns",
         element: (
