@@ -8,6 +8,7 @@ import {
   Calendar,
 } from "lucide-react";
 import CreateCampaignModal from "../components/campaigns/CreateCampaignModal";
+import EditCampaignModal from "../components/campaigns/EditCampaignModal"; // ✅ thêm
 import CampaignTable from "../components/campaigns/CampaignTable";
 import CampaignOverviewCard from "../components/campaigns/CampaignOverviewCard";
 import { getAllCampaignsApi } from "../services/api.service";
@@ -17,6 +18,8 @@ const CampaignManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false); // ✅ thêm
+  const [selectedCampaign, setSelectedCampaign] = useState(null); // ✅ thêm
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
 
@@ -96,6 +99,13 @@ const CampaignManagement = () => {
 
     // Show success message (you can add a toast notification here)
     console.log("Campaign created successfully:", formattedCampaign);
+  };
+
+  // ✅ Handle campaign update success
+  const handleCampaignUpdated = () => {
+    fetchCampaigns(); // reload danh sách
+    setShowEditModal(false);
+    setSelectedCampaign(null);
   };
 
   // Statistics với real data
@@ -220,6 +230,10 @@ const CampaignManagement = () => {
         campaigns={filteredCampaigns}
         loading={loading}
         onRefresh={fetchCampaigns}
+        onEdit={(campaign) => {
+          setSelectedCampaign(campaign);
+          setShowEditModal(true);
+        }}
       />
 
       {/* Create Campaign Modal */}
@@ -228,6 +242,16 @@ const CampaignManagement = () => {
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
           onCampaignCreated={handleCampaignCreated}
+        />
+      )}
+
+      {/* ✅ Edit Campaign Modal */}
+      {showEditModal && selectedCampaign && (
+        <EditCampaignModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          campaign={selectedCampaign}
+          onCampaignUpdated={handleCampaignUpdated}
         />
       )}
     </div>

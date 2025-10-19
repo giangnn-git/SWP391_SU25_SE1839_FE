@@ -243,3 +243,17 @@ export const createCustomerApi = (customerData) => {
     },
   });
 };
+
+export const updateCampaignApi = (id, campaignData) => {
+  return axios.put(`/api/api/campaigns/${id}`, {
+    code: campaignData.code,
+    name: campaignData.name,
+    description: campaignData.description,
+    startDate: campaignData.startDate,
+    endDate: campaignData.endDate,
+    produceDateFrom: campaignData.produceDateFrom,
+    produceDateTo: campaignData.produceDateTo,
+    affectedModels: campaignData.affectedModels,
+    status: campaignData.status,
+  });
+};
