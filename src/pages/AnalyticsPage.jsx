@@ -8,14 +8,15 @@ import {
 } from "lucide-react";
 import PerformanceTab from "../components/analytics/PerformanceTab";
 import PredictiveTab from "../components/analytics/PredictiveTab";
-import { getPerformanceReportApi } from "../services/api.service"; // ✅ Thêm import
+import { getPerformanceReportApi } from "../services/api.service";
 
 const AnalyticsPage = () => {
     const [activeTab, setActiveTab] = useState("performance");
-    const [performanceData, setPerformanceData] = useState([]); // ✅ State chứa data từ API
+    const [performanceData, setPerformanceData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    // --- KPI Cards static demo data ---
     const kpiCards = [
         {
             title: "Average Resolution Time",
@@ -23,6 +24,7 @@ const AnalyticsPage = () => {
             change: "-8%",
             subtitle: "vs last month",
             icon: <Clock4 size={22} className="text-blue-600" />,
+            color: "from-blue-50 to-blue-100",
         },
         {
             title: "Customer Satisfaction",
@@ -30,6 +32,7 @@ const AnalyticsPage = () => {
             change: "+5%",
             subtitle: "vs last month",
             icon: <TrendingUp size={22} className="text-green-600" />,
+            color: "from-green-50 to-green-100",
         },
         {
             title: "Warranty Cost / Vehicle",
@@ -37,6 +40,7 @@ const AnalyticsPage = () => {
             change: "-12%",
             subtitle: "vs last month",
             icon: <DollarSign size={22} className="text-orange-500" />,
+            color: "from-orange-50 to-orange-100",
         },
         {
             title: "Repeat Claims Rate",
@@ -44,10 +48,11 @@ const AnalyticsPage = () => {
             change: "-15%",
             subtitle: "vs last month",
             icon: <AlertCircle size={22} className="text-red-500" />,
+            color: "from-red-50 to-red-100",
         },
     ];
 
-    // ✅ Gọi API lấy dữ liệu Service Center Performance
+    // --- Fetch data from API ---
     useEffect(() => {
         const fetchPerformanceData = async () => {
             try {
@@ -61,48 +66,53 @@ const AnalyticsPage = () => {
                 setLoading(false);
             }
         };
-
-        if (activeTab === "performance") {
-            fetchPerformanceData();
-        }
+        if (activeTab === "performance") fetchPerformanceData();
     }, [activeTab]);
 
     return (
-        <div className="p-6 animate-fadeIn">
-            {/* Header */}
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                    <BarChart3 size={22} className="text-blue-600" />
+        <div className="p-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 animate-fadeIn">
+            {/* ====== HEADER ====== */}
+            <div className="mb-8 text-center lg:text-left">
+                <h1 className="text-3xl font-bold flex items-center justify-center lg:justify-start gap-2 tracking-tight text-gray-900">
+                    <BarChart3 size={26} className="text-gray-900" />
                     Reporting & Analytics
                 </h1>
                 <p className="text-gray-500 text-sm mt-1">
-                    Comprehensive warranty analytics and cost predictions
+                    Comprehensive warranty analytics and predictive insights
                 </p>
             </div>
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                {kpiCards.map((kpi, index) => (
+            {/* ====== KPI CARDS ====== */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                {kpiCards.map((kpi, i) => (
                     <div
-                        key={index}
-                        className="bg-white border border-gray-200 shadow-sm rounded-xl p-4 hover:shadow-md transition-all"
+                        key={i}
+                        className={`relative bg-white/80 border border-gray-200 shadow-md rounded-2xl p-5 
+                        hover:shadow-xl transition-all duration-500 backdrop-blur-sm group overflow-hidden`}
                     >
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="p-2 bg-gray-50 rounded-lg">{kpi.icon}</div>
+                        {/* Background accent */}
+                        <div
+                            className={`absolute inset-0 bg-gradient-to-br ${kpi.color} opacity-40 group-hover:opacity-60 transition-all duration-500`}
+                        ></div>
+
+                        {/* Icon + Title */}
+                        <div className="relative z-10 flex items-center gap-3 mb-3">
+                            <div className={`p-3 rounded-xl bg-gradient-to-br ${kpi.color} shadow-inner`}>
+                                {kpi.icon}
+                            </div>
                             <div>
-                                <h3 className="text-sm font-semibold text-gray-600">
-                                    {kpi.title}
-                                </h3>
-                                <p className="text-lg font-bold text-gray-900">{kpi.value}</p>
+                                <h3 className="text-sm font-semibold text-gray-600">{kpi.title}</h3>
+                                <p className="text-xl font-bold text-gray-900">{kpi.value}</p>
                             </div>
                         </div>
-                        <div className="flex justify-between text-xs text-gray-500">
+
+                        {/* Change info */}
+                        <div className="relative z-10 flex justify-between items-center text-xs text-gray-500">
                             <span
-                                className={
-                                    kpi.change.startsWith("+")
-                                        ? "text-green-600 font-semibold"
-                                        : "text-red-600 font-semibold"
-                                }
+                                className={`font-semibold ${kpi.change.startsWith("+")
+                                    ? "text-green-600"
+                                    : "text-red-500"
+                                    }`}
                             >
                                 {kpi.change}
                             </span>
@@ -112,13 +122,21 @@ const AnalyticsPage = () => {
                 ))}
             </div>
 
-            {/* Capsule Tabs */}
-            <div className="flex justify-start mb-6">
-                <div className="inline-flex bg-gray-100 rounded-full p-1 shadow-inner">
+            {/* ====== CAPSULE TABS ====== */}
+            <div className="flex justify-center lg:justify-start mb-6">
+                <div className="relative bg-gray-100 border border-gray-200 rounded-full p-1 shadow-inner w-fit flex">
+                    {/* Sliding indicator */}
+                    <div
+                        className={`absolute top-1 left-1 h-[85%] w-[48%] bg-white rounded-full shadow-sm transition-all duration-300 ease-in-out ${activeTab === "predictive"
+                            ? "translate-x-[100%]"
+                            : "translate-x-0"
+                            }`}
+                    ></div>
+
                     <button
                         onClick={() => setActiveTab("performance")}
-                        className={`px-5 py-1.5 text-sm font-medium rounded-full transition-all duration-300 ${activeTab === "performance"
-                            ? "bg-white text-gray-900 shadow-sm"
+                        className={`relative z-10 px-6 py-1.5 text-sm font-medium transition-all duration-300 ${activeTab === "performance"
+                            ? "text-gray-900"
                             : "text-gray-500 hover:text-gray-700"
                             }`}
                     >
@@ -126,8 +144,8 @@ const AnalyticsPage = () => {
                     </button>
                     <button
                         onClick={() => setActiveTab("predictive")}
-                        className={`px-5 py-1.5 text-sm font-medium rounded-full transition-all duration-300 ${activeTab === "predictive"
-                            ? "bg-white text-gray-900 shadow-sm"
+                        className={`relative z-10 px-6 py-1.5 text-sm font-medium transition-all duration-300 ${activeTab === "predictive"
+                            ? "text-gray-900"
                             : "text-gray-500 hover:text-gray-700"
                             }`}
                     >
@@ -136,8 +154,8 @@ const AnalyticsPage = () => {
                 </div>
             </div>
 
-            {/* Tab Content */}
-            <div className="bg-white rounded-xl shadow p-6 border border-gray-200">
+            {/* ====== TAB CONTENT ====== */}
+            <div className="bg-white/90 backdrop-blur-md border border-gray-200 shadow-xl rounded-2xl p-6 transition-all duration-500 hover:shadow-2xl animate-fadeIn">
                 {activeTab === "performance" ? (
                     <PerformanceTab
                         data={performanceData}
