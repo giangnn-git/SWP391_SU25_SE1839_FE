@@ -46,10 +46,10 @@ const UpdateWarrantyPolicyModal = ({
     formData.name !== (policy?.name || "") ||
     formData.description !== (policy?.description || "") ||
     formData.durationPeriod !==
-      (policy?.durationPeriod?.toString().replace(" months", "") || "") ||
+    (policy?.durationPeriod?.toString().replace(" months", "") || "") ||
     formData.mileageLimit !==
-      (policy?.mileageLimit?.toString().replace(" km", "").replace(/,/g, "") ||
-        "");
+    (policy?.mileageLimit?.toString().replace(" km", "").replace(/,/g, "") ||
+      "");
 
   // Gửi request update
   const handleSubmit = async () => {
@@ -85,7 +85,7 @@ const UpdateWarrantyPolicyModal = ({
       console.error(
         "Update failed:",
         error.response?.data?.message ||
-          "Failed to update policy. Please try again."
+        "Failed to update policy. Please try again."
       );
     }
   };
@@ -199,14 +199,17 @@ const UpdateWarrantyPolicyModal = ({
           >
             Cancel
           </button>
+
+          {/*  Nút Save được nâng cấp */}
           <button
-            onClick={handleSubmit}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white transition-colors font-medium text-sm ${
-              !isChanged || actionLoading
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-green-600 hover:bg-green-700"
-            }`}
-            disabled={actionLoading || !isChanged}
+            onClick={isChanged ? handleSubmit : undefined}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium text-sm transition-all duration-300 ${actionLoading
+              ? "bg-gray-400 cursor-not-allowed"
+              : isChanged
+                ? "bg-green-600 hover:bg-green-700"
+                : "bg-gray-300 hover:bg-gray-400 text-gray-100"
+              }`}
+            disabled={actionLoading}
           >
             {actionLoading ? (
               <>
