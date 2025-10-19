@@ -1,4 +1,4 @@
-import { Eye, X, Calendar, Gauge, FileText, Shield, Clock } from "lucide-react";
+import { Eye, X, Calendar, Gauge, FileText, Shield, Clock, Tag, Layers } from "lucide-react";
 
 const ViewWarrantyPolicyModal = ({ showModal, selectedPolicy, onClose }) => {
   if (!showModal || !selectedPolicy) return null;
@@ -36,6 +36,35 @@ const ViewWarrantyPolicyModal = ({ showModal, selectedPolicy, onClose }) => {
 
         {/* Content */}
         <div className="p-4 space-y-4">
+          {/*  Policy Code */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Tag size={16} className="text-gray-500" />
+              <h3 className="font-medium text-gray-900 text-sm">Policy Code</h3>
+            </div>
+            <div className="p-2 bg-gray-50 border border-gray-200 rounded text-gray-900 font-medium">
+              {selectedPolicy.code || "N/A"}
+            </div>
+          </div>
+
+          {/*  Policy Type */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Layers size={16} className="text-gray-500" />
+              <h3 className="font-medium text-gray-900 text-sm">Policy Type</h3>
+            </div>
+            <div className="p-2 bg-gray-50 border border-gray-200 rounded">
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-semibold ${selectedPolicy.type === "PROMOTION"
+                    ? "bg-yellow-100 text-yellow-700"
+                    : "bg-green-100 text-green-700"
+                  }`}
+              >
+                {selectedPolicy.type || "NORMAL"}
+              </span>
+            </div>
+          </div>
+
           {/* Policy Name */}
           <div>
             <div className="flex items-center gap-2 mb-2">

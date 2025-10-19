@@ -8,6 +8,8 @@ import {
   Gauge,
   Clock,
   Shield,
+  Tag,
+  Layers,
 } from "lucide-react";
 
 const WarrantyPolicyTable = ({
@@ -65,6 +67,18 @@ const WarrantyPolicyTable = ({
           <tr>
             <th className="py-4 px-6 text-left text-xs uppercase tracking-wider">
               <div className="flex items-center gap-2">
+                <Tag size={16} className="text-green-600" />
+                Policy Code
+              </div>
+            </th>
+            <th className="py-4 px-6 text-left text-xs uppercase tracking-wider">
+              <div className="flex items-center gap-2">
+                <Layers size={16} className="text-green-600" />
+                Policy Type
+              </div>
+            </th>
+            <th className="py-4 px-6 text-left text-xs uppercase tracking-wider">
+              <div className="flex items-center gap-2">
                 <FileText size={16} className="text-green-600" />
                 Policy Name
               </div>
@@ -95,13 +109,35 @@ const WarrantyPolicyTable = ({
             </th>
           </tr>
         </thead>
+
         <tbody className="divide-y divide-gray-100">
           {policies.map((policy, index) => (
             <tr
               key={policy.id}
               className="hover:bg-green-50 transition-colors duration-200 group"
             >
-              {/* Policy Name Column */}
+              {/*  Policy Code */}
+              <td className="py-4 px-6 font-semibold text-gray-900">
+                <div className="flex items-center gap-2">
+                  <Tag size={16} className="text-gray-500" />
+                  {policy.code || "N/A"}
+                </div>
+              </td>
+
+              {/*  Policy Type */}
+              <td className="py-4 px-6">
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    policy.type === "PROMOTION"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : "bg-green-100 text-green-700"
+                  }`}
+                >
+                  {policy.type || "NORMAL"}
+                </span>
+              </td>
+
+              {/* Policy Name */}
               <td className="py-4 px-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-green-100 rounded-lg">
@@ -115,7 +151,7 @@ const WarrantyPolicyTable = ({
                 </div>
               </td>
 
-              {/* Duration Column */}
+              {/* Duration */}
               <td className="py-4 px-6">
                 <div className="flex items-center gap-2 text-gray-700">
                   <Calendar size={18} className="text-green-500" />
@@ -131,7 +167,7 @@ const WarrantyPolicyTable = ({
                 </div>
               </td>
 
-              {/* Mileage Column */}
+              {/* Mileage */}
               <td className="py-4 px-6">
                 <div className="flex items-center gap-2 text-gray-700">
                   <Gauge size={18} className="text-blue-500" />
@@ -146,7 +182,7 @@ const WarrantyPolicyTable = ({
                 </div>
               </td>
 
-              {/* Description Column */}
+              {/* Description */}
               <td className="py-4 px-6">
                 <div className="max-w-[300px]">
                   <p className="text-gray-600 line-clamp-2 leading-relaxed">
@@ -155,7 +191,7 @@ const WarrantyPolicyTable = ({
                 </div>
               </td>
 
-              {/* Details Column */}
+              {/* Details */}
               <td className="py-4 px-6">
                 <div className="flex justify-center">
                   <button
@@ -171,10 +207,9 @@ const WarrantyPolicyTable = ({
                 </div>
               </td>
 
-              {/* Actions Column */}
+              {/* Actions */}
               <td className="py-4 px-6">
                 <div className="flex items-center justify-center gap-2">
-                  {/* Edit Button */}
                   <button
                     onClick={() => onEdit(policy)}
                     className="group relative flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-all duration-200 shadow-sm hover:shadow-md border border-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -187,7 +222,6 @@ const WarrantyPolicyTable = ({
                     </div>
                   </button>
 
-                  {/* Delete Button */}
                   <button
                     onClick={() => onDelete(policy)}
                     className="group relative flex items-center justify-center w-10 h-10 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition-all duration-200 shadow-sm hover:shadow-md border border-red-200 disabled:opacity-50 disabled:cursor-not-allowed"

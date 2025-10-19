@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Save, FileText, Calendar, Gauge, Shield } from "lucide-react";
+import { X, Save, FileText, Calendar, Gauge, Shield, Tag, Layers } from "lucide-react";
 
 const UpdateWarrantyPolicyModal = ({
   showModal,
@@ -10,6 +10,8 @@ const UpdateWarrantyPolicyModal = ({
   updatePolicyApi,
 }) => {
   const [formData, setFormData] = useState({
+    code: "",
+    type: "",
     name: "",
     description: "",
     durationPeriod: "",
@@ -20,6 +22,8 @@ const UpdateWarrantyPolicyModal = ({
   useEffect(() => {
     if (policy) {
       setFormData({
+        code: policy.code || "",
+        type: policy.type || "",
         name: policy.name || "",
         description: policy.description || "",
         durationPeriod:
@@ -41,15 +45,16 @@ const UpdateWarrantyPolicyModal = ({
     }));
   };
 
-  // Kiểm tra xem form có thay đổi gì không
+
   const isChanged =
-    formData.name !== (policy?.name || "") ||
-    formData.description !== (policy?.description || "") ||
-    formData.durationPeriod !==
+    formData.code.trim() !== (policy?.code || "").trim() ||
+    formData.type.trim() !== (policy?.type || "").trim() ||
+    formData.name.trim() !== (policy?.name || "").trim() ||
+    formData.description.trim() !== (policy?.description || "").trim() ||
+    formData.durationPeriod.toString() !==
     (policy?.durationPeriod?.toString().replace(" months", "") || "") ||
-    formData.mileageLimit !==
-    (policy?.mileageLimit?.toString().replace(" km", "").replace(/,/g, "") ||
-      "");
+    formData.mileageLimit.toString() !==
+    (policy?.mileageLimit?.toString().replace(" km", "").replace(/,/g, "") || "");
 
   // Gửi request update
   const handleSubmit = async () => {
@@ -59,6 +64,8 @@ const UpdateWarrantyPolicyModal = ({
     }
 
     if (
+      !formData.code ||
+      !formData.type ||
       !formData.name ||
       !formData.description ||
       !formData.durationPeriod ||
@@ -70,6 +77,8 @@ const UpdateWarrantyPolicyModal = ({
 
     try {
       const apiData = {
+        code: formData.code.trim(),
+        type: formData.type.trim(),
         name: formData.name.trim(),
         durationPeriod: parseInt(formData.durationPeriod),
         mileageLimit: parseInt(formData.mileageLimit),
@@ -78,7 +87,6 @@ const UpdateWarrantyPolicyModal = ({
 
       await updatePolicyApi(policy.id, apiData);
 
-      // Gọi callback để hiển thị thông báo ở UI cha
       if (onUpdated) onUpdated();
       onClose();
     } catch (error) {
@@ -100,9 +108,7 @@ const UpdateWarrantyPolicyModal = ({
           <div className="flex items-center gap-2">
             <Shield size={20} className="text-green-600" />
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                Edit Policy
-              </h2>
+              <h2 className="text-lg font-semibold text-gray-900">Edit Policy</h2>
               <p className="text-xs text-gray-600 mt-1">
                 Update warranty policy details
               </p>
@@ -119,6 +125,40 @@ const UpdateWarrantyPolicyModal = ({
 
         {/* Form Content */}
         <div className="p-4 space-y-4">
+          {/* Policy Code */}
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+              <Tag size={14} className="text-gray-500" />
+              Policy Code
+            </label>
+            <input
+              type="text"
+              placeholder="Enter policy code"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-sm"
+              value={formData.code}
+              onChange={(e) => handleFormDataChange("code", e.target.value)}
+              disabled={actionLoading}
+            />
+          </div>
+
+          {/* Policy Type */}
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+              <Layers size={14} className="text-gray-500" />
+              Policy Type
+            </label>
+            <select
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-sm"
+              value={formData.type}
+              onChange={(e) => handleFormDataChange("type", e.target.value)}
+              disabled={actionLoading}
+            >
+              <option value="">Select policy type</option>
+              <option value="NORMAL">Normal</option>
+              <option value="PROMOTION">Promotion</option>
+            </select>
+          </div>
+
           {/* Policy Name */}
           <div>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
@@ -200,16 +240,16 @@ const UpdateWarrantyPolicyModal = ({
             Cancel
           </button>
 
-          {/*  Nút Save được nâng cấp */}
+          {/*  Fixed Save Button */}
           <button
-            onClick={isChanged ? handleSubmit : undefined}
+            onClick={handleSubmit}
+            disabled={actionLoading || !isChanged}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium text-sm transition-all duration-300 ${actionLoading
               ? "bg-gray-400 cursor-not-allowed"
               : isChanged
                 ? "bg-green-600 hover:bg-green-700"
-                : "bg-gray-300 hover:bg-gray-400 text-gray-100"
+                : "bg-gray-300 cursor-not-allowed"
               }`}
-            disabled={actionLoading}
           >
             {actionLoading ? (
               <>

@@ -39,6 +39,8 @@ const WarrantyPolicyManagement = () => {
     description: "",
     durationPeriod: "",
     mileageLimit: "",
+    code: "",
+    type: "NORMAL",
   });
 
   // Filter, Search & Pagination
@@ -58,6 +60,8 @@ const WarrantyPolicyManagement = () => {
       const transformedPolicies = response.data.data.policyList.map(
         (policy) => ({
           id: policy.id,
+          code: policy.code || "N/A",
+          type: policy.type || "NORMAL",
           name: policy.name || "Unnamed Policy",
           description: policy.description || "No description available",
           durationPeriod: `${policy.durationPeriod} months`,
@@ -87,6 +91,8 @@ const WarrantyPolicyManagement = () => {
       setSuccess("");
 
       const apiData = {
+        code: policyData.code.trim(),
+        type: policyData.type,
         name: policyData.name,
         durationPeriod: parseInt(policyData.durationPeriod),
         mileageLimit: parseInt(policyData.mileageLimit),
@@ -112,6 +118,7 @@ const WarrantyPolicyManagement = () => {
   const handleEdit = (policy) => {
     const selected = policy.originalData || policy;
     setSelectedPolicy(selected);
+    setActionLoading(false);
     setShowUpdateModal(true);
   };
 
@@ -343,7 +350,7 @@ const WarrantyPolicyManagement = () => {
         onView={handleView}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        actionLoading={actionLoading}
+        actionLoading={false}
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}
         totalItems={filteredPolicies.length}
@@ -407,6 +414,7 @@ const WarrantyPolicyManagement = () => {
       <UpdateWarrantyPolicyModal
         showModal={showUpdateModal}
         policy={selectedPolicy}
+        actionLoading={actionLoading}
         onClose={() => setShowUpdateModal(false)}
         onUpdated={() => {
           fetchPolicies();
