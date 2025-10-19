@@ -43,14 +43,14 @@ const Sidebar = () => {
     //  Customer Registration — chỉ SC Staff — nằm ngay sau Dashboard
     ...(isScStaff
       ? [
-          {
-            name: "Customer Registration",
-            href: "/customer-registration",
-            icon: (
-              <UserPlus size={18} className={iconStyle} strokeWidth={1.8} />
-            ),
-          },
-        ]
+        {
+          name: "Customer Registration",
+          href: "/customer-registration",
+          icon: (
+            <UserPlus size={18} className={iconStyle} strokeWidth={1.8} />
+          ),
+        },
+      ]
       : []),
 
     //  Warranty Claims
@@ -70,77 +70,83 @@ const Sidebar = () => {
     //  Vehicle Management (Admin + EVM)
     ...(isAdmin || isEvmStaff
       ? [
-          {
-            name: "Vehicle Management",
-            href: "/vehicles",
-            icon: <Car size={18} className={iconStyle} strokeWidth={1.8} />,
-          },
-        ]
+        {
+          name: "Vehicle Management",
+          href: "/vehicles",
+          icon: <Car size={18} className={iconStyle} strokeWidth={1.8} />,
+        },
+      ]
       : []),
 
     //  CAMPAIGN MANAGEMENT
     ...(isAdmin || isEvmStaff
       ? [
-          {
-            name: "Campaign Management",
-            href: "/campaigns",
-            icon: (
-              <AlertTriangle
-                size={18}
-                className={iconStyle}
-                strokeWidth={1.8}
-              />
-            ),
-          },
-        ]
+        {
+          name: "Campaign Management",
+          href: "/campaigns",
+          icon: (
+            <AlertTriangle
+              size={18}
+              className={iconStyle}
+              strokeWidth={1.8}
+            />
+          ),
+        },
+      ]
       : []),
 
     //  Supply Chain — ẨN với SC_STAFF
     ...(isAdmin || isEvmStaff
       ? [
-          {
-            name: "Supply Chain",
-            href: "/supply-chain",
-            icon: (
-              <PackageSearch
-                size={18}
-                className={iconStyle}
-                strokeWidth={1.8}
-              />
-            ),
-          },
-        ]
+        {
+          name: "Supply Chain",
+          href: "/supply-chain",
+          icon: (
+            <PackageSearch
+              size={18}
+              className={iconStyle}
+              strokeWidth={1.8}
+            />
+          ),
+        },
+      ]
       : []),
 
-    // //  Analytics
-    // {
-    //   name: "Analytics & Reports",
-    //   href: "/analytics",
-    //   icon: <BarChart3 size={18} className={iconStyle} strokeWidth={1.8} />,
-    // },
+    //   Analytics & Reports — chỉ Admin & EVM Staff
+    ...(isAdmin || isEvmStaff
+      ? [
+        {
+          name: "Analytics & Reports",
+          href: "/analytics",
+          icon: (
+            <BarChart3 size={18} className={iconStyle} strokeWidth={1.8} />
+          ),
+        },
+      ]
+      : []),
 
     //  Policy
     ...(isAdmin || isEvmStaff
       ? [
-          {
-            name: "Policy",
-            href: "/policy",
-            icon: (
-              <FileText size={18} className={iconStyle} strokeWidth={1.8} />
-            ),
-          },
-        ]
+        {
+          name: "Policy",
+          href: "/policy",
+          icon: (
+            <FileText size={18} className={iconStyle} strokeWidth={1.8} />
+          ),
+        },
+      ]
       : []),
 
     //  User Management
     ...(isAdmin
       ? [
-          {
-            name: "User Management",
-            href: "/manage-users",
-            icon: <Users size={18} className={iconStyle} strokeWidth={1.8} />,
-          },
-        ]
+        {
+          name: "User Management",
+          href: "/manage-users",
+          icon: <Users size={18} className={iconStyle} strokeWidth={1.8} />,
+        },
+      ]
       : []),
   ];
 
@@ -153,9 +159,8 @@ const Sidebar = () => {
 
   return (
     <div
-      className={`transition-all duration-500 bg-white/50 backdrop-blur-xl border-r border-gray-200/70 shadow-lg h-full flex flex-col ${
-        collapsed ? "w-20" : "w-64"
-      }`}
+      className={`transition-all duration-500 bg-white/50 backdrop-blur-xl border-r border-gray-200/70 shadow-lg h-full flex flex-col ${collapsed ? "w-20" : "w-64"
+        }`}
     >
       {/* Header */}
       <div className="relative p-6 border-b border-gray-200/60 bg-gradient-to-r from-blue-50/60 to-blue-100/40 flex items-center justify-between backdrop-blur-md">
@@ -205,11 +210,10 @@ const Sidebar = () => {
                   }
                 >
                   <div
-                    className={`p-1.5 rounded-md transition-all duration-300 ${
-                      item.isActive
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-gray-100/70 text-gray-600 group-hover:bg-blue-50"
-                    }`}
+                    className={`p-1.5 rounded-md transition-all duration-300 ${item.isActive
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-gray-100/70 text-gray-600 group-hover:bg-blue-50"
+                      }`}
                   >
                     {item.icon}
                   </div>
@@ -223,9 +227,8 @@ const Sidebar = () => {
 
       {/* Footer */}
       <div
-        className={`p-4 border-t border-gray-200/70 bg-white/40 backdrop-blur-lg text-center ${
-          collapsed ? "text-[10px]" : ""
-        }`}
+        className={`p-4 border-t border-gray-200/70 bg-white/40 backdrop-blur-lg text-center ${collapsed ? "text-[10px]" : ""
+          }`}
       >
         <p className="text-xs text-gray-700 font-medium">EV Motors Corp</p>
         {!collapsed && (

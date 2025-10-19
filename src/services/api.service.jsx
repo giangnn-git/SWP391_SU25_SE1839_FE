@@ -257,3 +257,15 @@ export const updateCampaignApi = (id, campaignData) => {
     status: campaignData.status,
   });
 };
+
+//Reporting & Analytics API
+
+// Get performance report (Service Center Performance)
+export const getPerformanceReportApi = () => {
+  return axios.get("/api/api/reports/performances");
+};
+
+// { Reports - Resolution Time Distribution }
+export const getCompletedDurationReportApi = () => {
+  return axios.get("/api/api/reports/completed-duration");
+};

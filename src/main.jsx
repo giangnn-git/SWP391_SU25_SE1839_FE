@@ -18,6 +18,7 @@ import Profiles from "./pages/Profiles.jsx";
 import VehicleManagement from "./pages/VehicleManagement.jsx";
 import CampaignManagement from "./pages/CampaignManagement.jsx";
 import CustomerRegistration from "./pages/CustomerRegistration.jsx";
+import AnalyticsPage from "./pages/AnalyticsPage.jsx"; // ✅ ADD: Analytics Page import
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -126,6 +127,16 @@ const router = createBrowserRouter([
         element: (
           <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
             <CampaignManagement />
+          </PrivateRoute>
+        ),
+      },
+
+      //Analytics Page (chỉ Admin + EVM Staff có quyền truy cập)
+      {
+        path: "analytics",
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+            <AnalyticsPage />
           </PrivateRoute>
         ),
       },
