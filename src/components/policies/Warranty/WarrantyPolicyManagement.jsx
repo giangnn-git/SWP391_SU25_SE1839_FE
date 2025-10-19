@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   XCircle,
   Shield,
-  RotateCcw,
   X,
 } from "lucide-react";
 import {
@@ -102,7 +101,7 @@ const WarrantyPolicyManagement = () => {
       console.error("Error creating policy:", error);
       setError(
         error.response?.data?.message ||
-          "Failed to create policy. Please try again."
+        "Failed to create policy. Please try again."
       );
     } finally {
       setActionLoading(false);
@@ -133,7 +132,7 @@ const WarrantyPolicyManagement = () => {
   const filteredPolicies = policies.filter((policy) => {
     const matchesSearch = searchTerm
       ? policy.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        policy.description.toLowerCase().includes(searchTerm.toLowerCase())
+      policy.description.toLowerCase().includes(searchTerm.toLowerCase())
       : true;
 
     const matchesDuration = filterDuration
@@ -193,7 +192,6 @@ const WarrantyPolicyManagement = () => {
           onClick={fetchPolicies}
           className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
         >
-          <RotateCcw size={16} />
           Retry
         </button>
       </div>
@@ -219,16 +217,6 @@ const WarrantyPolicyManagement = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Refresh Button */}
-          <button
-            onClick={fetchPolicies}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            disabled={loading}
-          >
-            <RotateCcw size={18} className={loading ? "animate-spin" : ""} />
-            Refresh
-          </button>
-
           {/* Add New Policy Button */}
           <button
             className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50"
@@ -341,7 +329,6 @@ const WarrantyPolicyManagement = () => {
           </div>
         </div>
 
-        {/* Search Results Info */}
         {searchTerm && (
           <div className="mt-3 text-sm text-green-600">
             Found {filteredPolicies.length} policies matching "{searchTerm}"

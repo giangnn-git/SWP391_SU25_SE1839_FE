@@ -3,7 +3,6 @@ import {
   PlusCircle,
   Filter,
   Search,
-  RotateCcw,
   X,
   Settings,
 } from "lucide-react";
@@ -58,9 +57,9 @@ const PartPolicyManagement = () => {
   const filteredPolicies = policies.filter((policy) => {
     const matchesSearch = searchTerm
       ? policy.partName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        policy.partCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        policy.policyCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        policy.id?.toString().includes(searchTerm)
+      policy.partCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      policy.policyCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      policy.id?.toString().includes(searchTerm)
       : true;
 
     const matchesPart = filterPartName
@@ -79,8 +78,8 @@ const PartPolicyManagement = () => {
       filterStatus === ""
         ? true
         : filterStatus === "available"
-        ? new Date(policy.endDate) > new Date()
-        : new Date(policy.endDate) <= new Date();
+          ? new Date(policy.endDate) > new Date()
+          : new Date(policy.endDate) <= new Date();
 
     return (
       matchesSearch &&
@@ -123,31 +122,24 @@ const PartPolicyManagement = () => {
     setShowViewModal(true);
   };
 
-  // Handle status toggle - FINAL FIXED VERSION
+  // Handle status toggle
   const handleStatusToggle = async (partPolicyId) => {
     setActionLoading(true);
     try {
       const response = await updatePartPolicyStatusApi(partPolicyId);
-
-      // Refresh data từ server để đảm bảo consistency
       await fetchPolicies();
-
-      // Hiển thị thông báo thành công dựa trên response
       const updatedPolicy = response.data?.data;
       if (updatedPolicy) {
         const newStatus = updatedPolicy.status;
         setSuccess(
-          `Policy ${
-            newStatus === "ACTIVE" ? "activated" : "deactivated"
+          `Policy ${newStatus === "ACTIVE" ? "activated" : "deactivated"
           } successfully!`
         );
       } else {
         setSuccess("Policy status updated successfully!");
       }
     } catch (err) {
-      // Hiển thị thông báo lỗi cụ thể
       let errorMessage = "Failed to update policy status. Please try again.";
-
       if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       } else if (err.response?.status === 401) {
@@ -155,7 +147,6 @@ const PartPolicyManagement = () => {
       } else if (err.response?.status === 404) {
         errorMessage = "Policy not found.";
       }
-
       setError(errorMessage);
     } finally {
       setActionLoading(false);
@@ -187,7 +178,6 @@ const PartPolicyManagement = () => {
     setSearchTerm("");
   };
 
-  // Check if any filter is active
   const isAnyFilterActive =
     filterPartName ||
     filterPartCode ||
@@ -214,16 +204,6 @@ const PartPolicyManagement = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Refresh Button */}
-          <button
-            onClick={fetchPolicies}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            disabled={loading}
-          >
-            <RotateCcw size={18} className={loading ? "animate-spin" : ""} />
-            Refresh
-          </button>
-
           {/* Add New Policy Button */}
           <button
             className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50"
@@ -355,38 +335,34 @@ const PartPolicyManagement = () => {
           <div className="flex gap-2">
             <button
               onClick={() => setFilterStatus("")}
-              className={`px-4 py-2 text-sm rounded-lg transition-all ${
-                filterStatus === ""
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
+              className={`px-4 py-2 text-sm rounded-lg transition-all ${filterStatus === ""
+                ? "bg-blue-600 text-white shadow-sm"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
             >
               All
             </button>
             <button
               onClick={() => setFilterStatus("available")}
-              className={`px-4 py-2 text-sm rounded-lg transition-all ${
-                filterStatus === "available"
-                  ? "bg-green-600 text-white shadow-sm"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
+              className={`px-4 py-2 text-sm rounded-lg transition-all ${filterStatus === "available"
+                ? "bg-green-600 text-white shadow-sm"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
             >
               Available
             </button>
             <button
               onClick={() => setFilterStatus("expired")}
-              className={`px-4 py-2 text-sm rounded-lg transition-all ${
-                filterStatus === "expired"
-                  ? "bg-red-600 text-white shadow-sm"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
+              className={`px-4 py-2 text-sm rounded-lg transition-all ${filterStatus === "expired"
+                ? "bg-red-600 text-white shadow-sm"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
             >
               Expired
             </button>
           </div>
         </div>
 
-        {/* Search Results Info */}
         {searchTerm && (
           <div className="mt-3 text-sm text-blue-600">
             Found {filteredPolicies.length} policies matching "{searchTerm}"

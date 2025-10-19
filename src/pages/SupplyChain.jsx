@@ -4,7 +4,6 @@ import {
   Warehouse,
   Filter,
   Eye,
-  RotateCcw,
   LayoutGrid,
   Table,
   Download,
@@ -207,13 +206,6 @@ const SupplyChain = () => {
 
         <div className="flex gap-2">
           <button
-            onClick={() => fetchPartInventories(selectedServiceCenter || null)}
-            className="flex items-center border border-gray-300 bg-white/80 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-lg shadow-sm transition-all duration-300 hover:shadow-md"
-          >
-            <RotateCcw size={18} className="mr-2 text-blue-600" />
-            Refresh
-          </button>
-          <button
             onClick={handleExportCSV}
             className="flex items-center border border-gray-300 bg-white/80 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-lg shadow-sm transition-all duration-300 hover:shadow-md"
           >
@@ -224,7 +216,6 @@ const SupplyChain = () => {
       </div>
 
       {/* Dashboard Summary */}
-      {/* Dashboard Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6 animate-fadeInScale">
         {/* Total Warehouses */}
         <div className="group relative overflow-hidden bg-white rounded-2xl border border-blue-100 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
@@ -234,7 +225,9 @@ const SupplyChain = () => {
               <Warehouse size={28} strokeWidth={1.8} />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Total Warehouses</p>
+              <p className="text-sm font-medium text-gray-500">
+                Total Warehouses
+              </p>
               <h2 className="text-3xl font-bold text-gray-800 tracking-tight">
                 {uniqueWarehouses.length}
               </h2>
@@ -273,7 +266,9 @@ const SupplyChain = () => {
               <AlertTriangle size={28} strokeWidth={1.8} />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Low Stock Items</p>
+              <p className="text-sm font-medium text-gray-500">
+                Low Stock Items
+              </p>
               <h2 className="text-3xl font-bold text-gray-800 tracking-tight">
                 {parts.filter((p) => p.quantity < 100).length}
               </h2>
@@ -282,7 +277,6 @@ const SupplyChain = () => {
           <div className="h-1 bg-orange-400/70 w-0 group-hover:w-full transition-all duration-700"></div>
         </div>
       </div>
-
 
       {/* Filter Bar */}
       <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-md border border-gray-200 rounded-xl p-4 mb-5 shadow-md animate-fadeInScale">
