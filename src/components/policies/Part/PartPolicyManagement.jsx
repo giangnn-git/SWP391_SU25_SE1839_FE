@@ -27,7 +27,7 @@ const PartPolicyManagement = () => {
   const [filterPartName, setFilterPartName] = useState("");
   const [filterPartCode, setFilterPartCode] = useState("");
   const [filterPolicyCode, setFilterPolicyCode] = useState("");
-  const [filterStatus, setFilterStatus] = useState(""); // "available", "expired", or ""
+  const [filterStatus, setFilterStatus] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -123,40 +123,40 @@ const PartPolicyManagement = () => {
     setShowViewModal(true);
   };
 
-  // Handle status toggle
-  // Handle status toggle - FIXED VERSION (không cần payload)
+  // Handle status toggle - FINAL FIXED VERSION
   const handleStatusToggle = async (partPolicyId) => {
     setActionLoading(true);
     try {
-      console.log("🔍 Toggling policy status for ID:", partPolicyId);
+      const response = await updatePartPolicyStatusApi(partPolicyId);
 
-      // Gọi API không cần payload
-      await updatePartPolicyStatusApi(partPolicyId);
+      // Refresh data từ server để đảm bảo consistency
+      await fetchPolicies();
 
-      // Update local state - toggle trạng thái hiện tại
-      setPolicies((prev) =>
-        prev.map((policy) =>
-          policy.id === partPolicyId
-            ? {
-                ...policy,
-                active: !policy.active, // Toggle trạng thái hiện tại
-                status: policy.status === "ACTIVE" ? "INACTIVE" : "ACTIVE", // Toggle status string
-              }
-            : policy
-        )
-      );
-
-      // Lấy policy hiện tại để hiển thị message chính xác
-      const currentPolicy = policies.find((p) => p.id === partPolicyId);
-      const newStatus = !currentPolicy?.active;
-
-      setSuccess(
-        `Policy ${newStatus ? "activated" : "deactivated"} successfully!`
-      );
+      // Hiển thị thông báo thành công dựa trên response
+      const updatedPolicy = response.data?.data;
+      if (updatedPolicy) {
+        const newStatus = updatedPolicy.status;
+        setSuccess(
+          `Policy ${
+            newStatus === "ACTIVE" ? "activated" : "deactivated"
+          } successfully!`
+        );
+      } else {
+        setSuccess("Policy status updated successfully!");
+      }
     } catch (err) {
-      console.error("❌ Error updating policy status:", err);
-      console.log("🔍 Error details:", err.response?.data);
-      setError("Failed to update policy status. Please try again.");
+      // Hiển thị thông báo lỗi cụ thể
+      let errorMessage = "Failed to update policy status. Please try again.";
+
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.response?.status === 401) {
+        errorMessage = "Unauthorized. Please check your permissions.";
+      } else if (err.response?.status === 404) {
+        errorMessage = "Policy not found.";
+      }
+
+      setError(errorMessage);
     } finally {
       setActionLoading(false);
     }

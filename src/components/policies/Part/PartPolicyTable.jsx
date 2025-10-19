@@ -128,10 +128,10 @@ const PartPolicyTable = ({
         </thead>
         <tbody className="divide-y divide-gray-100">
           {policies.map((policy) => {
-            // SỬA LẠI: Coverage status dựa trên endDate
+            //  Coverage status dựa trên endDate
             const isCoverageActive = new Date(policy.endDate) >= new Date();
 
-            // SỬA LẠI: Policy status dựa trên field status từ BE
+            //  Policy status dựa trên field status từ BE
             const isPolicyActive = policy.status === "ACTIVE";
 
             return (
@@ -157,7 +157,6 @@ const PartPolicyTable = ({
                     </div>
                   </div>
                 </td>
-
                 {/* Policy Code Column */}
                 <td className="py-4 px-6">
                   <div className="flex items-center gap-2">
@@ -169,7 +168,6 @@ const PartPolicyTable = ({
                     </span>
                   </div>
                 </td>
-
                 {/* Start Date Column */}
                 <td className="py-4 px-6">
                   <div className="flex items-center gap-2 text-gray-700">
@@ -179,7 +177,6 @@ const PartPolicyTable = ({
                     </span>
                   </div>
                 </td>
-
                 {/* End Date Column */}
                 <td className="py-4 px-6">
                   <div className="flex items-center gap-2 text-gray-700">
@@ -189,8 +186,7 @@ const PartPolicyTable = ({
                     </span>
                   </div>
                 </td>
-
-                {/* Coverage Status Column - SỬA LẠI */}
+                {/* Coverage Status Column */}
                 <td className="py-4 px-6">
                   <div
                     className={`inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-semibold ${
@@ -202,7 +198,7 @@ const PartPolicyTable = ({
                     {isCoverageActive ? (
                       <>
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        Active
+                        Available
                       </>
                     ) : (
                       <>
@@ -212,22 +208,24 @@ const PartPolicyTable = ({
                     )}
                   </div>
                 </td>
+                {/* Policy Status Column  */}
 
-                {/* Policy Status Column - SỬA LẠI: Dùng trực tiếp field status */}
                 <td className="py-4 px-6">
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => handleStatusToggle(policy)}
                       disabled={statusLoading[policy.id] || actionLoading}
                       className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                        isPolicyActive
+                        policy.status === "ACTIVE"
                           ? "bg-green-600 hover:bg-green-700"
                           : "bg-gray-300 hover:bg-gray-400"
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       <span
                         className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${
-                          isPolicyActive ? "translate-x-6" : "translate-x-1"
+                          policy.status === "ACTIVE"
+                            ? "translate-x-6"
+                            : "translate-x-1"
                         }`}
                       />
                     </button>
@@ -235,22 +233,23 @@ const PartPolicyTable = ({
                     <div className="flex items-center gap-2">
                       {statusLoading[policy.id] ? (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                      ) : isPolicyActive ? (
+                      ) : policy.status === "ACTIVE" ? (
                         <CheckCircle size={16} className="text-green-600" />
                       ) : (
                         <XCircle size={16} className="text-gray-400" />
                       )}
                       <span
                         className={`text-sm font-medium ${
-                          isPolicyActive ? "text-green-700" : "text-gray-500"
+                          policy.status === "ACTIVE"
+                            ? "text-green-700"
+                            : "text-gray-500"
                         }`}
                       >
-                        {policy.status} {/* Hiển thị trực tiếp từ BE */}
+                        {policy.status}
                       </span>
                     </div>
                   </div>
                 </td>
-
                 {/* Actions Column */}
                 <td className="py-4 px-6">
                   <div className="flex items-center justify-center gap-2">
