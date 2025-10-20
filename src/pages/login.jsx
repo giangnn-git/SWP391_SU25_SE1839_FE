@@ -17,7 +17,7 @@ const LoginPage = () => {
     e.preventDefault();
     setError("");
     setLoading(true);
-    // localStorage.clear();
+    localStorage.clear();
 
     try {
       const res = await userLoginApi(user, password);
