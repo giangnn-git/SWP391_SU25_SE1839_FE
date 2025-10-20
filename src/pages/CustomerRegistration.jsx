@@ -16,16 +16,32 @@ import {
   Car,
   ChevronDown,
   Check,
+  FileText,
+  Shield,
+  CheckCircle,
+  AlertCircle,
 } from "lucide-react";
-import { getAllVehiclesApi, createCustomerApi } from "../services/api.service";
+import {
+  getAllVehiclesApi,
+  createCustomerApi,
+  getCustomerByVinApi,
+  getCampaignByVinApi,
+} from "../services/api.service";
 
 const CustomerRegistration = () => {
   const [vehicles, setVehicles] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [viewVehicle, setViewVehicle] = useState(null);
+  const [customerDetail, setCustomerDetail] = useState(null);
+  const [campaignData, setCampaignData] = useState(null);
+  const [loadingCustomer, setLoadingCustomer] = useState(false);
+  const [loadingCampaign, setLoadingCampaign] = useState(false);
+  const [activeDetailTab, setActiveDetailTab] = useState("customer");
+
   const [formData, setFormData] = useState({
     name: "",
     phoneNumber: "",
+    licensePlate: "",
     email: "",
     address: "",
     vin: "",
@@ -46,7 +62,30 @@ const CustomerRegistration = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
-  // Hide notifications automatically after 5 seconds
+  // Computed values
+  const registeredVehicles = vehicles.filter(
+    (vehicle) => vehicle.customerName && vehicle.customerName !== "N/A"
+  );
+
+  const availableVehicles = vehicles.filter((v) => v.customerName === "N/A");
+
+  const filteredVehicles = registeredVehicles.filter(
+    (vehicle) =>
+      vehicle.vin?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vehicle.modelName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vehicle.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vehicle.licensePlate?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredVehicles.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentVehicles = filteredVehicles.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+
+  // Effects
   useEffect(() => {
     if (success || error) {
       const timer = setTimeout(() => {
@@ -57,7 +96,6 @@ const CustomerRegistration = () => {
     }
   }, [success, error]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -67,14 +105,11 @@ const CustomerRegistration = () => {
         setShowVinDropdown(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch vehicles
+  // API Functions
   const fetchVehicles = async () => {
     try {
       setLoading(true);
@@ -89,6 +124,49 @@ const CustomerRegistration = () => {
     }
   };
 
+  const fetchCustomerDetail = async (vin) => {
+    try {
+      setLoadingCustomer(true);
+      const response = await getCustomerByVinApi(vin);
+      setCustomerDetail(response.data.data);
+    } catch (err) {
+      console.error("Error fetching customer details:", err);
+      setCustomerDetail(null);
+    } finally {
+      setLoadingCustomer(false);
+    }
+  };
+
+  const fetchCampaignByVin = async (vin) => {
+    try {
+      setLoadingCampaign(true);
+      const response = await getCampaignByVinApi(vin);
+      setCampaignData(response.data.data);
+    } catch (err) {
+      if (err.response?.status === 500) {
+        setCampaignData(null);
+      } else {
+        console.error("Error fetching campaign:", err);
+        setCampaignData(null);
+      }
+    } finally {
+      setLoadingCampaign(false);
+    }
+  };
+
+  const handleViewVehicle = async (vehicle) => {
+    const vehicleData = vehicle.vehicle || vehicle;
+    setViewVehicle(vehicleData);
+    setCustomerDetail(null);
+    setCampaignData(null);
+    setActiveDetailTab("customer");
+
+    await Promise.all([
+      fetchCustomerDetail(vehicleData.vin),
+      fetchCampaignByVin(vehicleData.vin),
+    ]);
+  };
+
   useEffect(() => {
     fetchVehicles();
   }, []);
@@ -98,7 +176,6 @@ const CustomerRegistration = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Submit form — call backend
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.phoneNumber || !selectedVin) {
@@ -118,6 +195,7 @@ const CustomerRegistration = () => {
       setFormData({
         name: "",
         phoneNumber: "",
+        licensePlate: "",
         email: "",
         address: "",
         vin: "",
@@ -134,75 +212,40 @@ const CustomerRegistration = () => {
     }
   };
 
-  // Get available VINs for dropdown (chưa đăng ký)
-  const availableVehicles = vehicles.filter((v) => v.customerName === "N/A");
-
-  // Filter VINs based on search input
   const filteredVins = availableVehicles.filter(
     (vehicle) =>
       vehicle.vin?.toLowerCase().includes(vinSearch.toLowerCase()) ||
       vehicle.modelName?.toLowerCase().includes(vinSearch.toLowerCase())
   );
 
-  // Handle VIN selection
   const handleVinSelect = (vin) => {
     setSelectedVin(vin);
     setVinSearch(vin);
     setShowVinDropdown(false);
   };
 
-  // Handle manual VIN input
   const handleVinInputChange = (value) => {
     setVinSearch(value);
     setSelectedVin(value);
     setShowVinDropdown(true);
   };
 
-  // 🔥 CHỈ HIỂN THỊ CÁC VIN ĐÃ CÓ CUSTOMER ĐĂNG KÝ
-  const registeredVehicles = vehicles.filter(
-    (vehicle) => vehicle.customerName && vehicle.customerName !== "N/A"
-  );
-
-  // Filter vehicles based on search term (chỉ trên registered vehicles)
-  const filteredVehicles = registeredVehicles.filter(
-    (vehicle) =>
-      vehicle.vin?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vehicle.modelName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vehicle.customerName?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredVehicles.length / itemsPerPage);
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentVehicles = filteredVehicles.slice(
-    indexOfFirstItem,
-    indexOfLastItem
-  );
-
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
-  const getStatusBadge = (customerName) => {
-    const isRegistered = customerName !== "N/A";
-    return (
-      <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          isRegistered
-            ? "bg-green-100 text-green-800"
-            : "bg-gray-100 text-gray-800"
-        }`}
-      >
-        {isRegistered ? "Registered" : "Available"}
-      </span>
-    );
+  const formatDate = (dateArray) => {
+    if (!dateArray || !Array.isArray(dateArray)) return "N/A";
+    const [year, month, day] = dateArray;
+    return `${day.toString().padStart(2, "0")}/${month
+      .toString()
+      .padStart(2, "0")}/${year}`;
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/30 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header Section */}
+        {/* Header */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div className="mb-4 sm:mb-0">
@@ -213,28 +256,23 @@ const CustomerRegistration = () => {
                 Customer Registration
               </h1>
               <p className="text-gray-600 mt-2">
-                Manage registered customers and their vehicle VINs
+                Manage registered customers and their vehicle information
               </p>
             </div>
 
             <button
               onClick={() => setShowForm(true)}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl 
-                         hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl 
-                         active:scale-95 font-medium group"
+              className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors font-medium"
             >
-              <Plus
-                size={20}
-                className="group-hover:scale-110 transition-transform"
-              />
-              Register New Customer
+              <Plus size={20} />
+              Register Customer
             </button>
           </div>
         </div>
 
-        {/* Stats Cards - UPDATED */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div className="bg-white rounded-xl p-6 shadow-sm border">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
@@ -244,13 +282,13 @@ const CustomerRegistration = () => {
                   {vehicles.length}
                 </p>
               </div>
-              <div className="p-3 bg-blue-50 rounded-xl">
+              <div className="p-3 bg-blue-100 rounded-xl">
                 <Car className="text-blue-600" size={24} />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div className="bg-white rounded-xl p-6 shadow-sm border">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
@@ -260,31 +298,31 @@ const CustomerRegistration = () => {
                   {registeredVehicles.length}
                 </p>
               </div>
-              <div className="p-3 bg-green-50 rounded-xl">
+              <div className="p-3 bg-green-100 rounded-xl">
                 <User className="text-green-600" size={24} />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div className="bg-white rounded-xl p-6 shadow-sm border">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
                   Available for Registration
                 </p>
                 <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {vehicles.length - registeredVehicles.length}
+                  {availableVehicles.length}
                 </p>
               </div>
-              <div className="p-3 bg-gray-50 rounded-xl">
+              <div className="p-3 bg-gray-100 rounded-xl">
                 <Car className="text-gray-600" size={24} />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Search and Filter Bar */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+        {/* Search Bar */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border mb-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
               <Search
@@ -293,13 +331,13 @@ const CustomerRegistration = () => {
               />
               <input
                 type="text"
-                placeholder="Search registered customers by VIN, model, or customer name..."
+                placeholder="Search by VIN, model, customer name, or license plate..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               />
             </div>
-            <button className="inline-flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+            <button className="inline-flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
               <Filter size={20} />
               Filter
             </button>
@@ -308,24 +346,24 @@ const CustomerRegistration = () => {
 
         {/* Messages */}
         {success && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-2xl text-green-700 shadow-sm transition-all duration-300">
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <CheckCircle size={16} className="text-green-500" />
               {success}
             </div>
           </div>
         )}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700 shadow-sm transition-all duration-300">
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+              <AlertCircle size={16} className="text-red-500" />
               {error}
             </div>
           </div>
         )}
 
         {/* Vehicles Table */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -334,7 +372,7 @@ const CustomerRegistration = () => {
             <>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50/80 border-b border-gray-200">
+                  <thead className="bg-gray-50 border-b">
                     <tr>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Vehicle Information
@@ -343,7 +381,7 @@ const CustomerRegistration = () => {
                         Customer
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        Status
+                        License Plate
                       </th>
                       <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Actions
@@ -351,54 +389,72 @@ const CustomerRegistration = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {currentVehicles.map((vehicle, index) => (
-                      <tr
-                        key={index}
-                        className="hover:bg-gray-50/50 transition-colors duration-150 group"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-50 rounded-lg">
-                              <Car className="text-blue-600" size={18} />
-                            </div>
-                            <div>
-                              <div className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                                {vehicle.vin}
+                    {currentVehicles.map((vehicle, index) => {
+                      const vehicleData = vehicle.vehicle || vehicle;
+                      const hasCampaign = vehicle.vehicle
+                        ? vehicle.name !== null
+                        : false;
+
+                      return (
+                        <tr
+                          key={index}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-blue-50 rounded-lg">
+                                <Car className="text-blue-600" size={18} />
                               </div>
-                              <div className="text-sm text-gray-600 flex items-center gap-2 mt-1">
-                                <span>{vehicle.modelName}</span>
-                                <span className="text-gray-300">•</span>
-                                <span className="flex items-center gap-1">
-                                  <Calendar size={14} />
-                                  {vehicle.productYear}
-                                </span>
+                              <div>
+                                <div className="font-semibold text-gray-900">
+                                  {vehicleData.vin}
+                                </div>
+                                <div className="text-sm text-gray-600 flex items-center gap-2 mt-1">
+                                  <span>{vehicleData.modelName}</span>
+                                  <span className="text-gray-300">•</span>
+                                  <span className="flex items-center gap-1">
+                                    <Calendar size={14} />
+                                    {vehicleData.productYear}
+                                  </span>
+                                </div>
+                                {hasCampaign && (
+                                  <div className="text-xs text-orange-600 mt-1 flex items-center gap-1">
+                                    <Shield size={12} />
+                                    Has Active Campaign
+                                  </div>
+                                )}
                               </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900">
-                            {vehicle.customerName}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          {getStatusBadge(vehicle.customerName)}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => setViewVehicle(vehicle)}
-                            className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-200 hover:shadow-sm group/btn"
-                            title="View details"
-                          >
-                            <Eye
-                              size={16}
-                              className="group-hover/btn:scale-110 transition-transform"
-                            />
-                            View
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-gray-900">
+                              {vehicleData.customerName}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            {vehicleData.licensePlate ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                <FileText size={12} className="mr-1" />
+                                {vehicleData.licensePlate}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                No Plate
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <button
+                              onClick={() => handleViewVehicle(vehicle)}
+                              className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+                            >
+                              <Eye size={16} />
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
 
                     {filteredVehicles.length === 0 && (
                       <tr>
@@ -430,12 +486,12 @@ const CustomerRegistration = () => {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                <div className="px-6 py-4 border-t border-gray-100 bg-gray-50">
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-gray-600">
                       Showing {indexOfFirstItem + 1}-
                       {Math.min(indexOfLastItem, filteredVehicles.length)} of{" "}
-                      {filteredVehicles.length} registered customers
+                      {filteredVehicles.length} vehicles
                     </p>
                     <div className="flex items-center gap-2">
                       <button
@@ -487,76 +543,271 @@ const CustomerRegistration = () => {
       {/* View Detail Modal */}
       {viewVehicle && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-gray-200/80">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
               <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                 <Eye className="text-blue-600" size={20} />
-                Customer & Vehicle Details
+                Vehicle & Customer Details
               </h2>
               <button
-                onClick={() => setViewVehicle(null)}
+                onClick={() => {
+                  setViewVehicle(null);
+                  setCustomerDetail(null);
+                  setCampaignData(null);
+                }}
                 className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400 hover:text-gray-600"
               >
                 <X size={20} />
               </button>
             </div>
-            <div className="p-6 space-y-4">
-              <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl">
-                <Car className="text-blue-600" size={20} />
-                <div>
-                  <div className="font-semibold text-gray-900">
+
+            {/* Vehicle Summary */}
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl">
+                <Car className="text-blue-600" size={24} />
+                <div className="flex-1">
+                  <div className="font-semibold text-gray-900 text-lg">
                     {viewVehicle.vin}
                   </div>
-                  <div className="text-sm text-gray-600">
-                    {viewVehicle.modelName} • {viewVehicle.productYear}
+                  <div className="text-sm text-gray-600 flex items-center gap-4 mt-1">
+                    <span>
+                      {viewVehicle.modelName} • {viewVehicle.productYear}
+                    </span>
+                    {viewVehicle.licensePlate && (
+                      <span className="flex items-center gap-1 text-blue-600 font-medium">
+                        <FileText size={14} />
+                        {viewVehicle.licensePlate}
+                      </span>
+                    )}
                   </div>
+                  {campaignData && (
+                    <div className="text-sm text-green-600 font-medium mt-2 flex items-center gap-1">
+                      <Shield size={14} />
+                      Active Campaign: {campaignData.name}
+                    </div>
+                  )}
                 </div>
               </div>
+            </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 text-sm">
-                  <User className="text-gray-400" size={16} />
-                  <span className="text-gray-600">Customer:</span>
-                  <span className="font-medium text-gray-900">
-                    {viewVehicle.customerName}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3 text-sm">
-                  <Phone className="text-gray-400" size={16} />
-                  <span className="text-gray-600">Phone:</span>
-                  <span className="font-medium text-gray-900">
-                    {viewVehicle.phoneNumber || "N/A"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <Mail className="text-gray-400" size={16} />
-                  <span className="text-gray-600">Email:</span>
-                  <span className="font-medium text-gray-900">
-                    {viewVehicle.email || "N/A"}
-                  </span>
-                </div>
+            {/* Tab Navigation */}
+            <div className="border-b border-gray-200">
+              <div className="flex px-6">
+                <button
+                  onClick={() => setActiveDetailTab("customer")}
+                  className={`py-3 px-4 font-medium text-sm border-b-2 transition-colors ${
+                    activeDetailTab === "customer"
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  👤 Customer Information
+                </button>
+                <button
+                  onClick={() => setActiveDetailTab("warranty")}
+                  className={`py-3 px-4 font-medium text-sm border-b-2 transition-colors ${
+                    activeDetailTab === "warranty"
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  🛡️ Warranty & Campaigns
+                </button>
               </div>
+            </div>
 
-              <div className="pt-4 border-t border-gray-100">
-                {getStatusBadge(viewVehicle.customerName)}
-              </div>
+            {/* Tab Content */}
+            <div className="overflow-y-auto max-h-96">
+              {/* Customer Information Tab */}
+              {activeDetailTab === "customer" && (
+                <div className="p-6 space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <User className="text-green-600" size={18} />
+                    Customer Details
+                  </h3>
+
+                  {loadingCustomer ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                      <span className="ml-2 text-gray-600">
+                        Loading customer details...
+                      </span>
+                    </div>
+                  ) : customerDetail ? (
+                    <div className="space-y-3 bg-green-50 rounded-xl p-4">
+                      <div className="flex items-center gap-3 text-sm">
+                        <User className="text-gray-500" size={16} />
+                        <span className="text-gray-600 font-medium w-20">
+                          Name:
+                        </span>
+                        <span className="font-semibold text-gray-900">
+                          {customerDetail.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm">
+                        <Phone className="text-gray-500" size={16} />
+                        <span className="text-gray-600 font-medium w-20">
+                          Phone:
+                        </span>
+                        <span className="font-semibold text-gray-900">
+                          {customerDetail.phoneNumber}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm">
+                        <Mail className="text-gray-500" size={16} />
+                        <span className="text-gray-600 font-medium w-20">
+                          Email:
+                        </span>
+                        <span className="font-semibold text-gray-900">
+                          {customerDetail.email}
+                        </span>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm">
+                        <MapPin className="text-gray-500 mt-0.5" size={16} />
+                        <span className="text-gray-600 font-medium w-20">
+                          Address:
+                        </span>
+                        <span className="font-semibold text-gray-900 flex-1">
+                          {customerDetail.address}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-xl">
+                      <User className="mx-auto mb-2 text-gray-400" size={24} />
+                      <p>No customer details found</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Warranty & Campaigns Tab */}
+              {activeDetailTab === "warranty" && (
+                <div className="p-6 space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <Shield className="text-orange-600" size={18} />
+                    Warranty Campaign
+                  </h3>
+
+                  {loadingCampaign ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                      <span className="ml-2 text-gray-600">
+                        Loading campaign details...
+                      </span>
+                    </div>
+                  ) : campaignData ? (
+                    <div className="space-y-4">
+                      <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <div className="font-semibold text-gray-900 text-lg mb-1">
+                              {campaignData.name}
+                            </div>
+                            {campaignData.code && (
+                              <div className="text-sm text-gray-600">
+                                Code: {campaignData.code}
+                              </div>
+                            )}
+                          </div>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                            <CheckCircle size={12} className="mr-1" />
+                            Active
+                          </span>
+                        </div>
+
+                        {campaignData.description && (
+                          <div className="text-sm text-gray-700 mb-4 p-3 bg-white rounded-lg border">
+                            {campaignData.description}
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Calendar size={14} className="text-gray-400" />
+                              <span className="text-gray-600 font-medium">
+                                Campaign Period:
+                              </span>
+                            </div>
+                            <div className="ml-6 space-y-1">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Start:</span>
+                                <span className="font-medium">
+                                  {formatDate(campaignData.startDate)}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">End:</span>
+                                <span className="font-medium">
+                                  {formatDate(campaignData.endDate)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Calendar size={14} className="text-gray-400" />
+                              <span className="text-gray-600 font-medium">
+                                Production Period:
+                              </span>
+                            </div>
+                            <div className="ml-6 space-y-1">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">From:</span>
+                                <span className="font-medium">
+                                  {formatDate(campaignData.produceDateFrom)}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">To:</span>
+                                <span className="font-medium">
+                                  {formatDate(campaignData.produceDateTo)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 🔥 ĐÃ BỎ: Affected Vehicles Count section */}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-xl">
+                      <AlertCircle
+                        className="mx-auto mb-2 text-gray-400"
+                        size={24}
+                      />
+                      <p className="font-medium">No active campaign found</p>
+                      <p className="text-sm mt-1">
+                        This vehicle is not part of any warranty campaign
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Register Form Modal - VIN COMBOBOX */}
+      {/* Register Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl border border-gray-200/80 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
               <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                 <UserPlus className="text-blue-600" size={20} />
                 Register New Customer
               </h2>
               <button
-                onClick={() => setShowForm(false)}
+                onClick={() => {
+                  setShowForm(false);
+                  setSelectedVin("");
+                  setVinSearch("");
+                }}
                 className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400 hover:text-gray-600"
               >
                 <X size={20} />
@@ -585,7 +836,7 @@ const CustomerRegistration = () => {
                       name="name"
                       value={formData.name}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                       placeholder="Enter full name"
                     />
                   </div>
@@ -605,8 +856,28 @@ const CustomerRegistration = () => {
                       name="phoneNumber"
                       value={formData.phoneNumber}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                       placeholder="e.g. 0901234567"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    License Plate
+                  </label>
+                  <div className="relative">
+                    <FileText
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                      size={16}
+                    />
+                    <input
+                      type="text"
+                      name="licensePlate"
+                      value={formData.licensePlate}
+                      onChange={handleChange}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      placeholder="e.g. 51A-12345"
                     />
                   </div>
                 </div>
@@ -625,19 +896,19 @@ const CustomerRegistration = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                       placeholder="example@email.com"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="md:col-span-2 space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
                     Address
                   </label>
                   <div className="relative">
                     <MapPin
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                      className="absolute left-3 top-3 transform text-gray-400"
                       size={16}
                     />
                     <input
@@ -645,14 +916,14 @@ const CustomerRegistration = () => {
                       name="address"
                       value={formData.address}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                       placeholder="e.g. Hanoi, Vietnam"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* 🔥 VIN COMBOBOX  */}
+              {/* VIN Combobox */}
               <div className="space-y-2" ref={vinDropdownRef}>
                 <label className="block text-sm font-medium text-gray-700">
                   Vehicle VIN *
@@ -663,7 +934,7 @@ const CustomerRegistration = () => {
                     value={vinSearch}
                     onChange={(e) => handleVinInputChange(e.target.value)}
                     onFocus={() => setShowVinDropdown(true)}
-                    className="w-full pl-4 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    className="w-full pl-4 pr-10 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     placeholder="Type VIN or select from available vehicles..."
                   />
                   <button
@@ -674,9 +945,8 @@ const CustomerRegistration = () => {
                     <ChevronDown size={20} />
                   </button>
 
-                  {/* Dropdown Menu */}
                   {showVinDropdown && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       {filteredVins.length === 0 ? (
                         <div className="px-4 py-3 text-sm text-gray-500">
                           No available vehicles found
@@ -707,7 +977,7 @@ const CustomerRegistration = () => {
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500">
                   {availableVehicles.length} available vehicles. Type to search
                   or select from dropdown.
                 </p>
@@ -721,15 +991,13 @@ const CustomerRegistration = () => {
                     setSelectedVin("");
                     setVinSearch("");
                   }}
-                  className="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-all font-medium"
+                  className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl 
-                             hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl 
-                             active:scale-95 font-medium"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium"
                 >
                   <UserPlus size={16} />
                   Register Customer

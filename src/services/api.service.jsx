@@ -230,16 +230,13 @@ export const createCustomerApi = (customerData) => {
   const data = {
     name: customerData.name,
     phoneNumber: customerData.phoneNumber,
+    licensePlate: customerData.licensePlate,
     email: customerData.email,
     address: customerData.address,
     vin: customerData.vin,
   };
 
-  return axios.post(URL_BACKEND, data, {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  return axios.post(URL_BACKEND, data);
 };
 
 export const updateCampaignApi = (id, campaignData) => {
@@ -268,19 +265,15 @@ export const getCompletedDurationReportApi = () => {
   return axios.get("/api/api/reports/completed-duration");
 };
 
-// { Campaign Vehicle API }
-export const getCampaignVehiclesApi = () => {
-  return axios.get("/api/api/campaign-vehicles");
+//{Get Customer by VIN}
+export const getCustomerByVinApi = (vin) => {
+  return axios.get(`/api/api/customer?vin=${vin}`);
 };
 
-export const updateCampaignVehicleStatusApi = (vehicleId, status) => {
-  return axios.put(`/api/api/campaign-vehicles/${vehicleId}/status`, {
-    status: status,
-  });
+export const searchVehiclesByPhoneApi = (phone) => {
+  return axios.get(`/api/vehicle?phone=${phone}`);
 };
 
-export const getCampaignVehiclesByServiceCenterApi = (serviceCenterId) => {
-  return axios.get(
-    `/api/api/campaign-vehicles/service-center/${serviceCenterId}`
-  );
+export const getCampaignByVinApi = (vin) => {
+  return axios.get(`/api/api/campaign?vin=${vin}`);
 };
