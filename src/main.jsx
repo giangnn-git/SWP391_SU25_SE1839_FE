@@ -19,7 +19,9 @@ import VehicleManagement from "./pages/VehicleManagement.jsx";
 import CampaignManagement from "./pages/CampaignManagement.jsx";
 import CustomerRegistration from "./pages/CustomerRegistration.jsx";
 import AnalyticsPage from "./pages/AnalyticsPage.jsx";
-
+import ClaimApprove from "./pages/ClaimApprove.jsx";
+import PartRequestPage from "./pages/PartRequest.jsx";
+import PartRequestReview from "./pages/PartRequestReview.jsx";
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -35,33 +37,63 @@ const router = createBrowserRouter([
         index: true, // Home page
         element: <Dashboard />,
       },
+
+      //  Warranty Claims — chỉ SC_STAFF có quyền
       {
         path: "warranty-claims",
-        element: <WarrantyClaims />,
-      },
-      {
-        path: "claim/:id",
-        element: <ClaimDetail />,
+        element: (
+          <PrivateRoute allowedRoles={["SC_STAFF"]}>
+            <WarrantyClaims />
+          </PrivateRoute>
+        ),
       },
 
+      //  Claim Detail — chỉ SC_STAFF có quyền
+      {
+        path: "claim/:id",
+        element: (
+          <PrivateRoute allowedRoles={["SC_STAFF"]}>
+            <ClaimDetail />
+          </PrivateRoute>
+        ),
+      },
+
+      //  Repair Orders — chỉ SC_STAFF có quyền
       {
         path: "repair-orders",
-        element: <RepairOrders />,
+        element: (
+          <PrivateRoute allowedRoles={["SC_STAFF"]}>
+            <RepairOrders />
+          </PrivateRoute>
+        ),
+      },
+
+      //  Repair Order Detail — chỉ SC_STAFF có quyền
+      {
+        path: "repair-orders/:id",
+        element: (
+          <PrivateRoute allowedRoles={["SC_STAFF"]}>
+            <RepairOrderDetail />
+          </PrivateRoute>
+        ),
       },
 
       //  Customer Registration — chỉ SC_STAFF có quyền
       {
-        path: "repair-orders/:id",
-        element: <RepairOrderDetail />,
-      },
-
-      {
-        path: "supply-chain", // chỉ admin + evm staff mới truy cập được
-        path: "manage-users", // Only Admin access
         path: "customer-registration",
         element: (
           <PrivateRoute allowedRoles={["SC_STAFF"]}>
             <CustomerRegistration />
+          </PrivateRoute>
+        ),
+      },
+
+      //  Part Requests — chỉ SC_STAFF có quyền
+      {
+        path: "part-requests",
+        element: (
+          <PrivateRoute allowedRoles={["SC_STAFF"]}>
+            <PartRequestPage />
           </PrivateRoute>
         ),
       },
@@ -76,6 +108,7 @@ const router = createBrowserRouter([
         ),
       },
 
+      //  Manage Users — ADMIN only
       {
         path: "manage-users",
         element: (
@@ -85,6 +118,7 @@ const router = createBrowserRouter([
         ),
       },
 
+      //  Supply Chain — ADMIN + EVM_STAFF only
       {
         path: "supply-chain",
         element: (
@@ -94,6 +128,26 @@ const router = createBrowserRouter([
         ),
       },
 
+      //  Claim Approve — chỉ EVM_STAFF có quyền
+      {
+        path: "claim-approve",
+        element: (
+          <PrivateRoute allowedRoles={["EVM_STAFF"]}>
+            <ClaimApprove />
+          </PrivateRoute>
+        ),
+      },
+      //Part Approve - chỉ EVM 
+      {
+        path: "part-requests-review",
+        element: (
+          <PrivateRoute allowedRoles={["EVM_STAFF"]}>
+            <PartRequestReview />
+          </PrivateRoute>
+        ),
+      },
+
+      //  Policy Management (Part + Warranty) — ADMIN + EVM_STAFF only
       {
         path: "part-policies",
         path: "policy", // Policy Management (Part + Warranty)
@@ -103,6 +157,7 @@ const router = createBrowserRouter([
           </PrivateRoute>
         ),
       },
+
       {
         path: "profile",
         element: <ProfilePage />,
@@ -113,6 +168,7 @@ const router = createBrowserRouter([
           </PrivateRoute>
         ),
       },
+
       {
         path: "warranty-policies",
         path: "policy",
@@ -123,6 +179,7 @@ const router = createBrowserRouter([
         ),
       },
 
+      //  Campaign Management — ADMIN + EVM_STAFF only
       {
         path: "campaigns",
         element: (
@@ -132,7 +189,7 @@ const router = createBrowserRouter([
         ),
       },
 
-      //Analytics Page (chỉ Admin + EVM Staff có quyền truy cập)
+      // Analytics Page (chỉ Admin + EVM Staff có quyền truy cập)
       {
         path: "analytics",
         element: (
