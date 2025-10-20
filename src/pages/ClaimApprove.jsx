@@ -19,6 +19,7 @@ const ClaimApprove = () => {
     const [selectedClaim, setSelectedClaim] = useState(null);
     const [confirmAction, setConfirmAction] = useState(null);
 
+
     const [claims, setClaims] = useState([
         {
             id: "WC-2024-001",
