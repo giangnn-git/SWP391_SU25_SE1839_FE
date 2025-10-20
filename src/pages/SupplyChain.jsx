@@ -57,12 +57,15 @@ const SupplyChain = () => {
 
       const formatted = data.map((item) => ({
         id: item.id,
-        code: item.partId ? `PART-${item.partId}` : "N/A",
+        code: item.partCode || "N/A",
         name: item.partName || "Unnamed Part",
         category: item.partCategory || "-",
         warehouse: item.serviceCenterName || "Unknown Warehouse",
         address: item.serviceCenterAddress || "Unknown Address",
         quantity: item.quantity ?? 0,
+        unit: item.unit || "UNIT",
+        partId: item.partId,
+        serviceCenterId: item.serviceCenterId,
       }));
 
       setParts(formatted);
@@ -70,7 +73,6 @@ const SupplyChain = () => {
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (err) {
-      console.error("❌ Error fetching part inventories:", err);
       setError("Failed to load part inventories. Please try again.");
     } finally {
       setLoadingData(false);
@@ -83,19 +85,21 @@ const SupplyChain = () => {
       const data = res.data?.data || [];
       const uniqueCenters = [
         ...new Map(
-          data.map((item) => [
-            item.serviceCenterId,
-            {
-              id: item.serviceCenterId,
-              name: item.serviceCenterName,
-              address: item.serviceCenterAddress,
-            },
-          ])
+          data
+            .filter((item) => item.serviceCenterId && item.serviceCenterName)
+            .map((item) => [
+              item.serviceCenterId,
+              {
+                id: item.serviceCenterId,
+                name: item.serviceCenterName,
+                address: item.serviceCenterAddress,
+              },
+            ])
         ).values(),
       ];
       setServiceCenters(uniqueCenters);
     } catch (err) {
-      console.error("❌ Error loading service centers:", err);
+      console.error(" Error loading service centers:", err);
     }
   };
 
@@ -170,11 +174,11 @@ const SupplyChain = () => {
   const handleExportCSV = () => {
     const csvContent =
       "data:text/csv;charset=utf-8," +
-      ["Part Code,Name,Category,Warehouse,Address,Quantity"]
+      ["Part Code,Name,Category,Warehouse,Address,Quantity,Unit"]
         .concat(
           parts.map(
             (p) =>
-              `${p.code},${p.name},${p.category},${p.warehouse},${p.address},${p.quantity}`
+              `${p.code},${p.name},${p.category},${p.warehouse},${p.address},${p.quantity},${p.unit}`
           )
         )
         .join("\n");
@@ -224,7 +228,6 @@ const SupplyChain = () => {
       </div>
 
       {/* Dashboard Summary */}
-      {/* Dashboard Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6 animate-fadeInScale">
         {/* Total Warehouses */}
         <div className="group relative overflow-hidden bg-white rounded-2xl border border-blue-100 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
@@ -234,7 +237,9 @@ const SupplyChain = () => {
               <Warehouse size={28} strokeWidth={1.8} />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Total Warehouses</p>
+              <p className="text-sm font-medium text-gray-500">
+                Total Warehouses
+              </p>
               <h2 className="text-3xl font-bold text-gray-800 tracking-tight">
                 {uniqueWarehouses.length}
               </h2>
@@ -262,10 +267,11 @@ const SupplyChain = () => {
 
         {/* Low Stock Items */}
         <div
-          className={`group relative overflow-hidden bg-white rounded-2xl border ${parts.filter((p) => p.quantity < 100).length > 0
-            ? "border-orange-200 shadow-lg animate-pulse"
-            : "border-gray-100"
-            } shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1`}
+          className={`group relative overflow-hidden bg-white rounded-2xl border ${
+            parts.filter((p) => p.quantity < 100).length > 0
+              ? "border-orange-200 shadow-lg animate-pulse"
+              : "border-gray-100"
+          } shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1`}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-orange-50/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           <div className="relative flex items-center gap-4 p-5">
@@ -273,7 +279,9 @@ const SupplyChain = () => {
               <AlertTriangle size={28} strokeWidth={1.8} />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Low Stock Items</p>
+              <p className="text-sm font-medium text-gray-500">
+                Low Stock Items
+              </p>
               <h2 className="text-3xl font-bold text-gray-800 tracking-tight">
                 {parts.filter((p) => p.quantity < 100).length}
               </h2>
@@ -282,7 +290,6 @@ const SupplyChain = () => {
           <div className="h-1 bg-orange-400/70 w-0 group-hover:w-full transition-all duration-700"></div>
         </div>
       </div>
-
 
       {/* Filter Bar */}
       <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-md border border-gray-200 rounded-xl p-4 mb-5 shadow-md animate-fadeInScale">
@@ -331,19 +338,21 @@ const SupplyChain = () => {
           {/* View Switch */}
           <div className="ml-auto flex items-center gap-2">
             <button
-              className={`p-2 rounded-lg transition ${viewMode === "table"
-                ? "bg-blue-100 text-blue-700"
-                : "hover:bg-gray-100 text-gray-600"
-                }`}
+              className={`p-2 rounded-lg transition ${
+                viewMode === "table"
+                  ? "bg-blue-100 text-blue-700"
+                  : "hover:bg-gray-100 text-gray-600"
+              }`}
               onClick={() => setViewMode("table")}
             >
               <Table size={18} />
             </button>
             <button
-              className={`p-2 rounded-lg transition ${viewMode === "card"
-                ? "bg-blue-100 text-blue-700"
-                : "hover:bg-gray-100 text-gray-600"
-                }`}
+              className={`p-2 rounded-lg transition ${
+                viewMode === "card"
+                  ? "bg-blue-100 text-blue-700"
+                  : "hover:bg-gray-100 text-gray-600"
+              }`}
               onClick={() => setViewMode("card")}
             >
               <LayoutGrid size={18} />
@@ -355,8 +364,8 @@ const SupplyChain = () => {
       {/* TABLE VIEW */}
       {!loadingData && viewMode === "table" && (
         <div className="overflow-x-auto bg-white rounded-2xl shadow-md border border-gray-100 animate-fadeIn">
-          <table className="min-w-full text-sm text-gray-700 border-separate border-spacing-y-1">
-            <thead className="bg-gradient-to-r from-blue-50 to-blue-100 text-gray-900 font-semibold shadow-sm">
+          <table className="min-w-full text-sm text-gray-700">
+            <thead className="bg-gradient-to-r from-blue-50 to-blue-100 text-gray-900 font-semibold">
               <tr>
                 {[
                   "Code",
@@ -365,48 +374,64 @@ const SupplyChain = () => {
                   "Warehouse",
                   "Address",
                   "Quantity",
+                  "Unit",
                   "Actions",
                 ].map((h) => (
                   <th
                     key={h}
-                    className={`py-3 px-4 ${["Quantity", "Actions"].includes(h)
-                      ? "text-center"
-                      : "text-left"
-                      }`}
+                    className={`py-4 px-4 whitespace-nowrap ${
+                      ["Quantity", "Unit", "Actions"].includes(h)
+                        ? "text-center"
+                        : "text-left"
+                    }`}
                   >
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-100">
               {currentParts.map((part) => (
                 <tr
                   key={part.id}
-                  className="bg-white hover:bg-blue-50/50 transition-all duration-150 border border-gray-100 hover:shadow-sm"
+                  className="hover:bg-blue-50/30 transition-colors duration-150"
                 >
-                  <td className="h-12 px-4 align-middle font-medium text-gray-800">
+                  <td className="py-4 px-4 align-middle font-medium text-gray-800 whitespace-nowrap">
                     {part.code}
                   </td>
-                  <td className="h-12 px-4 align-middle">{part.name}</td>
-                  <td className="h-12 px-4 align-middle">{part.category}</td>
-                  <td className="h-12 px-4 align-middle">{part.warehouse}</td>
-                  <td className="h-12 px-4 align-middle">{part.address}</td>
+                  <td className="py-4 px-4 align-middle whitespace-nowrap">
+                    {part.name}
+                  </td>
+                  <td className="py-4 px-4 align-middle whitespace-nowrap">
+                    {part.category}
+                  </td>
+                  <td className="py-4 px-4 align-middle whitespace-nowrap">
+                    {part.warehouse}
+                  </td>
+                  <td className="py-4 px-4 align-middle whitespace-nowrap max-w-[200px] truncate">
+                    {part.address}
+                  </td>
                   <td
-                    className={`h-12 px-4 text-center align-middle font-semibold ${getQuantityColor(
+                    className={`py-4 px-4 text-center align-middle font-semibold whitespace-nowrap ${getQuantityColor(
                       part.quantity
                     )}`}
                   >
-                    {part.quantity}
+                    {part.quantity.toLocaleString()}
                   </td>
-                  <td className="h-12 px-4 text-center align-middle">
+                  {/* UNIT  */}
+                  <td className="py-4 px-4 text-center align-middle whitespace-nowrap">
+                    <span className="inline-flex items-center justify-center min-w-[60px] px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs font-medium border border-gray-200">
+                      {part.unit}
+                    </span>
+                  </td>
+                  <td className="py-4 px-4 text-center align-middle whitespace-nowrap">
                     <button
                       onClick={() => {
                         setSelectedPart(part);
                         setShowViewModal(true);
                       }}
                       title="View details"
-                      className="flex items-center justify-center w-9 h-9 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg shadow-sm border border-blue-100 transition-all duration-200 hover:scale-105 active:scale-95 mx-auto"
+                      className="inline-flex items-center justify-center w-9 h-9 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg shadow-sm border border-blue-200 transition-all duration-200 hover:scale-105 active:scale-95"
                     >
                       <Eye size={18} strokeWidth={2} />
                     </button>
@@ -417,8 +442,8 @@ const SupplyChain = () => {
               {currentParts.length === 0 && (
                 <tr>
                   <td
-                    colSpan="7"
-                    className="text-center py-6 text-gray-500 italic"
+                    colSpan="8"
+                    className="text-center py-8 text-gray-500 italic"
                   >
                     No parts found.
                   </td>
@@ -428,7 +453,6 @@ const SupplyChain = () => {
           </table>
         </div>
       )}
-
       {/* CARD VIEW */}
       {!loadingData && viewMode === "card" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fadeInScale">
@@ -440,12 +464,13 @@ const SupplyChain = () => {
               <div className="flex justify-between items-center mb-3">
                 <h3 className="font-semibold text-gray-800">{part.name}</h3>
                 <span
-                  className={`text-xs px-2 py-1 rounded-full ${getQuantityColor(part.quantity) === "text-green-600"
-                    ? "bg-green-100 text-green-700"
-                    : getQuantityColor(part.quantity) === "text-yellow-600"
+                  className={`text-xs px-2 py-1 rounded-full ${
+                    getQuantityColor(part.quantity) === "text-green-600"
+                      ? "bg-green-100 text-green-700"
+                      : getQuantityColor(part.quantity) === "text-yellow-600"
                       ? "bg-yellow-100 text-yellow-700"
                       : "bg-red-100 text-red-700"
-                    }`}
+                  }`}
                 >
                   {part.quantity} pcs
                 </span>

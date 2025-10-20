@@ -42,10 +42,8 @@ export const updateUserApi = (id, userData) => {
 };
 //change pass
 export const changePasswordApi = async (passwordData) => {
-  const URL_BACKEND = `/api/auth/change-password`;
-
-  return axios.post(URL_BACKEND, {
-    oldPassword: passwordData.currentPassword,
+  return axios.post("/api/auth/change-password", {
+    oldPassword: passwordData.oldPassword,
     newPassword: passwordData.newPassword,
   });
 };
