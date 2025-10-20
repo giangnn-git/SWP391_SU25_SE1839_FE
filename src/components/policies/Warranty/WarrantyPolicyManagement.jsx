@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   XCircle,
   Shield,
-  RotateCcw,
   X,
 } from "lucide-react";
 import {
@@ -40,6 +39,8 @@ const WarrantyPolicyManagement = () => {
     description: "",
     durationPeriod: "",
     mileageLimit: "",
+    code: "",
+    type: "NORMAL",
   });
 
   // Filter, Search & Pagination
@@ -59,6 +60,8 @@ const WarrantyPolicyManagement = () => {
       const transformedPolicies = response.data.data.policyList.map(
         (policy) => ({
           id: policy.id,
+          code: policy.code || "N/A",
+          policyType: policy.policyType || "NORMAL",
           name: policy.name || "Unnamed Policy",
           description: policy.description || "No description available",
           durationPeriod: `${policy.durationPeriod} months`,
@@ -88,6 +91,8 @@ const WarrantyPolicyManagement = () => {
       setSuccess("");
 
       const apiData = {
+        code: policyData.code.trim(),
+        type: policyData.type,
         name: policyData.name,
         durationPeriod: parseInt(policyData.durationPeriod),
         mileageLimit: parseInt(policyData.mileageLimit),
@@ -113,6 +118,7 @@ const WarrantyPolicyManagement = () => {
   const handleEdit = (policy) => {
     const selected = policy.originalData || policy;
     setSelectedPolicy(selected);
+    setActionLoading(false);
     setShowUpdateModal(true);
   };
 
@@ -193,7 +199,6 @@ const WarrantyPolicyManagement = () => {
           onClick={fetchPolicies}
           className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
         >
-          <RotateCcw size={16} />
           Retry
         </button>
       </div>
@@ -219,16 +224,6 @@ const WarrantyPolicyManagement = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Refresh Button */}
-          <button
-            onClick={fetchPolicies}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            disabled={loading}
-          >
-            <RotateCcw size={18} className={loading ? "animate-spin" : ""} />
-            Refresh
-          </button>
-
           {/* Add New Policy Button */}
           <button
             className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50"
@@ -341,7 +336,6 @@ const WarrantyPolicyManagement = () => {
           </div>
         </div>
 
-        {/* Search Results Info */}
         {searchTerm && (
           <div className="mt-3 text-sm text-green-600">
             Found {filteredPolicies.length} policies matching "{searchTerm}"
@@ -356,7 +350,7 @@ const WarrantyPolicyManagement = () => {
         onView={handleView}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        actionLoading={actionLoading}
+        actionLoading={false}
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}
         totalItems={filteredPolicies.length}
@@ -420,6 +414,7 @@ const WarrantyPolicyManagement = () => {
       <UpdateWarrantyPolicyModal
         showModal={showUpdateModal}
         policy={selectedPolicy}
+        actionLoading={actionLoading}
         onClose={() => setShowUpdateModal(false)}
         onUpdated={() => {
           fetchPolicies();

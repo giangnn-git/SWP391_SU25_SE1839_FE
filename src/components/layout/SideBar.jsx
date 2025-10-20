@@ -31,7 +31,7 @@ const Sidebar = () => {
   const iconStyle = "text-gray-600 group-hover:text-blue-600 transition-colors";
 
   const navigation = [
-    //  Dashboard luôn ở đầu
+    // Dashboard always first
     {
       name: "Dashboard",
       href: "/",
@@ -40,7 +40,7 @@ const Sidebar = () => {
       ),
     },
 
-    //  Customer Registration — chỉ SC Staff — nằm ngay sau Dashboard
+    // Customer Registration — only SC Staff — right after Dashboard
     ...(isScStaff
       ? [
           {
@@ -53,21 +53,22 @@ const Sidebar = () => {
         ]
       : []),
 
-    //  Warranty Claims
+    // Warranty Claims
     {
       name: "Warranty Claims",
       href: "/warranty-claims",
       icon: <ShieldCheck size={18} className={iconStyle} strokeWidth={1.8} />,
     },
 
-    //  Repair Orders
+    // Repair Orders
     {
       name: "Repair Orders",
       href: "/repair-orders",
       icon: <Wrench size={18} className={iconStyle} strokeWidth={1.8} />,
     },
 
-    //  Vehicle Management (Admin + EVM)
+    // Rest of your existing navigation items...
+    // Vehicle Management (Admin + EVM)
     ...(isAdmin || isEvmStaff
       ? [
           {
@@ -78,7 +79,7 @@ const Sidebar = () => {
         ]
       : []),
 
-    //  CAMPAIGN MANAGEMENT
+    // CAMPAIGN MANAGEMENT (Admin + EVM)
     ...(isAdmin || isEvmStaff
       ? [
           {
@@ -95,7 +96,7 @@ const Sidebar = () => {
         ]
       : []),
 
-    //  Supply Chain — ẨN với SC_STAFF
+    // Supply Chain — Hidden from SC_STAFF
     ...(isAdmin || isEvmStaff
       ? [
           {
@@ -112,14 +113,20 @@ const Sidebar = () => {
         ]
       : []),
 
-    // //  Analytics
-    // {
-    //   name: "Analytics & Reports",
-    //   href: "/analytics",
-    //   icon: <BarChart3 size={18} className={iconStyle} strokeWidth={1.8} />,
-    // },
+    // Analytics & Reports — only Admin & EVM Staff
+    ...(isAdmin || isEvmStaff
+      ? [
+          {
+            name: "Analytics & Reports",
+            href: "/analytics",
+            icon: (
+              <BarChart3 size={18} className={iconStyle} strokeWidth={1.8} />
+            ),
+          },
+        ]
+      : []),
 
-    //  Policy
+    // Policy
     ...(isAdmin || isEvmStaff
       ? [
           {
@@ -132,7 +139,7 @@ const Sidebar = () => {
         ]
       : []),
 
-    //  User Management
+    // User Management
     ...(isAdmin
       ? [
           {

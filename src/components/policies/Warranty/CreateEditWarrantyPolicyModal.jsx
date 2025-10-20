@@ -1,5 +1,14 @@
 import React from "react";
-import { X, Save, Plus, FileText, Calendar, Gauge, Shield } from "lucide-react";
+import {
+  X,
+  Save,
+  Plus,
+  FileText,
+  Calendar,
+  Gauge,
+  Shield,
+  Tag,
+} from "lucide-react";
 
 const CreateEditWarrantyPolicyModal = ({
   showModal,
@@ -47,6 +56,23 @@ const CreateEditWarrantyPolicyModal = ({
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-4">
           <div className="space-y-4">
+            {/* Policy Code */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                <Tag size={14} className="text-green-500" />
+                Policy Code *
+              </label>
+              <input
+                type="text"
+                placeholder="Enter policy code"
+                className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-sm disabled:bg-gray-100 disabled:opacity-50"
+                value={formData.code}
+                onChange={(e) => onFormDataChange("code", e.target.value)}
+                disabled={actionLoading}
+                required
+              />
+            </div>
+
             {/* Policy Name */}
             <div>
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
@@ -62,6 +88,25 @@ const CreateEditWarrantyPolicyModal = ({
                 disabled={actionLoading}
                 required
               />
+            </div>
+
+            {/* Policy Type */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                <Shield size={14} className="text-green-500" />
+                Policy Type *
+              </label>
+              <select
+                className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-sm disabled:bg-gray-100 disabled:opacity-50"
+                value={formData.policyType}
+                onChange={(e) => onFormDataChange("type", e.target.value)}
+                disabled={actionLoading}
+                required
+              >
+                <option value="">Select policy type</option>
+                <option value="NORMAL">NORMAL</option>
+                <option value="PROMOTION">PROMOTION</option>
+              </select>
             </div>
 
             {/* Duration Period */}

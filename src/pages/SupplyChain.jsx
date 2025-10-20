@@ -4,7 +4,6 @@ import {
   Warehouse,
   Filter,
   Eye,
-  RotateCcw,
   LayoutGrid,
   Table,
   Download,
@@ -210,13 +209,6 @@ const SupplyChain = () => {
         </div>
 
         <div className="flex gap-2">
-          <button
-            onClick={() => fetchPartInventories(selectedServiceCenter || null)}
-            className="flex items-center border border-gray-300 bg-white/80 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-lg shadow-sm transition-all duration-300 hover:shadow-md"
-          >
-            <RotateCcw size={18} className="mr-2 text-blue-600" />
-            Refresh
-          </button>
           <button
             onClick={handleExportCSV}
             className="flex items-center border border-gray-300 bg-white/80 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-lg shadow-sm transition-all duration-300 hover:shadow-md"

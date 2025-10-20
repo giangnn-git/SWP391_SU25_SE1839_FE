@@ -210,7 +210,7 @@ export const getPartInventoryByServiceCenterIdApi = (serviceCenterId) => {
   return axios.get(`/api/api/part-inventory/service-center/${serviceCenterId}`);
 };
 
-// {Warranty API}
+// {Warranty Claims API}
 
 export const updateWarrantyClaimApi = async (id, updatedData) => {
   return axios.put(`/api/claims/${id}`, updatedData);
@@ -254,4 +254,33 @@ export const updateCampaignApi = (id, campaignData) => {
     affectedModels: campaignData.affectedModels,
     status: campaignData.status,
   });
+};
+
+//Reporting & Analytics API
+
+// Get performance report (Service Center Performance)
+export const getPerformanceReportApi = () => {
+  return axios.get("/api/api/reports/performances");
+};
+
+// { Reports - Resolution Time Distribution }
+export const getCompletedDurationReportApi = () => {
+  return axios.get("/api/api/reports/completed-duration");
+};
+
+// { Campaign Vehicle API }
+export const getCampaignVehiclesApi = () => {
+  return axios.get("/api/api/campaign-vehicles");
+};
+
+export const updateCampaignVehicleStatusApi = (vehicleId, status) => {
+  return axios.put(`/api/api/campaign-vehicles/${vehicleId}/status`, {
+    status: status,
+  });
+};
+
+export const getCampaignVehiclesByServiceCenterApi = (serviceCenterId) => {
+  return axios.get(
+    `/api/api/campaign-vehicles/service-center/${serviceCenterId}`
+  );
 };

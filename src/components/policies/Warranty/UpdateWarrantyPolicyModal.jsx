@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { X, Save, FileText, Calendar, Gauge, Shield } from "lucide-react";
+import {
+  X,
+  Save,
+  FileText,
+  Calendar,
+  Gauge,
+  Shield,
+  Tag,
+  Layers,
+} from "lucide-react";
 
 const UpdateWarrantyPolicyModal = ({
   showModal,
@@ -10,16 +19,19 @@ const UpdateWarrantyPolicyModal = ({
   updatePolicyApi,
 }) => {
   const [formData, setFormData] = useState({
+    code: "",
+    policyType: "NORMAL",
     name: "",
     description: "",
     durationPeriod: "",
     mileageLimit: "",
   });
 
-  // Load dữ liệu từ policy
   useEffect(() => {
     if (policy) {
       setFormData({
+        code: policy.code || "",
+        policyType: policy.policyType || "NORMAL",
         name: policy.name || "",
         description: policy.description || "",
         durationPeriod:
@@ -41,13 +53,14 @@ const UpdateWarrantyPolicyModal = ({
     }));
   };
 
-  // Kiểm tra xem form có thay đổi gì không
   const isChanged =
-    formData.name !== (policy?.name || "") ||
-    formData.description !== (policy?.description || "") ||
-    formData.durationPeriod !==
+    formData.code?.trim() !== (policy?.code || "").trim() ||
+    formData.policyType?.trim() !== (policy?.policyType || "").trim() ||
+    formData.name?.trim() !== (policy?.name || "").trim() ||
+    formData.description?.trim() !== (policy?.description || "").trim() ||
+    formData.durationPeriod?.toString() !==
       (policy?.durationPeriod?.toString().replace(" months", "") || "") ||
-    formData.mileageLimit !==
+    formData.mileageLimit?.toString() !==
       (policy?.mileageLimit?.toString().replace(" km", "").replace(/,/g, "") ||
         "");
 
@@ -59,8 +72,10 @@ const UpdateWarrantyPolicyModal = ({
     }
 
     if (
-      !formData.name ||
-      !formData.description ||
+      !formData.code?.trim() ||
+      !formData.policyType?.trim() ||
+      !formData.name?.trim() ||
+      !formData.description?.trim() ||
       !formData.durationPeriod ||
       !formData.mileageLimit
     ) {
@@ -70,15 +85,18 @@ const UpdateWarrantyPolicyModal = ({
 
     try {
       const apiData = {
+        code: formData.code.trim(),
+        policyType: formData.policyType.trim(), // ĐÃ SỬA
         name: formData.name.trim(),
         durationPeriod: parseInt(formData.durationPeriod),
         mileageLimit: parseInt(formData.mileageLimit),
         description: formData.description.trim(),
       };
 
+      console.log("📤 Sending update data:", apiData); // Debug
+
       await updatePolicyApi(policy.id, apiData);
 
-      // Gọi callback để hiển thị thông báo ở UI cha
       if (onUpdated) onUpdated();
       onClose();
     } catch (error) {
@@ -119,6 +137,42 @@ const UpdateWarrantyPolicyModal = ({
 
         {/* Form Content */}
         <div className="p-4 space-y-4">
+          {/* Policy Code */}
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+              <Tag size={14} className="text-gray-500" />
+              Policy Code
+            </label>
+            <input
+              type="text"
+              placeholder="Enter policy code"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-sm"
+              value={formData.code}
+              onChange={(e) => handleFormDataChange("code", e.target.value)}
+              disabled={actionLoading}
+            />
+          </div>
+
+          {/* Policy Type   */}
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+              <Layers size={14} className="text-gray-500" />
+              Policy Type
+            </label>
+            <select
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-sm"
+              value={formData.policyType}
+              onChange={(e) =>
+                handleFormDataChange("policyType", e.target.value)
+              }
+              disabled={actionLoading}
+            >
+              <option value="">Select policy type</option>
+              <option value="NORMAL">Normal</option>
+              <option value="PROMOTION">Promotion</option>
+            </select>
+          </div>
+
           {/* Policy Name */}
           <div>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
@@ -199,14 +253,17 @@ const UpdateWarrantyPolicyModal = ({
           >
             Cancel
           </button>
+
           <button
             onClick={handleSubmit}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white transition-colors font-medium text-sm ${
-              !isChanged || actionLoading
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-green-600 hover:bg-green-700"
-            }`}
             disabled={actionLoading || !isChanged}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium text-sm transition-all duration-300 ${
+              actionLoading
+                ? "bg-gray-400 cursor-not-allowed"
+                : isChanged
+                ? "bg-green-600 hover:bg-green-700"
+                : "bg-gray-300 cursor-not-allowed"
+            }`}
           >
             {actionLoading ? (
               <>
