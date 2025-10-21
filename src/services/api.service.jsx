@@ -271,7 +271,7 @@ export const getCustomerByVinApi = (vin) => {
 };
 
 export const searchVehiclesByPhoneApi = (phone) => {
-  return axios.get(`/api/vehicle?phone=${phone}`);
+  return axios.get(`/api/api/vehicle?phone=${phone}`);
 };
 
 export const getCampaignByVinApi = (vin) => {

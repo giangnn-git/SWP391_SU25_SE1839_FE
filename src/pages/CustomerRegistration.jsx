@@ -26,7 +26,9 @@ import {
   createCustomerApi,
   getCustomerByVinApi,
   getCampaignByVinApi,
+  searchVehiclesByPhoneApi,
 } from "../services/api.service";
+import axios from "axios";
 
 const CustomerRegistration = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -51,6 +53,44 @@ const CustomerRegistration = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  //  State cho tìm kiếm theo số điện thoại
+  const [phoneSearch, setPhoneSearch] = useState("");
+  const [searchingByPhone, setSearchingByPhone] = useState(false);
+
+  //  Hàm gọi API tìm kiếm theo số điện thoại
+  const handleSearchByPhone = async () => {
+    if (!phoneSearch.trim()) {
+      setError("Please enter a phone number to search.");
+      return;
+    }
+
+    try {
+      //  Fix: đảm bảo có token sau F5
+      const token = localStorage.getItem("token");
+      if (token) axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+      setSearchingByPhone(true);
+      setLoading(true);
+
+      const res = await searchVehiclesByPhoneApi(phoneSearch);
+      const data = res.data?.data?.vehicles || [];
+
+      if (data.length === 0) {
+        setError("No vehicles found for this phone number.");
+        setVehicles([]);
+      } else {
+        setError("");
+        setVehicles(data);
+      }
+    } catch (err) {
+      console.error("Error searching vehicles by phone:", err);
+      setError("Failed to search by phone number. Please try again.");
+    } finally {
+      setLoading(false);
+      setSearchingByPhone(false);
+    }
+  };
+
 
   // State cho VIN combobox
   const [vinSearch, setVinSearch] = useState("");
@@ -156,12 +196,18 @@ const CustomerRegistration = () => {
 
   const handleViewVehicle = async (vehicle) => {
     const vehicleData = vehicle.vehicle || vehicle;
+
+    if (!vehicleData?.vin) {
+      console.warn("⚠️ No VIN found for selected vehicle");
+      return;
+    }
+
     setViewVehicle(vehicleData);
     setCustomerDetail(null);
     setCampaignData(null);
     setActiveDetailTab("customer");
 
-    await Promise.all([
+    await Promise.allSettled([
       fetchCustomerDetail(vehicleData.vin),
       fetchCampaignByVin(vehicleData.vin),
     ]);
@@ -205,8 +251,7 @@ const CustomerRegistration = () => {
       fetchVehicles();
     } catch (err) {
       setError(
-        `Failed to register customer: ${
-          err.response?.data?.message || "Please try again."
+        `Failed to register customer: ${err.response?.data?.message || "Please try again."
         }`
       );
     }
@@ -324,6 +369,7 @@ const CustomerRegistration = () => {
         {/* Search Bar */}
         <div className="bg-white rounded-xl p-6 shadow-sm border mb-6">
           <div className="flex flex-col sm:flex-row gap-4">
+            {/*  Search theo VIN, model, customer, license plate */}
             <div className="flex-1 relative">
               <Search
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
@@ -337,9 +383,40 @@ const CustomerRegistration = () => {
                 className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               />
             </div>
-            <button className="inline-flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+
+            {/*  Search theo số điện thoại */}
+            <div className="flex-1 relative">
+              <Phone
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                size={20}
+              />
+              <input
+                type="text"
+                placeholder="Search by phone number..."
+                value={phoneSearch}
+                onChange={(e) => setPhoneSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              />
+            </div>
+
+            {/*  Nút tìm kiếm */}
+            <button
+              onClick={handleSearchByPhone}
+              disabled={searchingByPhone}
+              className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-white transition-all ${searchingByPhone ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+                }`}
+            >
+              <Search size={18} />
+              {searchingByPhone ? "Searching..." : "Search by Phone"}
+            </button>
+
+            {/*  Reset */}
+            <button
+              onClick={fetchVehicles}
+              className="inline-flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
               <Filter size={20} />
-              Filter
+              Reset
             </button>
           </div>
         </div>
@@ -497,11 +574,10 @@ const CustomerRegistration = () => {
                       <button
                         onClick={() => handlePageChange(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className={`p-2 rounded-lg border transition-all ${
-                          currentPage === 1
-                            ? "text-gray-400 border-gray-200 cursor-not-allowed"
-                            : "text-gray-600 border-gray-300 hover:bg-white hover:shadow-sm"
-                        }`}
+                        className={`p-2 rounded-lg border transition-all ${currentPage === 1
+                          ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                          : "text-gray-600 border-gray-300 hover:bg-white hover:shadow-sm"
+                          }`}
                       >
                         <ChevronLeft size={16} />
                       </button>
@@ -510,11 +586,10 @@ const CustomerRegistration = () => {
                         <button
                           key={i + 1}
                           onClick={() => handlePageChange(i + 1)}
-                          className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
-                            currentPage === i + 1
-                              ? "bg-blue-600 text-white shadow-sm"
-                              : "text-gray-600 hover:bg-gray-100"
-                          }`}
+                          className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${currentPage === i + 1
+                            ? "bg-blue-600 text-white shadow-sm"
+                            : "text-gray-600 hover:bg-gray-100"
+                            }`}
                         >
                           {i + 1}
                         </button>
@@ -523,11 +598,10 @@ const CustomerRegistration = () => {
                       <button
                         onClick={() => handlePageChange(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className={`p-2 rounded-lg border transition-all ${
-                          currentPage === totalPages
-                            ? "text-gray-400 border-gray-200 cursor-not-allowed"
-                            : "text-gray-600 border-gray-300 hover:bg-white hover:shadow-sm"
-                        }`}
+                        className={`p-2 rounded-lg border transition-all ${currentPage === totalPages
+                          ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                          : "text-gray-600 border-gray-300 hover:bg-white hover:shadow-sm"
+                          }`}
                       >
                         <ChevronRight size={16} />
                       </button>
@@ -596,21 +670,19 @@ const CustomerRegistration = () => {
               <div className="flex px-6">
                 <button
                   onClick={() => setActiveDetailTab("customer")}
-                  className={`py-3 px-4 font-medium text-sm border-b-2 transition-colors ${
-                    activeDetailTab === "customer"
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700"
-                  }`}
+                  className={`py-3 px-4 font-medium text-sm border-b-2 transition-colors ${activeDetailTab === "customer"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                    }`}
                 >
                   👤 Customer Information
                 </button>
                 <button
                   onClick={() => setActiveDetailTab("warranty")}
-                  className={`py-3 px-4 font-medium text-sm border-b-2 transition-colors ${
-                    activeDetailTab === "warranty"
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700"
-                  }`}
+                  className={`py-3 px-4 font-medium text-sm border-b-2 transition-colors ${activeDetailTab === "warranty"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                    }`}
                 >
                   🛡️ Warranty & Campaigns
                 </button>
@@ -771,7 +843,7 @@ const CustomerRegistration = () => {
                           </div>
                         </div>
 
-                        {/* 🔥 ĐÃ BỎ: Affected Vehicles Count section */}
+                        {/*  ĐÃ BỎ: Affected Vehicles Count section */}
                       </div>
                     </div>
                   ) : (
@@ -956,9 +1028,8 @@ const CustomerRegistration = () => {
                           <div
                             key={index}
                             onClick={() => handleVinSelect(vehicle.vin)}
-                            className={`px-4 py-3 cursor-pointer transition-colors hover:bg-blue-50 flex items-center justify-between ${
-                              selectedVin === vehicle.vin ? "bg-blue-50" : ""
-                            }`}
+                            className={`px-4 py-3 cursor-pointer transition-colors hover:bg-blue-50 flex items-center justify-between ${selectedVin === vehicle.vin ? "bg-blue-50" : ""
+                              }`}
                           >
                             <div>
                               <div className="font-medium text-gray-900">
