@@ -8,6 +8,7 @@ import {
 import UserTable from "../components/users/userTable.jsx";
 import EditUserModal from "../components/users/editUserModal.jsx";
 import CreateUserModal from "../components/users/CreateUserModal.jsx";
+import { Users } from "lucide-react";
 
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
@@ -68,13 +69,14 @@ const ManageUsers = () => {
     setCreateLoading(true);
     setError("");
     try {
-      await createUserApi(
-        userData.email,
-        userData.name,
-        userData.password,
-        userData.phoneNumber,
-        userData.role
-      );
+      await createUserApi({
+        email: userData.email,
+        name: userData.name,
+        phoneNumber: userData.phoneNumber,
+        role: userData.role,
+        serviceCenterId: userData.serviceCenterId,
+      });
+
       setSuccess("User created successfully!");
       setIsCreateModalOpen(false);
       loadUsers();
@@ -82,7 +84,7 @@ const ManageUsers = () => {
       setError(
         "Failed to create user: " + (err.response?.data?.message || err.message)
       );
-      throw err;
+      throw err; // re-throw để modal có thể xử lý
     } finally {
       setCreateLoading(false);
     }
@@ -133,10 +135,10 @@ const ManageUsers = () => {
         prevUsers.map((user) =>
           user.id === id
             ? {
-                ...user,
-                isActive: !currentIsActive,
-                status: !currentIsActive ? "ACTIVE" : "INACTIVE",
-              }
+              ...user,
+              isActive: !currentIsActive,
+              status: !currentIsActive ? "ACTIVE" : "INACTIVE",
+            }
             : user
         )
       );
@@ -146,10 +148,10 @@ const ManageUsers = () => {
         prevFiltered.map((user) =>
           user.id === id
             ? {
-                ...user,
-                isActive: !currentIsActive,
-                status: !currentIsActive ? "ACTIVE" : "INACTIVE",
-              }
+              ...user,
+              isActive: !currentIsActive,
+              status: !currentIsActive ? "ACTIVE" : "INACTIVE",
+            }
             : user
         )
       );
@@ -179,7 +181,10 @@ const ManageUsers = () => {
       {/* Header với Create Button và Search */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Users />
+            User Management
+          </h1>
           <p className="text-gray-600">Manage system users and permissions</p>
         </div>
 

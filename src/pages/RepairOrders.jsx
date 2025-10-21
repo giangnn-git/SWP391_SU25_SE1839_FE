@@ -32,22 +32,22 @@ const RepairOrdersManagement = () => {
     }
   };
 
-  const fetchTechnicians = async () => {
-    try {
-      const res = await axios.get(
-        "/api/auth/techinicals"
-      );
-      setTechnicians(res.data?.data?.technicians || []);
-    } catch (err) {
-      console.error("Error fetching technicians:", err);
-      setError("Failed to load technicians.");
-    }
-  };
+  // const fetchTechnicians = async () => {
+  //   try {
+  //     const res = await axios.get(
+  //       "/api/auth/techinicals"
+  //     );
+  //     setTechnicians(res.data?.data?.technicians || []);
+  //   } catch (err) {
+  //     console.error("Error fetching technicians:", err);
+  //     setError("Failed to load technicians.");
+  //   }
+  // };
 
 
   useEffect(() => {
     fetchRepairOrders();
-    fetchTechnicians();
+    // fetchTechnicians();
   }, []);
 
   const handleOrderCreated = (newOrder) => {
@@ -110,7 +110,6 @@ const RepairOrdersManagement = () => {
       {/* Table */}
       <RepairOrderTable
         orders={filteredOrders}
-        technicians={technicians}
         loading={loading}
         error={error}
         fetchRepairOrders={fetchRepairOrders}

@@ -126,7 +126,7 @@ const ClaimTable = ({ claims = [], loading, error }) => {
                                                     {claim.vin}
                                                 </div>
                                                 <div className="text-xs text-gray-500">
-                                                    {claim.userName || "–"}
+                                                    {claim.licensePlate || "–"} , {claim.userName || "–"}
                                                 </div>
                                             </div>
                                         </td>

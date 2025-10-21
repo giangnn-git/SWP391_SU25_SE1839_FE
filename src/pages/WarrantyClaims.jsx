@@ -36,23 +36,32 @@ const WarrantyClaimsManagement = () => {
         fetchClaims();
     }, []);
 
-    const handleClaimCreated = (newClaim) => {
-        if (!newClaim?.id) return;
+    const handleClaimCreated = async (newClaim) => {
+        try {
 
-        const formattedClaim = {
-            id: newClaim.id,
-            vin: newClaim.vin || "",
-            description: newClaim.description || "",
-            priority: newClaim.priority?.toLowerCase() || "normal",
-            currentStatus: newClaim.currentStatus || "pending",
-            claimDate: newClaim.claimDate || null,
-            senderName: newClaim.senderName || "",
-            userName: newClaim.userName || ""
-        };
+            const formattedClaim = {
+                id: newClaim.id,
+                vin: newClaim.vin || "",
+                licensePlate: newClaim.licensePlate || "",
+                description: newClaim.description || "",
+                priority: newClaim.priority?.toLowerCase() || "normal",
+                currentStatus: newClaim.currentStatus || "pending",
+                claimDate: newClaim.claimDate || new Date().toISOString(),
+                senderName: newClaim.senderName || "",
+                userName: newClaim.userName || ""
+            };
 
-        setClaims(prev => [formattedClaim, ...prev]);
-        setCurrentPage(1);
+
+            setClaims(prev => [formattedClaim, ...prev]);
+            setCurrentPage(1);
+
+
+            fetchClaims();
+        } catch (err) {
+            console.error("Error updating claim list:", err);
+        }
     };
+
 
 
     // Filter search + priority + status
