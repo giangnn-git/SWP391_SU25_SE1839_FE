@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     PackageSearch,
     CheckCircle2,
@@ -6,55 +6,132 @@ import {
     Clock4,
     Search,
     Eye,
-    LayoutGrid,
-    Table,
     Loader2,
     Filter,
 } from "lucide-react";
+import axios from "axios";
+import {
+    getAllPartRequestsApi,
+    approvePartRequestApi,
+    rejectPartRequestApi,
+    getPartRequestDetailApi,
+} from "../services/api.service";
 
 const PartRequestReview = () => {
-    const [requests, setRequests] = useState([
-        {
-            id: 1,
-            partName: "Battery Module A",
-            quantity: 2,
-            reason: "VIN12345 - Battery fault detected",
-            status: "Pending",
-            date: "2025-10-17 10:45",
-            requester: "SC_Hanoi",
-        },
-        {
-            id: 2,
-            partName: "Inverter V3",
-            quantity: 1,
-            reason: "VIN98765 - Inverter malfunction",
-            status: "Approved",
-            date: "2025-10-16 09:30",
-            requester: "SC_Danang",
-        },
-    ]);
-
+    const [requests, setRequests] = useState([]);
     const [filter, setFilter] = useState("All");
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [processing, setProcessing] = useState(false);
     const [actionMessage, setActionMessage] = useState("");
-    const [viewMode, setViewMode] = useState("table");
+    const [loading, setLoading] = useState(false);
+    const [detailLoading, setDetailLoading] = useState(false);
 
-    const handleDecision = (id, decision) => {
+    // ✅ Lấy danh sách yêu cầu phụ tùng
+    const fetchRequests = async () => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem("token");
+            if (token)
+                axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+            const res = await getAllPartRequestsApi();
+            let data = res.data;
+
+            if (Array.isArray(data?.data?.partSupplies)) {
+                data = data.data.partSupplies;
+            } else if (Array.isArray(data)) {
+                data = data;
+            } else {
+                data = [];
+            }
+
+            const mapped = data.map((item) => ({
+                id: item.id,
+                partName: item.note?.split(" ")[1] || "N/A",
+                quantity: item.details?.[0]?.requestedQuantity || "-",
+                reason: item.note || "-",
+                status:
+                    item.status === "PENDING"
+                        ? "Pending"
+                        : item.status === "APPROVED"
+                            ? "Approved"
+                            : "Rejected",
+                date: formatDate(item.createdDate),
+                requester: item.serviceCenterName || "Unknown",
+            }));
+
+            setRequests(mapped);
+        } catch (err) {
+            console.error("❌ Error fetching part requests:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchRequests();
+    }, []);
+
+    // ✅ Lấy chi tiết 1 yêu cầu
+    const handleViewDetail = async (id) => {
+        // Mở modal ngay lập tức để tránh trễ
+        setSelectedRequest({ id, loading: true });
+        setDetailLoading(true);
+
+        try {
+            const res = await getPartRequestDetailApi(id);
+            const data = res.data?.data || {};
+
+            // Cập nhật lại dữ liệu chi tiết sau khi tải xong
+            setSelectedRequest(data);
+        } catch (err) {
+            console.error("❌ Error fetching part request detail:", err);
+            setSelectedRequest({
+                id,
+                error: "Failed to load details. Please try again.",
+            });
+        } finally {
+            setDetailLoading(false);
+        }
+    };
+
+    // ✅ Xử lý phê duyệt hoặc từ chối
+    const handleDecision = async (id, decision) => {
         setProcessing(true);
-        setTimeout(() => {
+        try {
             setRequests((prev) =>
-                prev.map((req) => (req.id === id ? { ...req, status: decision } : req))
+                prev.map((r) =>
+                    r.id === id ? { ...r, status: decision } : r
+                )
             );
-            setProcessing(false);
+
+            // đổi trạng thái trực tiếp trong modal
+            setSelectedRequest((prev) => ({
+                ...prev,
+                status: decision.toUpperCase(),
+            }));
+
             setActionMessage(
                 decision === "Approved"
                     ? "✅ Request approved successfully!"
                     : "❌ Request rejected successfully!"
             );
-            setTimeout(() => setActionMessage(""), 1500);
-        }, 800);
+        } catch (err) {
+            console.error("❌ Error updating request:", err);
+            setActionMessage("Failed to update request status.");
+        } finally {
+            setProcessing(false);
+            setTimeout(() => setActionMessage(""), 2000);
+        }
+    };
+
+    const formatDate = (arr) => {
+        if (!Array.isArray(arr)) return "-";
+        const [y, m, d, hh, mm] = arr;
+        return `${d.toString().padStart(2, "0")}/${m
+            .toString()
+            .padStart(2, "0")}/${y} ${hh}:${mm}`;
     };
 
     const filteredRequests = requests.filter((req) => {
@@ -94,7 +171,6 @@ const PartRequestReview = () => {
         }
     };
 
-    // ✅ Thống kê trạng thái
     const totalApproved = requests.filter((r) => r.status === "Approved").length;
     const totalPending = requests.filter((r) => r.status === "Pending").length;
     const totalRejected = requests.filter((r) => r.status === "Rejected").length;
@@ -116,92 +192,55 @@ const PartRequestReview = () => {
                         </p>
                     </div>
                 </div>
-
-                {/* Toggle View Buttons */}
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => setViewMode("table")}
-                        className={`p-2 rounded-lg border ${viewMode === "table"
-                            ? "bg-emerald-100 border-emerald-300 text-emerald-700"
-                            : "bg-white border-gray-200 text-gray-500 hover:bg-gray-100"
-                            } transition-all`}
-                        title="Table View"
-                    >
-                        <Table size={18} />
-                    </button>
-
-                    <button
-                        onClick={() => setViewMode("card")}
-                        className={`p-2 rounded-lg border ${viewMode === "card"
-                            ? "bg-emerald-100 border-emerald-300 text-emerald-700"
-                            : "bg-white border-gray-200 text-gray-500 hover:bg-gray-100"
-                            } transition-all`}
-                        title="Card View"
-                    >
-                        <LayoutGrid size={18} />
-                    </button>
-                </div>
             </div>
 
-            {/* ✅ KPI STATUS BAR */}
+            {/* KPI Cards */}
             <div className="grid grid-cols-3 gap-5 mb-8">
-                <div className="flex items-center justify-between bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
+                <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl p-4">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-green-500/90 rounded-lg text-white">
                             <CheckCircle2 size={20} />
                         </div>
                         <div>
-                            <h3 className="text-sm font-medium text-gray-800">
-                                Approved Requests
-                            </h3>
-                            <p className="text-2xl font-bold text-green-700">
-                                {totalApproved}
-                            </p>
+                            <h3 className="text-sm font-medium text-gray-800">Approved Requests</h3>
+                            <p className="text-2xl font-bold text-green-700">{totalApproved}</p>
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
+                <div className="flex items-center justify-between bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-yellow-500/90 rounded-lg text-white">
                             <Clock4 size={20} />
                         </div>
                         <div>
-                            <h3 className="text-sm font-medium text-gray-800">
-                                Pending Requests
-                            </h3>
-                            <p className="text-2xl font-bold text-yellow-700">
-                                {totalPending}
-                            </p>
+                            <h3 className="text-sm font-medium text-gray-800">Pending Requests</h3>
+                            <p className="text-2xl font-bold text-yellow-700">{totalPending}</p>
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
+                <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded-xl p-4">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-red-500/90 rounded-lg text-white">
                             <XCircle size={20} />
                         </div>
                         <div>
-                            <h3 className="text-sm font-medium text-gray-800">
-                                Rejected Requests
-                            </h3>
-                            <p className="text-2xl font-bold text-red-700">
-                                {totalRejected}
-                            </p>
+                            <h3 className="text-sm font-medium text-gray-800">Rejected Requests</h3>
+                            <p className="text-2xl font-bold text-red-700">{totalRejected}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Filter Bar */}
-            <div className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl shadow-md p-5 mb-8 flex flex-wrap items-center justify-between gap-4">
+            {/* Filter bar */}
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-md p-5 mb-8 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                     <Filter size={18} className="text-gray-500" />
                     <select
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
-                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     >
                         <option value="All">All Requests</option>
                         <option value="Pending">Pending</option>
@@ -225,213 +264,135 @@ const PartRequestReview = () => {
                 </div>
             </div>
 
-            {/* Table or Card View */}
-            {viewMode === "table" ? (
-                <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-white">
+            {/* Table */}
+            <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-white">
+                {loading ? (
+                    <div className="p-8 text-center text-gray-500">
+                        <Loader2 className="mx-auto animate-spin mb-2" /> Loading requests...
+                    </div>
+                ) : filteredRequests.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500 italic">
+                        No part requests found.
+                    </div>
+                ) : (
                     <table className="w-full text-sm text-gray-700">
                         <thead className="bg-emerald-50 text-gray-800">
                             <tr>
-                                <th className="py-3 px-4 text-left font-semibold w-[18%]">
-                                    Part Name
-                                </th>
-                                <th className="py-3 px-4 text-left font-semibold w-[8%]">
-                                    Qty
-                                </th>
-                                <th className="py-3 px-4 text-left font-semibold w-[28%]">
-                                    Reason
-                                </th>
-                                <th className="py-3 px-4 text-left font-semibold w-[15%]">
-                                    Requester
-                                </th>
-                                <th className="py-3 px-4 text-left font-semibold w-[16%]">
-                                    Date
-                                </th>
-                                <th className="py-3 px-4 text-center font-semibold w-[10%]">
-                                    Status
-                                </th>
-                                <th className="py-3 px-4 text-center font-semibold w-[10%]">
-                                    Actions
-                                </th>
+                                <th className="py-3 px-4 text-left font-semibold">Part</th>
+                                <th className="py-3 px-4 text-left font-semibold">Quantity</th>
+                                <th className="py-3 px-4 text-left font-semibold">Reason</th>
+                                <th className="py-3 px-4 text-left font-semibold">Requester</th>
+                                <th className="py-3 px-4 text-left font-semibold">Date</th>
+                                <th className="py-3 px-4 text-center font-semibold">Status</th>
+                                <th className="py-3 px-4 text-center font-semibold">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredRequests.map((req, index) => (
-                                <tr
-                                    key={req.id}
-                                    className={`${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
-                                        } border-t border-gray-100 hover:bg-emerald-50/40 transition`}
-                                >
-                                    <td className="py-3 px-4 font-medium text-gray-900">
-                                        {req.partName}
-                                    </td>
-                                    <td className="py-3 px-4 text-gray-700">{req.quantity}</td>
-                                    <td className="py-3 px-4 text-gray-700 truncate max-w-[200px]">
-                                        {req.reason}
-                                    </td>
-                                    <td className="py-3 px-4 text-gray-700">{req.requester}</td>
-                                    <td className="py-3 px-4 text-gray-500">{req.date}</td>
-                                    <td className="py-3 px-4 text-center">
-                                        {getStatusBadge(req.status)}
-                                    </td>
+                            {filteredRequests.map((req) => (
+                                <tr key={req.id} className="border-t border-gray-100 hover:bg-emerald-50/40">
+                                    <td className="py-3 px-4 font-medium">{req.partName}</td>
+                                    <td className="py-3 px-4">{req.quantity}</td>
+                                    <td className="py-3 px-4">{req.reason}</td>
+                                    <td className="py-3 px-4">{req.requester}</td>
+                                    <td className="py-3 px-4">{req.date}</td>
+                                    <td className="py-3 px-4 text-center">{getStatusBadge(req.status)}</td>
                                     <td className="py-3 px-4 text-center">
                                         <button
-                                            onClick={() => setSelectedRequest(req)}
-                                            className="group flex items-center justify-center gap-2 px-3.5 py-1.5 text-sm font-medium rounded-full 
-             bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm 
-             hover:bg-emerald-600 hover:text-white hover:shadow-md 
-             transition-all duration-300"
+                                            onClick={() => handleViewDetail(req.id)}
+                                            className="px-3 py-1 text-xs bg-emerald-100 text-emerald-700 border border-emerald-300 rounded hover:bg-emerald-600 hover:text-white transition flex items-center gap-1"
                                         >
-                                            <Eye
-                                                size={16}
-                                                className="text-emerald-600 group-hover:text-white transition-colors duration-300"
-                                            />
-                                            <span className="group-hover:translate-x-0.5 transition-transform duration-300">
-                                                View
-                                            </span>
+                                            <Eye size={14} /> View
                                         </button>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {filteredRequests.map((req) => (
-                        <div
-                            key={req.id}
-                            className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-                        >
-                            <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-base font-semibold text-gray-800">
-                                    {req.partName}
-                                </h3>
-                                {getStatusBadge(req.status)}
-                            </div>
-                            <div className="text-sm text-gray-600 space-y-1">
-                                <p>
-                                    <b>Quantity:</b> {req.quantity}
-                                </p>
-                                <p className="line-clamp-2">
-                                    <b>Reason:</b> {req.reason}
-                                </p>
-                                <p>
-                                    <b>Requester:</b> {req.requester}
-                                </p>
-                                <p className="text-xs text-gray-500">{req.date}</p>
-                            </div>
-                            <div className="mt-4 flex justify-between">
-                                <button
-                                    onClick={() => setSelectedRequest(req)}
-                                    className="group flex items-center justify-center gap-2 px-3.5 py-2 text-sm font-medium rounded-full 
-             bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm 
-             hover:bg-emerald-600 hover:text-white hover:shadow-md hover:scale-[1.04]
-             transition-all duration-300"
-                                >
-                                    <Eye
-                                        size={16}
-                                        className="text-emerald-600 group-hover:text-white transition-colors duration-300"
-                                    />
-                                    <span className="group-hover:translate-x-0.5 transition-transform duration-300">
-                                        View Details
-                                    </span>
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
+                )}
+            </div>
 
-            {/* Toast Notification */}
-            {actionMessage && (
-                <div className="fixed bottom-6 right-6 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium animate-fadeIn">
-                    {actionMessage}
-                </div>
-            )}
-
-            {/* Modal */}
+            {/* Modal chi tiết */}
             {selectedRequest && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fadeIn">
-                    <div className="bg-white rounded-2xl shadow-2xl w-[480px] p-6 relative animate-slideUp border border-gray-100">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                            <Eye size={20} className="text-emerald-600" />
-                            Request Details
-                        </h2>
-
-                        <div className="space-y-3 text-sm text-gray-700">
-                            <p>
-                                <b>Part:</b> {selectedRequest.partName}
-                            </p>
-                            <p>
-                                <b>Quantity:</b> {selectedRequest.quantity}
-                            </p>
-                            <p>
-                                <b>Reason:</b> {selectedRequest.reason}
-                            </p>
-                            <p>
-                                <b>Requester:</b> {selectedRequest.requester}
-                            </p>
-                            <p>
-                                <b>Date:</b> {selectedRequest.date}
-                            </p>
-                            <div className="flex items-center gap-2">
-                                <p className="font-semibold text-gray-800">Status:</p>
-                                {getStatusBadge(selectedRequest.status)}
-                            </div>
+                    <div className="bg-white rounded-2xl shadow-2xl w-[500px] p-6 relative border border-gray-100 animate-slideUp">
+                        <div className="flex items-center justify-between border-b border-gray-200 pb-3 mb-4">
+                            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                <Eye size={20} className="text-emerald-600" />
+                                Request Details
+                            </h2>
+                            {getStatusBadge(selectedRequest.status)}
                         </div>
 
-                        <div className="mt-6 flex justify-between">
+                        {detailLoading ? (
+                            <div className="text-center py-6 text-gray-500">
+                                <Loader2 className="mx-auto animate-spin mb-2" /> Loading...
+                            </div>
+                        ) : (
+                            <div className="space-y-3 text-sm text-gray-700">
+                                <p><b>Service Center:</b> {selectedRequest.serviceCenterName || "-"}</p>
+                                <p><b>Created By:</b> {selectedRequest.createdBy || "-"}</p>
+                                <p><b>Note:</b> {selectedRequest.note || "-"}</p>
+                                <p><b>Created Date:</b> {formatDate(selectedRequest.createdDate)}</p>
+
+                                {Array.isArray(selectedRequest.details) && selectedRequest.details.length > 0 && (
+                                    <div className="mt-3 border-t border-gray-200 pt-2">
+                                        <b>Parts Requested:</b>
+                                        <ul className="list-disc ml-6 mt-2 space-y-1">
+                                            {selectedRequest.details.map((d, i) => (
+                                                <li key={i}>
+                                                    Part ID: {d.partId || "-"} – Quantity: {d.requestedQuantity}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* ✅ Footer mới: Close trái - Approve/Reject phải */}
+                        <div className="mt-8 flex items-center justify-between border-t border-gray-200 pt-4">
                             <button
                                 onClick={() => setSelectedRequest(null)}
-                                className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-100 transition"
+                                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg 
+                                           hover:bg-gray-100 transition-all duration-200"
                             >
                                 Close
                             </button>
-                            {selectedRequest.status === "Pending" && (
-                                <div className="flex gap-2">
+
+                            {selectedRequest.status === "PENDING" && (
+                                <div className="flex items-center gap-3">
                                     <button
                                         onClick={() => handleDecision(selectedRequest.id, "Approved")}
-                                        className="group flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-full
-             bg-green-50 text-green-700 border border-green-200 shadow-sm
-             hover:bg-green-600 hover:text-white hover:shadow-md hover:scale-[1.03]
-             transition-all duration-300"
+                                        disabled={processing}
+                                        className="flex items-center gap-1.5 px-4 py-2 rounded-lg 
+                                                   bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium 
+                                                   shadow-sm hover:shadow-md transition-all duration-200"
                                     >
-                                        {processing ? (
-                                            <Loader2 size={14} className="animate-spin" />
-                                        ) : (
-                                            <CheckCircle2
-                                                size={16}
-                                                className="text-green-600 group-hover:text-white transition-colors duration-300"
-                                            />
-                                        )}
-                                        <span className="group-hover:translate-x-0.5 transition-transform duration-300">
-                                            Approve
-                                        </span>
+                                        <CheckCircle2 size={16} />
+                                        {processing ? "Processing..." : "Approve"}
                                     </button>
 
                                     <button
                                         onClick={() => handleDecision(selectedRequest.id, "Rejected")}
-                                        className="group flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-full
-             bg-red-50 text-red-700 border border-red-200 shadow-sm
-             hover:bg-red-600 hover:text-white hover:shadow-md hover:scale-[1.03]
-             transition-all duration-300"
+                                        disabled={processing}
+                                        className="flex items-center gap-1.5 px-4 py-2 rounded-lg 
+                                                   bg-red-500 hover:bg-red-600 text-white text-sm font-medium 
+                                                   shadow-sm hover:shadow-md transition-all duration-200"
                                     >
-                                        {processing ? (
-                                            <Loader2 size={14} className="animate-spin" />
-                                        ) : (
-                                            <XCircle
-                                                size={16}
-                                                className="text-red-600 group-hover:text-white transition-colors duration-300"
-                                            />
-                                        )}
-                                        <span className="group-hover:translate-x-0.5 transition-transform duration-300">
-                                            Reject
-                                        </span>
+                                        <XCircle size={16} />
+                                        {processing ? "Processing..." : "Reject"}
                                     </button>
                                 </div>
                             )}
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Toast */}
+            {actionMessage && (
+                <div className="fixed bottom-6 right-6 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium animate-fadeIn">
+                    {actionMessage}
                 </div>
             )}
         </div>

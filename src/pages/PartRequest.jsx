@@ -1,58 +1,106 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     PackageSearch,
     Send,
     ClipboardList,
-    PlusCircle,
     X,
     CheckCircle2,
     Clock4,
     AlertCircle,
     Loader2,
 } from "lucide-react";
+import axios from "axios";
+import {
+    createPartRequestApi,
+    getAllPartRequestsApi,
+} from "../services/api.service";
 
 const PartRequestPage = () => {
     const [formData, setFormData] = useState({
-        partName: "",
+        partId: "",
         quantity: "",
-        reason: "",
+        note: "",
     });
-
     const [requests, setRequests] = useState([]);
     const [success, setSuccess] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
-    const handleInputChange = (field, value) => {
-        setFormData((prev) => ({ ...prev, [field]: value }));
+    // ✅ Fetch tất cả yêu cầu từ BE
+    const fetchRequests = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            if (token)
+                axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+            const res = await getAllPartRequestsApi();
+            let data = res.data;
+
+            // Chuẩn hóa dữ liệu (theo đúng JSON bạn gửi)
+            if (Array.isArray(data?.data?.partSupplies))
+                data = data.data.partSupplies;
+            else if (Array.isArray(data)) data = data;
+            else data = [];
+
+            console.log("✅ Normalized part requests:", data);
+            setRequests(data);
+        } catch (err) {
+            console.error("❌ Error fetching part requests:", err);
+            setError("Failed to load part requests. Please try again later.");
+        }
     };
 
-    const handleSubmit = (e) => {
+    useEffect(() => {
+        fetchRequests();
+    }, []);
+
+    // ✅ Gửi yêu cầu mới
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
         setSuccess("");
 
-        if (!formData.partName || !formData.quantity || !formData.reason) {
+        if (!formData.partId || !formData.quantity || !formData.note) {
             setError("Please fill in all fields before submitting.");
             return;
         }
 
-        setLoading(true);
+        const payload = {
+            note: formData.note,
+            details: [
+                {
+                    partId: parseInt(formData.partId),
+                    requestedQuantity: parseInt(formData.quantity),
+                },
+            ],
+        };
 
-        setTimeout(() => {
-            const newRequest = {
-                id: Date.now(),
-                ...formData,
-                status: "Pending",
-                date: new Date().toLocaleString("en-GB"),
-            };
-
-            setRequests([newRequest, ...requests]);
-            setFormData({ partName: "", quantity: "", reason: "" });
+        try {
+            setLoading(true);
+            await createPartRequestApi(payload);
             setSuccess("✅ Request submitted successfully!");
+            setFormData({ partId: "", quantity: "", note: "" });
+            await fetchRequests(); // Reload list sau khi tạo
+        } catch (err) {
+            console.error("❌ Error creating part request:", err);
+            setError("Failed to submit request. Please try again.");
+        } finally {
             setLoading(false);
             setTimeout(() => setSuccess(""), 3000);
-        }, 800);
+        }
+    };
+
+    const handleInputChange = (field, value) => {
+        setFormData((prev) => ({ ...prev, [field]: value }));
+    };
+
+    // ✅ Format ngày từ mảng [year,month,day,hour,minute,...]
+    const formatDate = (dateArray) => {
+        if (!Array.isArray(dateArray)) return "-";
+        const [y, m, d, hh, mm] = dateArray;
+        return `${d.toString().padStart(2, "0")}/${m
+            .toString()
+            .padStart(2, "0")}/${y} ${hh}:${mm}`;
     };
 
     return (
@@ -100,26 +148,22 @@ const PartRequestPage = () => {
                         New Part Request
                     </h2>
                 </div>
-
                 <form
                     onSubmit={handleSubmit}
                     className="grid grid-cols-1 md:grid-cols-3 gap-5"
                 >
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Part Name
+                            Part ID
                         </label>
                         <input
-                            type="text"
-                            placeholder="Enter part name..."
-                            value={formData.partName}
-                            onChange={(e) =>
-                                handleInputChange("partName", e.target.value)
-                            }
+                            type="number"
+                            placeholder="Enter part ID"
+                            value={formData.partId}
+                            onChange={(e) => handleInputChange("partId", e.target.value)}
                             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                         />
                     </div>
-
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Quantity
@@ -129,28 +173,22 @@ const PartRequestPage = () => {
                             min="1"
                             placeholder="Enter quantity"
                             value={formData.quantity}
-                            onChange={(e) =>
-                                handleInputChange("quantity", e.target.value)
-                            }
+                            onChange={(e) => handleInputChange("quantity", e.target.value)}
                             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                         />
                     </div>
-
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Reason for Request
+                            Note
                         </label>
                         <input
                             type="text"
-                            placeholder="e.g., VIN1234 battery replacement"
-                            value={formData.reason}
-                            onChange={(e) =>
-                                handleInputChange("reason", e.target.value)
-                            }
+                            placeholder="Describe the issue or reason..."
+                            value={formData.note}
+                            onChange={(e) => handleInputChange("note", e.target.value)}
                             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                         />
                     </div>
-
                     <div className="md:col-span-3 flex justify-end">
                         <button
                             type="submit"
@@ -162,13 +200,11 @@ const PartRequestPage = () => {
                         >
                             {loading ? (
                                 <>
-                                    <Loader2 size={16} className="animate-spin" />
-                                    Sending...
+                                    <Loader2 size={16} className="animate-spin" /> Sending...
                                 </>
                             ) : (
                                 <>
-                                    <Send size={16} />
-                                    Send Request
+                                    <Send size={16} /> Send Request
                                 </>
                             )}
                         </button>
@@ -194,11 +230,12 @@ const PartRequestPage = () => {
                         <table className="min-w-full text-sm text-gray-700 border-collapse">
                             <thead className="bg-gradient-to-r from-blue-50 to-blue-100 border-b border-gray-200 text-gray-700">
                                 <tr>
-                                    <th className="py-3 px-4 text-left font-semibold">Part Name</th>
-                                    <th className="py-3 px-4 text-left font-semibold">Quantity</th>
-                                    <th className="py-3 px-4 text-left font-semibold">Reason</th>
+                                    <th className="py-3 px-4 text-left font-semibold">ID</th>
+                                    <th className="py-3 px-4 text-left font-semibold">Service Center</th>
+                                    <th className="py-3 px-4 text-left font-semibold">Created By</th>
                                     <th className="py-3 px-4 text-left font-semibold">Date</th>
                                     <th className="py-3 px-4 text-left font-semibold">Status</th>
+                                    <th className="py-3 px-4 text-left font-semibold">Note</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -207,27 +244,18 @@ const PartRequestPage = () => {
                                         key={req.id}
                                         className="border-b border-gray-100 hover:bg-blue-50/60 transition-colors"
                                     >
-                                        <td className="py-3 px-4 font-medium">{req.partName}</td>
-                                        <td className="py-3 px-4">{req.quantity}</td>
-                                        <td className="py-3 px-4 text-gray-700">{req.reason}</td>
-                                        <td className="py-3 px-4 text-gray-500">{req.date}</td>
+                                        <td className="py-3 px-4 font-medium">{req.id}</td>
+                                        <td className="py-3 px-4">{req.serviceCenterName}</td>
+                                        <td className="py-3 px-4">{req.createdBy}</td>
+                                        <td className="py-3 px-4">{formatDate(req.createdDate)}</td>
                                         <td className="py-3 px-4">
-                                            {req.status === "Pending" && (
+                                            {req.status === "PENDING" && (
                                                 <span className="inline-flex items-center gap-1 text-yellow-700 bg-yellow-100 px-2 py-1 rounded-full text-xs font-medium">
                                                     <Clock4 size={12} /> Pending
                                                 </span>
                                             )}
-                                            {req.status === "Approved" && (
-                                                <span className="inline-flex items-center gap-1 text-green-700 bg-green-100 px-2 py-1 rounded-full text-xs font-medium">
-                                                    <CheckCircle2 size={12} /> Approved
-                                                </span>
-                                            )}
-                                            {req.status === "Rejected" && (
-                                                <span className="inline-flex items-center gap-1 text-red-700 bg-red-100 px-2 py-1 rounded-full text-xs font-medium">
-                                                    <X size={12} /> Rejected
-                                                </span>
-                                            )}
                                         </td>
+                                        <td className="py-3 px-4 text-gray-700">{req.note}</td>
                                     </tr>
                                 ))}
                             </tbody>

@@ -277,3 +277,26 @@ export const searchVehiclesByPhoneApi = (phone) => {
 export const getCampaignByVinApi = (vin) => {
   return axios.get(`/api/api/campaign?vin=${vin}`);
 };
+
+//Part Request
+export const createPartRequestApi = (data) => {
+  return axios.post("/api/api/part-supply", data);
+};
+
+export const getAllPartRequestsApi = () => {
+  return axios.get("/api/api/part-supplies");
+};
+
+// ✅ EVM Staff phê duyệt yêu cầu phụ tùng
+export const approvePartRequestApi = (id) => {
+  return axios.put(`/api/api/part-supply/${id}/approve`);
+};
+
+// ✅ EVM Staff từ chối yêu cầu phụ tùng
+export const rejectPartRequestApi = (id) => {
+  return axios.put(`/api/api/part-supply/${id}/reject`);
+}
+
+export const getPartRequestDetailApi = (id) => {
+  return axios.get(`/api/api/part-supply/${id}`);
+};
