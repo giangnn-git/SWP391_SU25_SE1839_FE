@@ -4,10 +4,10 @@ import {
   Search,
   Filter,
   AlertTriangle,
-  RotateCcw,
   Calendar,
 } from "lucide-react";
 import CreateCampaignModal from "../components/campaigns/CreateCampaignModal";
+import EditCampaignModal from "../components/campaigns/EditCampaignModal";
 import CampaignTable from "../components/campaigns/CampaignTable";
 import CampaignOverviewCard from "../components/campaigns/CampaignOverviewCard";
 import { getAllCampaignsApi } from "../services/api.service";
@@ -17,6 +17,8 @@ const CampaignManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
 
@@ -94,8 +96,14 @@ const CampaignManagement = () => {
     setCampaigns((prev) => [formattedCampaign, ...prev]);
     setShowCreateModal(false);
 
-    // Show success message (you can add a toast notification here)
     console.log("Campaign created successfully:", formattedCampaign);
+  };
+
+  // Handle campaign update success
+  const handleCampaignUpdated = () => {
+    fetchCampaigns(); // reload danh sách
+    setShowEditModal(false);
+    setSelectedCampaign(null);
   };
 
   // Statistics với real data
@@ -130,14 +138,6 @@ const CampaignManagement = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          <button
-            onClick={fetchCampaigns}
-            className="flex items-center border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-md transition"
-          >
-            <RotateCcw size={18} className="mr-2" />
-            Refresh
-          </button>
-
           <button
             className="flex items-center bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded-md transition shadow-sm"
             onClick={() => setShowCreateModal(true)}
@@ -220,6 +220,10 @@ const CampaignManagement = () => {
         campaigns={filteredCampaigns}
         loading={loading}
         onRefresh={fetchCampaigns}
+        onEdit={(campaign) => {
+          setSelectedCampaign(campaign);
+          setShowEditModal(true);
+        }}
       />
 
       {/* Create Campaign Modal */}
@@ -228,6 +232,16 @@ const CampaignManagement = () => {
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
           onCampaignCreated={handleCampaignCreated}
+        />
+      )}
+
+      {/* Edit Campaign Modal */}
+      {showEditModal && selectedCampaign && (
+        <EditCampaignModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          campaign={selectedCampaign}
+          onCampaignUpdated={handleCampaignUpdated}
         />
       )}
     </div>

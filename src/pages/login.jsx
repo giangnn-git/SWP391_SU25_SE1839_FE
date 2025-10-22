@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { userLoginApi } from "../services/api.service";
 import { storage } from "../utils/storage";
 import ForgotPasswordModal from "../components/auth/ForgotPasswordModal";
+import { jwtDecode } from "jwt-decode";
 
 const LoginPage = () => {
   const [user, setUser] = useState("");
@@ -20,26 +21,26 @@ const LoginPage = () => {
 
     try {
       const res = await userLoginApi(user, password);
-      const token = res.data?.data?.token;
-      const id = res.data?.data?.id;
-      const name = res.data?.data?.name;
-      const phone = res.data?.data?.phoneNumber;
-      const scid = res.data?.data?.serviceCenterId;
+      const data = res.data?.data;
+      const token = data?.token;
+      const decoded = jwtDecode(token);
 
-      const requiresPasswordChange = res.data?.data?.requiresPasswordChange;
+      const phone = data.phone;
+      const requiresPasswordChange = data.requiresPasswordChange;
 
       if (!token) {
         setError("Token not received from server!");
+        setLoading(false);
         return;
       }
 
       storage.set("token", token);
-      storage.set("userEmail", user);
+      storage.set("userEmail", decoded.sub);
       storage.set("isLoggedIn", true);
-      storage.set("id", id);
-      storage.set("userName", name);
+      storage.set("id", decoded.id || decoded.userId || "");
+      storage.set("userName", decoded.name);
       storage.set("userPhone", phone);
-      storage.set("serviceCenterId", scid);
+      storage.set("serviceCenterId", decoded.serviceCenterId);
       storage.set("requiresPasswordChange", requiresPasswordChange);
 
       if (requiresPasswordChange === true) {
@@ -59,7 +60,6 @@ const LoginPage = () => {
     } finally {
       setLoading(false);
     }
-
   };
 
   const handleForgotPassword = () => {

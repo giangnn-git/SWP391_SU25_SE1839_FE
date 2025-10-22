@@ -9,6 +9,7 @@ import {
   Calendar,
   Gauge,
   FileText,
+  MoreVertical,
 } from "lucide-react";
 import { getVehicleDetailApi } from "../../services/api.service";
 
@@ -125,7 +126,7 @@ const ViewVehicleModal = ({ vehicle, onClose }) => {
     );
   };
 
-  const handleMouseEnter = (partPolicy, index, e) => {
+  const handleThreeDotsClick = (partPolicy, index, e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setActiveTooltip({
       index,
@@ -135,17 +136,23 @@ const ViewVehicleModal = ({ vehicle, onClose }) => {
     });
   };
 
-  const handleMouseLeave = (e) => {
-    // Kiểm tra xem chuột có di chuyển vào tooltip không
-    if (tooltipRef.current && tooltipRef.current.contains(e.relatedTarget)) {
-      return;
-    }
+  const handleCloseTooltip = () => {
     setActiveTooltip(null);
   };
 
-  const handleTooltipMouseLeave = () => {
-    setActiveTooltip(null);
-  };
+  // Close tooltip when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (tooltipRef.current && !tooltipRef.current.contains(event.target)) {
+        setActiveTooltip(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   if (!vehicle) return null;
 
@@ -232,7 +239,7 @@ const ViewVehicleModal = ({ vehicle, onClose }) => {
                       <Package size={16} className="text-purple-600" />
                       Part Policies ({vehicleDetail.partPolicies.length})
                       <span className="text-xs text-gray-500 font-normal ml-2">
-                        (Hover to see details)
+                        (Click ⋮ to see details)
                       </span>
                     </h3>
 
@@ -242,22 +249,27 @@ const ViewVehicleModal = ({ vehicle, onClose }) => {
                           key={`${partPolicy.partId}-${partPolicy.policyId}`}
                           className="relative"
                         >
-                          <div
-                            className="flex justify-between items-center p-3 border border-gray-100 rounded-lg hover:bg-gray-50 hover:border-purple-200 hover:shadow-sm transition cursor-help group"
-                            onMouseEnter={(e) =>
-                              handleMouseEnter(partPolicy, index, e)
-                            }
-                            onMouseLeave={handleMouseLeave}
-                          >
+                          <div className="flex justify-between items-center p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition group">
                             <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-purple-500 rounded-full group-hover:bg-purple-600 transition"></div>
-                              <span className="font-medium text-gray-900 group-hover:text-purple-700 transition">
+                              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                              <span className="font-medium text-gray-900">
                                 {partPolicy.partName}
                               </span>
                             </div>
-                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded group-hover:bg-purple-100 group-hover:text-purple-700 transition">
-                              {partPolicy.policyName}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                {partPolicy.policyName}
+                              </span>
+                              <button
+                                onClick={(e) =>
+                                  handleThreeDotsClick(partPolicy, index, e)
+                                }
+                                className="p-1 rounded hover:bg-gray-200 transition text-gray-500 hover:text-purple-600"
+                                title="View policy details"
+                              >
+                                <MoreVertical size={14} />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -280,12 +292,6 @@ const ViewVehicleModal = ({ vehicle, onClose }) => {
 
         {/* Footer */}
         <div className="flex justify-end gap-3 p-6 border-t border-gray-100 bg-gray-50">
-          <button
-            onClick={onClose}
-            className="px-5 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition font-medium"
-          >
-            Cancel
-          </button>
           <button
             onClick={onClose}
             className="px-5 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition font-medium"

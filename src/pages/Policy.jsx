@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import PartPolicyManagement from "../components/policies/Part/PartPolicyManagement";
 import WarrantyPolicyManagement from "../components/policies/Warranty/WarrantyPolicyManagement";
-
+import { FileText } from "lucide-react";
 const Policy = () => {
   const [activeTab, setActiveTab] = useState("part");
 
@@ -10,7 +10,7 @@ const Policy = () => {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold flex items-center gap-2">
-          📑 Policy Management
+          <FileText /> Policy Management
         </h1>
         <p className="text-gray-500 mt-1">
           Manage part-specific and general warranty policies.

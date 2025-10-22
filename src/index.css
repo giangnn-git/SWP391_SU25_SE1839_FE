@@ -20,3 +20,11 @@
   position: fixed;
   z-index: 9999;
 }
+
+.toggle-bg {
+  transition: background-color 0.2s ease-in-out;
+}
+
+.toggle-knob {
+  transition: transform 0.2s ease-in-out;
+}

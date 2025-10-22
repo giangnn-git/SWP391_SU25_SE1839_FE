@@ -1,5 +1,14 @@
-import React from "react";
-import { Eye, Trash2 } from "lucide-react";
+import React, { useState } from "react";
+import {
+  Eye,
+  Trash2,
+  FileText,
+  Calendar,
+  Clock,
+  ToggleLeft,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
 
 const formatDate = (dateString) => {
   if (!dateString) return "N/A";
@@ -13,7 +22,7 @@ const formatDate = (dateString) => {
     });
   } catch (error) {
     console.error("Error formatting date:", error);
-    return dateString; // Fallback to original string if error
+    return dateString;
   }
 };
 
@@ -22,92 +31,238 @@ const PartPolicyTable = ({
   loading,
   onView,
   onDelete,
+  onStatusToggle,
   actionLoading,
   currentPage,
   itemsPerPage,
   totalItems,
 }) => {
+  const [statusLoading, setStatusLoading] = useState({});
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-3 text-gray-600">Loading part policies...</span>
+      <div className="flex justify-center items-center py-12">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-600"></div>
+          <span className="text-gray-600 text-sm">
+            Loading part policies...
+          </span>
+        </div>
       </div>
     );
   }
 
   if (!policies || policies.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
-        No part policies found.
+      <div className="text-center py-16 bg-white rounded-xl border-2 border-dashed border-gray-200">
+        <FileText size={48} className="mx-auto text-gray-300 mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          No part policies found
+        </h3>
+        <p className="text-gray-600 max-w-sm mx-auto">
+          Get started by creating your first part warranty policy.
+        </p>
       </div>
     );
   }
 
+  // Handle status toggle - SỬA LẠI: chỉ truyền policyId
+  const handleStatusToggle = async (policy) => {
+    if (!onStatusToggle) return;
+
+    setStatusLoading((prev) => ({ ...prev, [policy.id]: true }));
+
+    try {
+      // Chỉ truyền policyId, không truyền status
+      await onStatusToggle(policy.id);
+    } finally {
+      setStatusLoading((prev) => ({ ...prev, [policy.id]: false }));
+    }
+  };
+
   return (
     <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-      <table className="min-w-full text-sm text-gray-700 border-separate border-spacing-y-1">
-        <thead className="bg-gray-100 text-gray-900 font-semibold">
+      <table className="min-w-full text-sm text-gray-700">
+        <thead className="bg-gradient-to-r from-gray-50 to-gray-100 text-gray-900 font-semibold border-b border-gray-200">
           <tr>
-            <th className="py-3 px-4 text-left">Part Code</th>
-            <th className="py-3 px-4 text-left">Part Name</th>
-            <th className="py-3 px-4 text-left">Policy Code</th>
-            <th className="py-3 px-4 text-left">Start Date</th>
-            <th className="py-3 px-4 text-left">End Date</th>
-            <th className="py-3 px-4 text-left">Status</th>
-            <th className="py-3 px-4 text-center">Actions</th>
+            <th className="py-4 px-6 text-left text-xs uppercase tracking-wider">
+              <div className="flex items-center gap-2">
+                <FileText size={16} className="text-gray-500" />
+                Part Information
+              </div>
+            </th>
+            <th className="py-4 px-6 text-left text-xs uppercase tracking-wider">
+              <div className="flex items-center gap-2">
+                <FileText size={16} className="text-gray-500" />
+                Policy Code
+              </div>
+            </th>
+            <th className="py-4 px-6 text-left text-xs uppercase tracking-wider">
+              <div className="flex items-center gap-2">
+                <Calendar size={16} className="text-gray-500" />
+                Start Date
+              </div>
+            </th>
+            <th className="py-4 px-6 text-left text-xs uppercase tracking-wider">
+              <div className="flex items-center gap-2">
+                <Calendar size={16} className="text-gray-500" />
+                End Date
+              </div>
+            </th>
+            <th className="py-4 px-6 text-left text-xs uppercase tracking-wider">
+              <div className="flex items-center gap-2">
+                <Clock size={16} className="text-gray-500" />
+                Coverage Status
+              </div>
+            </th>
+            <th className="py-4 px-6 text-left text-xs uppercase tracking-wider">
+              <div className="flex items-center gap-2">
+                <ToggleLeft size={16} className="text-gray-500" />
+                Policy Status
+              </div>
+            </th>
+            <th className="py-4 px-6 text-center text-xs uppercase tracking-wider">
+              Actions
+            </th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-gray-100">
           {policies.map((policy) => {
-            const isActive = new Date(policy.endDate) >= new Date();
+            //  Coverage status dựa trên endDate
+            const isCoverageActive = new Date(policy.endDate) >= new Date();
+
+            //  Policy status dựa trên field status từ BE
+            const isPolicyActive = policy.status === "ACTIVE";
 
             return (
               <tr
                 key={policy.id}
-                className="bg-white border border-gray-200 hover:shadow-sm transition duration-100 h-[60px]"
+                className="hover:bg-gray-50 transition-colors duration-200 group"
               >
-                <td className="py-3 px-4 font-mono text-sm font-medium bg-gray-50 rounded">
-                  {policy.partCode}
+                {/* Part Information Column */}
+                <td className="py-4 px-6">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 bg-blue-50 rounded-lg">
+                        <FileText size={16} className="text-blue-600" />
+                      </div>
+                      <div>
+                        <div className="font-mono text-sm font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded">
+                          {policy.partCode}
+                        </div>
+                        <div className="text-sm text-gray-900 font-medium mt-1">
+                          {policy.partName}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </td>
-                <td className="py-3 px-4 text-gray-900">{policy.partName}</td>
-                <td className="py-3 px-4 font-mono text-sm font-medium bg-blue-50 text-blue-700 rounded">
-                  {policy.policyCode}
+                {/* Policy Code Column */}
+                <td className="py-4 px-6">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-green-50 rounded-lg">
+                      <FileText size={16} className="text-green-600" />
+                    </div>
+                    <span className="font-mono text-sm font-semibold text-green-700 bg-green-50 px-3 py-1 rounded-full">
+                      {policy.policyCode}
+                    </span>
+                  </div>
                 </td>
-                <td className="py-3 px-4">{formatDate(policy.startDate)}</td>
-                <td className="py-3 px-4">{formatDate(policy.endDate)}</td>
-                <td className="py-3 px-4">
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      isActive
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
+                {/* Start Date Column */}
+                <td className="py-4 px-6">
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <Calendar size={16} className="text-gray-400" />
+                    <span className="font-medium">
+                      {formatDate(policy.startDate)}
+                    </span>
+                  </div>
+                </td>
+                {/* End Date Column */}
+                <td className="py-4 px-6">
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <Calendar size={16} className="text-gray-400" />
+                    <span className="font-medium">
+                      {formatDate(policy.endDate)}
+                    </span>
+                  </div>
+                </td>
+                {/* Coverage Status Column */}
+                <td className="py-4 px-6">
+                  <div
+                    className={`inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-semibold ${
+                      isCoverageActive
+                        ? "bg-green-100 text-green-700 border border-green-200"
+                        : "bg-red-100 text-red-700 border border-red-200"
                     }`}
                   >
-                    {isActive ? "Active" : "Expired"}
-                  </span>
+                    {isCoverageActive ? (
+                      <>
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        Available
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                        Expired
+                      </>
+                    )}
+                  </div>
                 </td>
+                {/* Policy Status Column  */}
 
-                {/* Action Column */}
-                <td className="py-3 px-4 text-center align-middle">
+                <td className="py-4 px-6">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => handleStatusToggle(policy)}
+                      disabled={statusLoading[policy.id] || actionLoading}
+                      className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                        policy.status === "ACTIVE"
+                          ? "bg-green-600 hover:bg-green-700"
+                          : "bg-gray-300 hover:bg-gray-400"
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      <span
+                        className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${
+                          policy.status === "ACTIVE"
+                            ? "translate-x-6"
+                            : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      {statusLoading[policy.id] ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      ) : policy.status === "ACTIVE" ? (
+                        <CheckCircle size={16} className="text-green-600" />
+                      ) : (
+                        <XCircle size={16} className="text-gray-400" />
+                      )}
+                      <span
+                        className={`text-sm font-medium ${
+                          policy.status === "ACTIVE"
+                            ? "text-green-700"
+                            : "text-gray-500"
+                        }`}
+                      >
+                        {policy.status}
+                      </span>
+                    </div>
+                  </div>
+                </td>
+                {/* Actions Column */}
+                <td className="py-4 px-6">
                   <div className="flex items-center justify-center gap-2">
                     {/* View Button */}
                     <button
                       onClick={() => onView(policy)}
-                      className="flex items-center justify-center w-9 h-9 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm"
+                      className="group relative flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-all duration-200 shadow-sm hover:shadow-md border border-blue-200"
                       title="View Details"
                     >
-                      <Eye size={16} />
-                    </button>
-
-                    {/* Delete Button */}
-                    <button
-                      onClick={() => onDelete(policy)}
-                      className="flex items-center justify-center w-9 h-9 rounded-md bg-red-600 hover:bg-red-700 text-white transition shadow-sm disabled:opacity-50"
-                      title="Delete"
-                      disabled={actionLoading}
-                    >
-                      <Trash2 size={16} />
+                      <Eye size={18} />
+                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                        View Details
+                      </div>
                     </button>
                   </div>
                 </td>

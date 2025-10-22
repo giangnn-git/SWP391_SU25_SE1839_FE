@@ -1,9 +1,14 @@
 import React, { useState } from "react";
-import { Eye, Edit, Calendar, Car, Hash, Plus } from "lucide-react"; // Thêm Plus icon
+import { Eye, Edit, Calendar, Car, Hash, Plus } from "lucide-react";
 import ViewCampaignModal from "./ViewCampaignModal";
 
-const CampaignTable = ({ campaigns, loading, onRefresh, onCreateCampaign }) => {
-  // Thêm onCreateCampaign prop
+const CampaignTable = ({
+  campaigns,
+  loading,
+  onRefresh,
+  onCreateCampaign,
+  onEdit, // ✅ thêm prop mới
+}) => {
   const [selectedCampaign, setSelectedCampaign] = useState(null);
 
   const getStatusBadge = (status) => {
@@ -48,7 +53,7 @@ const CampaignTable = ({ campaigns, loading, onRefresh, onCreateCampaign }) => {
   return (
     <>
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {/* Table Header - ĐÃ SỬA Ở ĐÂY */}
+        {/* Table Header */}
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -63,7 +68,7 @@ const CampaignTable = ({ campaigns, loading, onRefresh, onCreateCampaign }) => {
           </div>
         </div>
 
-        {/* Table Content (giữ nguyên phần còn lại) */}
+        {/* Table Content */}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -143,11 +148,10 @@ const CampaignTable = ({ campaigns, loading, onRefresh, onCreateCampaign }) => {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <div
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          campaign.totalVehicles > 0
-                            ? "bg-blue-100 text-blue-800 border border-blue-200"
-                            : "bg-gray-100 text-gray-600 border border-gray-200"
-                        }`}
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${campaign.totalVehicles > 0
+                          ? "bg-blue-100 text-blue-800 border border-blue-200"
+                          : "bg-gray-100 text-gray-600 border border-gray-200"
+                          }`}
                       >
                         {campaign.totalVehicles} vehicles
                       </div>
@@ -172,6 +176,10 @@ const CampaignTable = ({ campaigns, loading, onRefresh, onCreateCampaign }) => {
                       <button
                         className="p-2 text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
                         title="Edit Campaign"
+                        onClick={() => {
+                          console.log("🟠 Edit clicked:", campaign);
+                          onEdit && onEdit(campaign); // ✅ gọi callback mở modal edit
+                        }}
                       >
                         <Edit size={16} />
                       </button>

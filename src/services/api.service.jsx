@@ -42,10 +42,8 @@ export const updateUserApi = (id, userData) => {
 };
 //change pass
 export const changePasswordApi = async (passwordData) => {
-  const URL_BACKEND = `/api/auth/change-password`;
-
-  return axios.post(URL_BACKEND, {
-    oldPassword: passwordData.currentPassword,
+  return axios.post("/api/auth/change-password", {
+    oldPassword: passwordData.oldPassword,
     newPassword: passwordData.newPassword,
   });
 };
@@ -129,6 +127,11 @@ export const getPartPolicyCodesApi = () => {
   return axios.get("/api/api/part-policy/code");
 };
 
+// { Part Policy Status }
+export const updatePartPolicyStatusApi = (partPolicyId) => {
+  return axios.put(`/api/api/part-policy/status/${partPolicyId}`);
+};
+
 // { vehicle storage API}
 export const getVehicleDetailApi = (vehicleId) => {
   return axios.get(`/api/api/model/detail/${vehicleId}`);
@@ -207,7 +210,7 @@ export const getPartInventoryByServiceCenterIdApi = (serviceCenterId) => {
   return axios.get(`/api/api/part-inventory/service-center/${serviceCenterId}`);
 };
 
-// {Warranty API}
+// {Warranty Claims API}
 
 export const updateWarrantyClaimApi = async (id, updatedData) => {
   return axios.put(`/api/claims/${id}`, updatedData);
@@ -216,7 +219,6 @@ export const updateWarrantyClaimApi = async (id, updatedData) => {
 export const getAllWarrantyClaimsApi = () => {
   return axios.get("/api/api/claims");
 };
-
 
 // Get all registered vehicles (Customer Registration page)
 export const getAllVehiclesApi = () => {
@@ -228,14 +230,73 @@ export const createCustomerApi = (customerData) => {
   const data = {
     name: customerData.name,
     phoneNumber: customerData.phoneNumber,
+    licensePlate: customerData.licensePlate,
     email: customerData.email,
     address: customerData.address,
     vin: customerData.vin,
   };
 
-  return axios.post(URL_BACKEND, data, {
-    headers: {
-      "Content-Type": "application/json",
-    },
+  return axios.post(URL_BACKEND, data);
+};
+
+export const updateCampaignApi = (id, campaignData) => {
+  return axios.put(`/api/api/campaigns/${id}`, {
+    code: campaignData.code,
+    name: campaignData.name,
+    description: campaignData.description,
+    startDate: campaignData.startDate,
+    endDate: campaignData.endDate,
+    produceDateFrom: campaignData.produceDateFrom,
+    produceDateTo: campaignData.produceDateTo,
+    affectedModels: campaignData.affectedModels,
+    status: campaignData.status,
   });
+};
+
+//Reporting & Analytics API
+
+// Get performance report (Service Center Performance)
+export const getPerformanceReportApi = () => {
+  return axios.get("/api/api/reports/performances");
+};
+
+// { Reports - Resolution Time Distribution }
+export const getCompletedDurationReportApi = () => {
+  return axios.get("/api/api/reports/completed-duration");
+};
+
+//{Get Customer by VIN}
+export const getCustomerByVinApi = (vin) => {
+  return axios.get(`/api/api/customer?vin=${vin}`);
+};
+
+export const searchVehiclesByPhoneApi = (phone) => {
+  return axios.get(`/api/api/vehicle?phone=${phone}`);
+};
+
+export const getCampaignByVinApi = (vin) => {
+  return axios.get(`/api/api/campaign?vin=${vin}`);
+};
+
+//Part Request
+export const createPartRequestApi = (data) => {
+  return axios.post("/api/api/part-supply", data);
+};
+
+export const getAllPartRequestsApi = () => {
+  return axios.get("/api/api/part-supplies");
+};
+
+// ✅ EVM Staff phê duyệt yêu cầu phụ tùng
+export const approvePartRequestApi = (id) => {
+  return axios.put(`/api/api/part-supply/${id}/approve`);
+};
+
+// ✅ EVM Staff từ chối yêu cầu phụ tùng
+export const rejectPartRequestApi = (id) => {
+  return axios.put(`/api/api/part-supply/${id}/reject`);
+}
+
+export const getPartRequestDetailApi = (id) => {
+  return axios.get(`/api/api/part-supply/${id}`);
 };

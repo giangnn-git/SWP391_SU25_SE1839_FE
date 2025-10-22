@@ -31,7 +31,7 @@ const Sidebar = () => {
   const iconStyle = "text-gray-600 group-hover:text-blue-600 transition-colors";
 
   const navigation = [
-    //  Dashboard luôn ở đầu
+    // Dashboard always first
     {
       name: "Dashboard",
       href: "/",
@@ -40,7 +40,7 @@ const Sidebar = () => {
       ),
     },
 
-    //  Customer Registration — chỉ SC Staff — nằm ngay sau Dashboard
+    // Customer Registration — only SC Staff — right after Dashboard
     ...(isScStaff
       ? [
         {
@@ -53,21 +53,45 @@ const Sidebar = () => {
       ]
       : []),
 
-    //  Warranty Claims
-    {
-      name: "Warranty Claims",
-      href: "/warranty-claims",
-      icon: <ShieldCheck size={18} className={iconStyle} strokeWidth={1.8} />,
-    },
+    // Warranty Claims — chỉ dành cho SC Staff
+    ...(isScStaff || isAdmin
+      ? [
+        {
+          name: "Warranty Claims",
+          href: "/warranty-claims",
+          icon: (
+            <ShieldCheck size={18} className={iconStyle} strokeWidth={1.8} />
+          ),
+        },
+      ]
+      : []),
 
-    //  Repair Orders
-    {
-      name: "Repair Orders",
-      href: "/repair-orders",
-      icon: <Wrench size={18} className={iconStyle} strokeWidth={1.8} />,
-    },
+    // Repair Orders — chỉ dành cho SC Staff
+    ...(isScStaff || isAdmin
+      ? [
+        {
+          name: "Repair Orders",
+          href: "/repair-orders",
+          icon: <Wrench size={18} className={iconStyle} strokeWidth={1.8} />,
+        },
+      ]
+      : []),
 
-    //  Vehicle Management (Admin + EVM)
+    // Part Requests — chỉ dành cho SC Staff
+    ...(isScStaff
+      ? [
+        {
+          name: "Part Requests",
+          href: "/part-requests",
+          icon: (
+            <PackageSearch size={18} className={iconStyle} strokeWidth={1.8} />
+          ),
+        },
+      ]
+      : []),
+
+    // Rest of your existing navigation items...
+    // Vehicle Management (Admin + EVM)
     ...(isAdmin || isEvmStaff
       ? [
         {
@@ -78,20 +102,7 @@ const Sidebar = () => {
       ]
       : []),
 
-    //  Claim Approval (Admin + EVM)
-    ...(isAdmin || isEvmStaff
-      ? [
-        {
-          name: "Claim Approval",
-          href: "/approvals",
-          icon: (
-            <CheckCircle2 size={18} className={iconStyle} strokeWidth={1.8} />
-          ),
-        },
-      ]
-      : []),
-
-    //  CAMPAIGN MANAGEMENT - Thêm vào đây
+    // CAMPAIGN MANAGEMENT (Admin + EVM)
     ...(isAdmin || isEvmStaff
       ? [
         {
@@ -108,21 +119,71 @@ const Sidebar = () => {
       ]
       : []),
 
-    //  Supply Chain
-    {
-      name: "Supply Chain",
-      href: "/supply-chain",
-      icon: <PackageSearch size={18} className={iconStyle} strokeWidth={1.8} />,
-    },
+    // Supply Chain — Hidden from SC_STAFF
+    ...(isAdmin || isEvmStaff
+      ? [
+        {
+          name: "Supply Chain",
+          href: "/supply-chain",
+          icon: (
+            <PackageSearch
+              size={18}
+              className={iconStyle}
+              strokeWidth={1.8}
+            />
+          ),
+        },
+      ]
+      : []),
 
-    // //  Analytics
-    // {
-    //   name: "Analytics & Reports",
-    //   href: "/analytics",
-    //   icon: <BarChart3 size={18} className={iconStyle} strokeWidth={1.8} />,
-    // },
+    // Analytics & Reports — only Admin & EVM Staff
+    ...(isAdmin || isEvmStaff
+      ? [
+        {
+          name: "Analytics & Reports",
+          href: "/analytics",
+          icon: (
+            <BarChart3 size={18} className={iconStyle} strokeWidth={1.8} />
+          ),
+        },
+      ]
+      : []),
 
-    //  Policy
+    // Claim Approve — only EVM Staff
+    ...(isEvmStaff
+      ? [
+        {
+          name: "Claim Approve",
+          href: "/claim-approve",
+          icon: (
+            <CheckCircle2
+              size={18}
+              className={iconStyle}
+              strokeWidth={1.8}
+            />
+          ),
+        },
+      ]
+      : []),
+
+    // Part Request Review — only EVM Staff
+    ...(isEvmStaff
+      ? [
+        {
+          name: "Part Request Review",
+          href: "/part-requests-review",
+          icon: (
+            <PackageSearch
+              size={18}
+              className={iconStyle}
+              strokeWidth={1.8}
+            />
+          ),
+        },
+      ]
+      : []),
+
+    // Policy — Admin & EVM Staff
     ...(isAdmin || isEvmStaff
       ? [
         {
@@ -135,7 +196,7 @@ const Sidebar = () => {
       ]
       : []),
 
-    //  User Management
+    // User Management — only Admin
     ...(isAdmin
       ? [
         {
