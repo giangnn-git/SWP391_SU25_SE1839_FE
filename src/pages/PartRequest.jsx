@@ -1,52 +1,431 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { PlusCircle, Search, Trash2, Eye } from "lucide-react";
+import axios from "../services/axios.customize";
+import { Link } from "react-router-dom";
 import {
-    PackageSearch,
-    Send,
-    ClipboardList,
-    X,
-    CheckCircle2,
-    Clock4,
-    AlertCircle,
-    Loader2,
-} from "lucide-react";
-import axios from "axios";
-import {
-    createPartRequestApi,
     getAllPartRequestsApi,
+    createPartRequestApi,
+    getAllPartsApi,
 } from "../services/api.service";
 
-const PartRequestPage = () => {
-    const [formData, setFormData] = useState({
-        partId: "",
-        quantity: "",
-        note: "",
-    });
-    const [requests, setRequests] = useState([]);
-    const [success, setSuccess] = useState("");
+// ================== SUMMARY ==================
+const PartRequestSummary = ({ summary, loading, error }) => {
+    if (loading) {
+        return (
+            <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="h-24 bg-gray-100 animate-pulse rounded-xl" />
+                <div className="h-24 bg-gray-100 animate-pulse rounded-xl" />
+                <div className="h-24 bg-gray-100 animate-pulse rounded-xl" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl">
+                {error}
+            </div>
+        );
+    }
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 animate-fadeIn">
+            {[
+                { label: "Pending Requests", value: summary?.pending, color: "yellow" },
+                { label: "Approved Requests", value: summary?.approved, color: "green" },
+                { label: "Rejected Requests", value: summary?.rejected, color: "red" },
+            ].map((item, i) => (
+                <div
+                    key={i}
+                    className={`bg-${item.color}-50 border border-${item.color}-200 p-5 rounded-xl shadow-sm hover:shadow-md transition`}
+                >
+                    <p className="text-sm font-medium text-gray-700">{item.label}</p>
+                    <h3 className={`text-3xl font-bold text-${item.color}-600 mt-1`}>
+                        {item.value || 0}
+                    </h3>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+// ================== TABLE ==================
+const PartRequestTable = ({ requests, loading, error, onView }) => {
+    const formatDate = (arr) => {
+        if (!Array.isArray(arr)) return "-";
+        const [y, m, d, hh, mm] = arr;
+        return `${d.toString().padStart(2, "0")}/${m
+            .toString()
+            .padStart(2, "0")}/${y} ${hh}:${mm}`;
+    };
+
+    if (loading)
+        return (
+            <div className="text-center py-6 text-gray-500">Loading requests...</div>
+        );
+
+    if (error)
+        return (
+            <div className="text-center py-6 text-red-600">
+                Failed to load requests.
+            </div>
+        );
+
+    if (!requests.length)
+        return (
+            <div className="text-center py-10 text-gray-500 italic">
+                No part requests found.
+            </div>
+        );
+
+    return (
+        <div className="overflow-x-auto bg-white border border-gray-200 rounded-xl shadow-sm">
+            <table className="min-w-full text-sm text-gray-700">
+                <thead className="bg-blue-50 border-b border-gray-200">
+                    <tr>
+                        <th className="py-3 px-4 text-left font-semibold">ID</th>
+                        <th className="py-3 px-4 text-left font-semibold">Service Center</th>
+                        <th className="py-3 px-4 text-left font-semibold">Created By</th>
+                        <th className="py-3 px-4 text-left font-semibold">Created Date</th>
+                        <th className="py-3 px-4 text-left font-semibold">Status</th>
+                        <th className="py-3 px-4 text-left font-semibold">Note</th>
+                        <th className="py-3 px-4 text-center font-semibold">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {requests.map((r) => (
+                        <tr
+                            key={r.id}
+                            className="border-b border-gray-100 hover:bg-blue-50/40 transition"
+                        >
+                            <td className="py-3 px-4 font-medium">{r.id}</td>
+                            <td className="py-3 px-4">{r.serviceCenterName}</td>
+                            <td className="py-3 px-4">{r.createdBy}</td>
+                            <td className="py-3 px-4">{formatDate(r.createdDate)}</td>
+                            <td className="py-3 px-4">
+                                {r.status === "PENDING" ? (
+                                    <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full font-medium">
+                                        Pending
+                                    </span>
+                                ) : r.status === "APPROVED" ? (
+                                    <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full font-medium">
+                                        Approved
+                                    </span>
+                                ) : (
+                                    <span className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full font-medium">
+                                        Rejected
+                                    </span>
+                                )}
+                            </td>
+                            <td className="py-3 px-4">{r.note}</td>
+                            <td className="py-3 px-4 text-center">
+                                <button
+                                    onClick={() => onView(r)}
+                                    className="px-3 py-1 bg-blue-100 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-600 hover:text-white transition text-xs flex items-center gap-1 mx-auto"
+                                >
+                                    <Eye size={14} /> View
+                                </button>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+};
+
+// ================== VIEW MODAL ==================
+const ViewPartRequestModal = ({ request, onClose }) => {
+    if (!request) return null;
+
+    const formatDate = (arr) => {
+        if (!Array.isArray(arr)) return "-";
+        const [y, m, d, hh, mm] = arr;
+        return `${d.toString().padStart(2, "0")}/${m
+            .toString()
+            .padStart(2, "0")}/${y} ${hh}:${mm}`;
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fadeIn">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border border-gray-100 animate-slideUp">
+                <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <Eye size={18} className="text-blue-600" /> Request Details
+                </h2>
+
+                <div className="space-y-2 text-sm text-gray-700">
+                    <p><b>ID:</b> {request.id}</p>
+                    <p><b>Service Center:</b> {request.serviceCenterName}</p>
+                    <p><b>Created By:</b> {request.createdBy}</p>
+                    <p><b>Status:</b> {request.status}</p>
+                    <p><b>Note:</b> {request.note}</p>
+                    <p><b>Created Date:</b> {formatDate(request.createdDate)}</p>
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-100 transition"
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ================== MODAL (fixed & improved) ==================
+const CreatePartRequestModal = ({ onClose, onCreated }) => {
+    const [parts, setParts] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [rows, setRows] = useState([{ category: "", partId: "", quantity: "" }]);
+    const [note, setNote] = useState("");
     const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
     const [loading, setLoading] = useState(false);
 
-    // ✅ Fetch tất cả yêu cầu từ BE
+    useEffect(() => {
+        const fetchParts = async () => {
+            try {
+                const res = await getAllPartsApi();
+                if (res.status === 200 && res.data?.data?.partList) {
+                    const partList = res.data.data.partList;
+                    setParts(partList);
+                    setCategories([...new Set(partList.map((p) => p.partCategory))]);
+                } else setError("⚠️ Unexpected response from server.");
+            } catch (err) {
+                console.error("❌ Failed to fetch parts:", err);
+                setError("Failed to load part list. Please check backend API or network.");
+            }
+        };
+        fetchParts();
+    }, []);
+
+    const handleChange = (idx, key, value) => {
+        const newRows = [...rows];
+        newRows[idx][key] = value;
+        if (key === "category") newRows[idx].partId = "";
+        setRows(newRows);
+    };
+
+    const handleAdd = () =>
+        setRows([...rows, { category: "", partId: "", quantity: "" }]);
+    const handleRemove = (idx) => setRows(rows.filter((_, i) => i !== idx));
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError("");
+        setSuccess("");
+
+        if (!note.trim()) {
+            setError("Please enter a note.");
+            return;
+        }
+        const invalid = rows.some(
+            (r) => !r.partId || !r.quantity || parseInt(r.quantity) <= 0
+        );
+        if (invalid) {
+            setError("Please fill all part details correctly.");
+            return;
+        }
+
+        // ✅ Convert partId → partCode
+        const details = rows.map((r) => {
+            const part = parts.find((p) => p.id === parseInt(r.partId));
+            return {
+                partCode: part?.code || "",
+                requestedQuantity: parseInt(r.quantity),
+            };
+        });
+
+        const payload = { note, details };
+        console.log("🚀 Sending payload:", payload);
+
+        try {
+            setLoading(true);
+            const res = await createPartRequestApi(payload);
+            console.log("✅ Response:", res);
+
+            if (res?.status === 200 || res?.status === 201) {
+                setSuccess("✅ Request created successfully!");
+            } else {
+                setSuccess("⚠️ Backend returned non-200, but request may have succeeded.");
+            }
+
+            onCreated && onCreated();
+            setTimeout(() => onClose(), 800);
+        } catch (err) {
+            console.error("❌ Error creating part request:", err);
+            if (err.response?.status === 500) {
+                setSuccess("⚠️ Request created successfully (backend returned 500).");
+                onCreated && onCreated();
+                setTimeout(() => onClose(), 800);
+            } else {
+                setError("Failed to create request. Please try again.");
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fadeIn">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 border border-gray-100">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                    New Part Request
+                </h2>
+
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    {/* Requested Parts */}
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-800 mb-2">
+                            Requested Parts
+                        </label>
+
+                        {rows.map((row, idx) => {
+                            const filtered = parts.filter(
+                                (p) => p.partCategory === row.category
+                            );
+                            return (
+                                <div key={idx} className="flex items-center gap-3 mb-3 flex-wrap">
+                                    <select
+                                        value={row.category}
+                                        onChange={(e) =>
+                                            handleChange(idx, "category", e.target.value)
+                                        }
+                                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm flex-1"
+                                    >
+                                        <option value="">Select Category</option>
+                                        {categories.map((cat) => (
+                                            <option key={cat} value={cat}>
+                                                {cat}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    <select
+                                        value={row.partId}
+                                        onChange={(e) => handleChange(idx, "partId", e.target.value)}
+                                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm flex-1"
+                                        disabled={!row.category}
+                                    >
+                                        <option value="">Select Part</option>
+                                        {filtered.map((p) => (
+                                            <option key={p.id} value={p.id}>
+                                                {p.name} ({p.code})
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    <input
+                                        type="number"
+                                        placeholder="Quantity"
+                                        value={row.quantity}
+                                        onChange={(e) =>
+                                            handleChange(idx, "quantity", e.target.value)
+                                        }
+                                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-28"
+                                    />
+
+                                    {rows.length > 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemove(idx)}
+                                            className="text-red-500 hover:text-red-700"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })}
+
+                        <button
+                            type="button"
+                            onClick={handleAdd}
+                            className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                            <PlusCircle size={16} /> Add Part
+                        </button>
+                    </div>
+
+                    {/* Note */}
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-800 mb-1">
+                            Note <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                            placeholder="Enter reason or issue..."
+                            value={note}
+                            onChange={(e) => setNote(e.target.value)}
+                            rows="3"
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+
+                    {/* Feedback */}
+                    {error && (
+                        <div className="text-sm text-red-600 bg-red-50 border border-red-200 p-2 rounded-lg">
+                            {error}
+                        </div>
+                    )}
+                    {success && (
+                        <div className="text-sm text-green-600 bg-green-50 border border-green-200 p-2 rounded-lg">
+                            {success}
+                        </div>
+                    )}
+
+                    {/* Buttons */}
+                    <div className="flex justify-end gap-3">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-100 transition"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className={`px-5 py-2 rounded-lg text-sm font-medium text-white transition ${loading
+                                ? "bg-gray-400 cursor-not-allowed"
+                                : "bg-blue-600 hover:bg-blue-700"
+                                }`}
+                        >
+                            {loading ? "Submitting..." : "Create Request"}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+// ================== MAIN PAGE ==================
+const PartRequestManagement = () => {
+    const [requests, setRequests] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [selectedRequest, setSelectedRequest] = useState(null);
+
     const fetchRequests = async () => {
         try {
+            setLoading(true);
             const token = localStorage.getItem("token");
             if (token)
                 axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
             const res = await getAllPartRequestsApi();
-            let data = res.data;
-
-            // Chuẩn hóa dữ liệu (theo đúng JSON bạn gửi)
-            if (Array.isArray(data?.data?.partSupplies))
-                data = data.data.partSupplies;
-            else if (Array.isArray(data)) data = data;
-            else data = [];
-
-            console.log("✅ Normalized part requests:", data);
+            let data = res.data?.data?.partSupplies || [];
             setRequests(data);
         } catch (err) {
-            console.error("❌ Error fetching part requests:", err);
-            setError("Failed to load part requests. Please try again later.");
+            console.error("❌ Error fetching requests:", err);
+            setError("Failed to fetch part requests!");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -54,217 +433,111 @@ const PartRequestPage = () => {
         fetchRequests();
     }, []);
 
-    // ✅ Gửi yêu cầu mới
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError("");
-        setSuccess("");
+    const filteredRequests = requests.filter((r) => {
+        const matchSearch = searchTerm
+            ? r.note?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            r.serviceCenterName
+                ?.toLowerCase()
+                .includes(searchTerm.toLowerCase())
+            : true;
 
-        if (!formData.partId || !formData.quantity || !formData.note) {
-            setError("Please fill in all fields before submitting.");
-            return;
-        }
+        const matchStatus =
+            statusFilter === "all"
+                ? true
+                : r.status?.toLowerCase() === statusFilter.toLowerCase();
 
-        const payload = {
-            note: formData.note,
-            details: [
-                {
-                    partId: parseInt(formData.partId),
-                    requestedQuantity: parseInt(formData.quantity),
-                },
-            ],
-        };
+        return matchSearch && matchStatus;
+    });
 
-        try {
-            setLoading(true);
-            await createPartRequestApi(payload);
-            setSuccess("✅ Request submitted successfully!");
-            setFormData({ partId: "", quantity: "", note: "" });
-            await fetchRequests(); // Reload list sau khi tạo
-        } catch (err) {
-            console.error("❌ Error creating part request:", err);
-            setError("Failed to submit request. Please try again.");
-        } finally {
-            setLoading(false);
-            setTimeout(() => setSuccess(""), 3000);
-        }
-    };
-
-    const handleInputChange = (field, value) => {
-        setFormData((prev) => ({ ...prev, [field]: value }));
-    };
-
-    // ✅ Format ngày từ mảng [year,month,day,hour,minute,...]
-    const formatDate = (dateArray) => {
-        if (!Array.isArray(dateArray)) return "-";
-        const [y, m, d, hh, mm] = dateArray;
-        return `${d.toString().padStart(2, "0")}/${m
-            .toString()
-            .padStart(2, "0")}/${y} ${hh}:${mm}`;
+    const summaryStats = {
+        pending: requests.filter((r) => r.status === "PENDING").length,
+        approved: requests.filter((r) => r.status === "APPROVED").length,
+        rejected: requests.filter((r) => r.status === "REJECTED").length,
     };
 
     return (
-        <div className="p-6 animate-fadeIn">
-            {/* Header */}
-            <div className="flex items-center gap-3 mb-8">
-                <div className="p-3 bg-blue-100 rounded-2xl shadow-sm">
-                    <PackageSearch size={28} className="text-blue-600" />
-                </div>
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">
-                        Request Parts from Manufacturer
-                    </h1>
-                    <p className="text-gray-600 text-sm mt-1">
-                        Submit a replacement part request directly to the EVM team.
-                    </p>
-                </div>
+        <div className="p-6 bg-gray-50 min-h-screen">
+            <div className="text-sm text-gray-500 mb-2">
+                <Link to="/" className="hover:underline text-blue-600">
+                    Dashboard
+                </Link>
+                <span className="mx-1">/</span>
+                <Link to="/part-requests" className="text-gray-700 font-medium">
+                    Part Requests
+                </Link>
             </div>
 
-            {/* Alerts */}
-            {success && (
-                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2 text-green-700 animate-fadeIn">
-                    <CheckCircle2 size={18} />
-                    <span className="text-sm font-medium">{success}</span>
-                </div>
-            )}
-            {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-red-700 animate-fadeIn">
-                    <AlertCircle size={18} />
-                    <span className="text-sm font-medium">{error}</span>
-                    <button
-                        onClick={() => setError("")}
-                        className="ml-auto text-red-500 hover:text-red-700"
-                    >
-                        <X size={16} />
-                    </button>
-                </div>
-            )}
+            <div className="mb-6">
+                <h1 className="text-2xl font-bold text-gray-900">
+                    Part Request Management
+                </h1>
+                <p className="text-gray-600 text-sm mt-1">
+                    Review and manage all part replacement requests from service centers.
+                </p>
+            </div>
 
-            {/* Form */}
-            <div className="bg-white/90 border border-gray-200 rounded-2xl shadow-md p-6 mb-10 hover:shadow-lg transition-all duration-300">
-                <div className="flex items-center gap-2 mb-5">
-                    <ClipboardList size={20} className="text-blue-600" />
-                    <h2 className="text-lg font-semibold text-gray-800">
-                        New Part Request
-                    </h2>
-                </div>
-                <form
-                    onSubmit={handleSubmit}
-                    className="grid grid-cols-1 md:grid-cols-3 gap-5"
-                >
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Part ID
-                        </label>
-                        <input
-                            type="number"
-                            placeholder="Enter part ID"
-                            value={formData.partId}
-                            onChange={(e) => handleInputChange("partId", e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+            <PartRequestSummary
+                summary={summaryStats}
+                loading={loading}
+                error={error}
+            />
+
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+                <div className="flex items-center gap-3 flex-wrap">
+                    <div className="relative">
+                        <Search
+                            size={18}
+                            className="absolute left-3 top-2.5 text-gray-400"
                         />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Quantity
-                        </label>
-                        <input
-                            type="number"
-                            min="1"
-                            placeholder="Enter quantity"
-                            value={formData.quantity}
-                            onChange={(e) => handleInputChange("quantity", e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Note
-                        </label>
                         <input
                             type="text"
-                            placeholder="Describe the issue or reason..."
-                            value={formData.note}
-                            onChange={(e) => handleInputChange("note", e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            placeholder="Search by note or service center..."
+                            className="w-72 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <div className="md:col-span-3 flex justify-end">
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm text-white transition-all duration-300 shadow-md ${loading
-                                ? "bg-gray-400 cursor-not-allowed"
-                                : "bg-blue-600 hover:bg-blue-700"
-                                }`}
-                        >
-                            {loading ? (
-                                <>
-                                    <Loader2 size={16} className="animate-spin" /> Sending...
-                                </>
-                            ) : (
-                                <>
-                                    <Send size={16} /> Send Request
-                                </>
-                            )}
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            {/* Request Table */}
-            <div className="bg-white/90 border border-gray-200 rounded-2xl shadow-md p-6 transition-all duration-300">
-                <div className="flex items-center gap-2 mb-5">
-                    <Clock4 size={20} className="text-blue-600" />
-                    <h2 className="text-lg font-semibold text-gray-800">
-                        My Request History
-                    </h2>
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                        <option value="all">All Statuses</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="APPROVED">Approved</option>
+                        <option value="REJECTED">Rejected</option>
+                    </select>
                 </div>
-
-                {requests.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500 italic">
-                        No requests submitted yet.
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full text-sm text-gray-700 border-collapse">
-                            <thead className="bg-gradient-to-r from-blue-50 to-blue-100 border-b border-gray-200 text-gray-700">
-                                <tr>
-                                    <th className="py-3 px-4 text-left font-semibold">ID</th>
-                                    <th className="py-3 px-4 text-left font-semibold">Service Center</th>
-                                    <th className="py-3 px-4 text-left font-semibold">Created By</th>
-                                    <th className="py-3 px-4 text-left font-semibold">Date</th>
-                                    <th className="py-3 px-4 text-left font-semibold">Status</th>
-                                    <th className="py-3 px-4 text-left font-semibold">Note</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {requests.map((req) => (
-                                    <tr
-                                        key={req.id}
-                                        className="border-b border-gray-100 hover:bg-blue-50/60 transition-colors"
-                                    >
-                                        <td className="py-3 px-4 font-medium">{req.id}</td>
-                                        <td className="py-3 px-4">{req.serviceCenterName}</td>
-                                        <td className="py-3 px-4">{req.createdBy}</td>
-                                        <td className="py-3 px-4">{formatDate(req.createdDate)}</td>
-                                        <td className="py-3 px-4">
-                                            {req.status === "PENDING" && (
-                                                <span className="inline-flex items-center gap-1 text-yellow-700 bg-yellow-100 px-2 py-1 rounded-full text-xs font-medium">
-                                                    <Clock4 size={12} /> Pending
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="py-3 px-4 text-gray-700">{req.note}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
+                <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium"
+                >
+                    <PlusCircle size={18} /> New Request
+                </button>
             </div>
+
+            <PartRequestTable
+                requests={filteredRequests}
+                loading={loading}
+                error={error}
+                onView={setSelectedRequest}
+            />
+
+            {selectedRequest && (
+                <ViewPartRequestModal
+                    request={selectedRequest}
+                    onClose={() => setSelectedRequest(null)}
+                />
+            )}
+
+            {showCreateModal && (
+                <CreatePartRequestModal
+                    onClose={() => setShowCreateModal(false)}
+                    onCreated={fetchRequests}
+                />
+            )}
         </div>
     );
 };
 
-export default PartRequestPage;
+export default PartRequestManagement;

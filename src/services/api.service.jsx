@@ -300,3 +300,7 @@ export const rejectPartRequestApi = (id) => {
 export const getPartRequestDetailApi = (id) => {
   return axios.get(`/api/api/part-supply/${id}`);
 };
+
+export const getAllPartsApi = async () => {
+  return axios.get("/api/api/parts");
+};

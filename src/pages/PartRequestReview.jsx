@@ -27,7 +27,7 @@ const PartRequestReview = () => {
     const [loading, setLoading] = useState(false);
     const [detailLoading, setDetailLoading] = useState(false);
 
-    // ✅ Lấy danh sách yêu cầu phụ tùng
+    // ✅ Lấy danh sách yêu cầu phụ tùng (có gọi API chi tiết để lấy part và quantity)
     const fetchRequests = async () => {
         try {
             setLoading(true);
@@ -46,22 +46,49 @@ const PartRequestReview = () => {
                 data = [];
             }
 
-            const mapped = data.map((item) => ({
-                id: item.id,
-                partName: item.note?.split(" ")[1] || "N/A",
-                quantity: item.details?.[0]?.requestedQuantity || "-",
-                reason: item.note || "-",
-                status:
-                    item.status === "PENDING"
-                        ? "Pending"
-                        : item.status === "APPROVED"
-                            ? "Approved"
-                            : "Rejected",
-                date: formatDate(item.createdDate),
-                requester: item.serviceCenterName || "Unknown",
-            }));
+            // 🔥 Gọi song song API chi tiết để lấy part và quantity thật
+            const detailedList = await Promise.all(
+                data.map(async (item) => {
+                    try {
+                        const detailRes = await getPartRequestDetailApi(item.id);
+                        const details = detailRes.data?.data?.details || [];
+                        const firstDetail = details[0] || {};
 
-            setRequests(mapped);
+                        return {
+                            id: item.id,
+                            partName: firstDetail.partCode || "—",
+                            quantity: firstDetail.requestedQuantity || "—",
+                            reason: item.note || "-",
+                            status:
+                                item.status === "PENDING"
+                                    ? "Pending"
+                                    : item.status === "APPROVED"
+                                        ? "Approved"
+                                        : "Rejected",
+                            date: formatDate(item.createdDate),
+                            requester: item.serviceCenterName || "Unknown",
+                        };
+                    } catch (err) {
+                        console.warn("⚠️ Failed to fetch details for request", item.id);
+                        return {
+                            id: item.id,
+                            partName: "—",
+                            quantity: "—",
+                            reason: item.note || "-",
+                            status:
+                                item.status === "PENDING"
+                                    ? "Pending"
+                                    : item.status === "APPROVED"
+                                        ? "Approved"
+                                        : "Rejected",
+                            date: formatDate(item.createdDate),
+                            requester: item.serviceCenterName || "Unknown",
+                        };
+                    }
+                })
+            );
+
+            setRequests(detailedList);
         } catch (err) {
             console.error("❌ Error fetching part requests:", err);
         } finally {
@@ -75,15 +102,12 @@ const PartRequestReview = () => {
 
     // ✅ Lấy chi tiết 1 yêu cầu
     const handleViewDetail = async (id) => {
-        // Mở modal ngay lập tức để tránh trễ
         setSelectedRequest({ id, loading: true });
         setDetailLoading(true);
 
         try {
             const res = await getPartRequestDetailApi(id);
             const data = res.data?.data || {};
-
-            // Cập nhật lại dữ liệu chi tiết sau khi tải xong
             setSelectedRequest(data);
         } catch (err) {
             console.error("❌ Error fetching part request detail:", err);
@@ -106,7 +130,6 @@ const PartRequestReview = () => {
                 )
             );
 
-            // đổi trạng thái trực tiếp trong modal
             setSelectedRequest((prev) => ({
                 ...prev,
                 status: decision.toUpperCase(),
@@ -136,8 +159,8 @@ const PartRequestReview = () => {
 
     const filteredRequests = requests.filter((req) => {
         const matchesSearch =
-            req.partName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            req.reason.toLowerCase().includes(searchTerm.toLowerCase());
+            req.partName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            req.reason?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesFilter = filter === "All" ? true : req.status === filter;
         return matchesSearch && matchesFilter;
     });
@@ -340,7 +363,7 @@ const PartRequestReview = () => {
                                         <ul className="list-disc ml-6 mt-2 space-y-1">
                                             {selectedRequest.details.map((d, i) => (
                                                 <li key={i}>
-                                                    Part ID: {d.partId || "-"} – Quantity: {d.requestedQuantity}
+                                                    Part Code: {d.partCode || "-"} – Quantity: {d.requestedQuantity}
                                                 </li>
                                             ))}
                                         </ul>
@@ -349,7 +372,6 @@ const PartRequestReview = () => {
                             </div>
                         )}
 
-                        {/* ✅ Footer mới: Close trái - Approve/Reject phải */}
                         <div className="mt-8 flex items-center justify-between border-t border-gray-200 pt-4">
                             <button
                                 onClick={() => setSelectedRequest(null)}
