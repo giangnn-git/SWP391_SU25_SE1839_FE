@@ -12,10 +12,10 @@ import {
 import axios from "axios";
 import {
   getAllPartRequestsApi,
-  approvePartRequestApi,
-  rejectPartRequestApi,
   getPartRequestDetailApi,
 } from "../services/api.service";
+import { reviewPartSupplyApi } from "../services/api.service";
+
 
 const PartRequestReview = () => {
   const [requests, setRequests] = useState([]);
@@ -27,7 +27,12 @@ const PartRequestReview = () => {
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // ✅ Lấy danh sách yêu cầu phụ tùng (có gọi API chi tiết để lấy part và quantity)
+  // ✅ Thêm biến trạng thái cho modal xác nhận
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmAction, setConfirmAction] = useState("");
+  const [confirmId, setConfirmId] = useState(null);
+
+  // ✅ Lấy danh sách yêu cầu phụ tùng
   const fetchRequests = async () => {
     try {
       setLoading(true);
@@ -63,8 +68,8 @@ const PartRequestReview = () => {
                 item.status === "PENDING"
                   ? "Pending"
                   : item.status === "APPROVED"
-                  ? "Approved"
-                  : "Rejected",
+                    ? "Approved"
+                    : "Rejected",
               date: formatDate(item.createdDate),
               requester: item.serviceCenterName || "Unknown",
             };
@@ -79,8 +84,8 @@ const PartRequestReview = () => {
                 item.status === "PENDING"
                   ? "Pending"
                   : item.status === "APPROVED"
-                  ? "Approved"
-                  : "Rejected",
+                    ? "Approved"
+                    : "Rejected",
               date: formatDate(item.createdDate),
               requester: item.serviceCenterName || "Unknown",
             };
@@ -120,32 +125,74 @@ const PartRequestReview = () => {
     }
   };
 
-  // ✅ Xử lý phê duyệt hoặc từ chối
-  const handleDecision = async (id, decision) => {
+  // ✅ Mở modal xác nhận thay vì alert
+  const handleDecision = (id, decision) => {
+    setConfirmId(id);
+    setConfirmAction(decision);
+    setShowConfirm(true);
+  };
+
+  // ✅ Khi người dùng xác nhận hành động (Approve/Reject)
+  const handleConfirmAction = async () => {
+    if (!confirmId || !selectedRequest) return;
     setProcessing(true);
+
     try {
+      const actionType = confirmAction === "Approved" ? "APPROVE" : "REJECT";
+
+      // ✅ Tạo payload đúng chuẩn BE
+      const payload = {
+        partSupplyId: selectedRequest?.id || confirmId, // đảm bảo không null
+        action: confirmAction === "Approved" ? "APPROVE" : "REJECT",
+        note:
+          confirmAction === "Approved"
+            ? "Approved after checking stock availability"
+            : "Rejected due to insufficient stock",
+        details: (selectedRequest?.details || []).map((d, index) => ({
+          detailId: d?.id ?? d?.detailId ?? index + 1, // đảm bảo có giá trị
+          approvedQuantity:
+            confirmAction === "Approved"
+              ? d?.requestedQuantity ?? 0
+              : 0,
+          remark: confirmAction === "Approved" ? "In stock" : "Out of stock",
+        })),
+      };
+
+      console.log("📦 Payload gửi BE:", JSON.stringify(payload, null, 2));
+
+
+      // ✅ Gọi API PUT
+      const res = await reviewPartSupplyApi(payload);
+      console.log("✅ BE Response:", res.data);
+
+      // Cập nhật UI sau khi thành công
       setRequests((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, status: decision } : r))
+        prev.map((r) => (r.id === confirmId ? { ...r, status: confirmAction } : r))
       );
 
       setSelectedRequest((prev) => ({
         ...prev,
-        status: decision.toUpperCase(),
+        status: confirmAction.toUpperCase(),
       }));
 
       setActionMessage(
-        decision === "Approved"
+        confirmAction === "Approved"
           ? "✅ Request approved successfully!"
           : "❌ Request rejected successfully!"
       );
+
+      setShowConfirm(false);
+      setTimeout(() => fetchRequests(), 1000);
     } catch (err) {
-      console.error("❌ Error updating request:", err);
-      setActionMessage("Failed to update request status.");
+      console.error("❌ Error reviewing request:", err);
+      console.log("🧾 Response từ BE:", err.response?.data);
+      setActionMessage("Failed to update request on server.");
     } finally {
       setProcessing(false);
-      setTimeout(() => setActionMessage(""), 2000);
+      setTimeout(() => setActionMessage(""), 2500);
     }
   };
+
 
   const formatDate = (arr) => {
     if (!Array.isArray(arr)) return "-";
@@ -299,8 +346,7 @@ const PartRequestReview = () => {
       <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-white">
         {loading ? (
           <div className="p-8 text-center text-gray-500">
-            <Loader2 className="mx-auto animate-spin mb-2" /> Loading
-            requests...
+            <Loader2 className="mx-auto animate-spin mb-2" /> Loading requests...
           </div>
         ) : filteredRequests.length === 0 ? (
           <div className="p-8 text-center text-gray-500 italic">
@@ -377,7 +423,8 @@ const PartRequestReview = () => {
                   <b>Note:</b> {selectedRequest.note || "-"}
                 </p>
                 <p>
-                  <b>Created Date:</b> {formatDate(selectedRequest.createdDate)}
+                  <b>Created Date:</b>{" "}
+                  {formatDate(selectedRequest.createdDate)}
                 </p>
 
                 {Array.isArray(selectedRequest.details) &&
@@ -400,8 +447,7 @@ const PartRequestReview = () => {
             <div className="mt-8 flex items-center justify-between border-t border-gray-200 pt-4">
               <button
                 onClick={() => setSelectedRequest(null)}
-                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg 
-                                           hover:bg-gray-100 transition-all duration-200"
+                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100 transition-all duration-200"
               >
                 Close
               </button>
@@ -409,32 +455,57 @@ const PartRequestReview = () => {
               {selectedRequest.status === "PENDING" && (
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() =>
-                      handleDecision(selectedRequest.id, "Approved")
-                    }
+                    onClick={() => handleDecision(selectedRequest.id, "Approved")}
                     disabled={processing}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg 
-                                                   bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium 
-                                                   shadow-sm hover:shadow-md transition-all duration-200"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200"
                   >
                     <CheckCircle2 size={16} />
                     {processing ? "Processing..." : "Approve"}
                   </button>
 
                   <button
-                    onClick={() =>
-                      handleDecision(selectedRequest.id, "Rejected")
-                    }
+                    onClick={() => handleDecision(selectedRequest.id, "Rejected")}
                     disabled={processing}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg 
-                                                   bg-red-500 hover:bg-red-600 text-white text-sm font-medium 
-                                                   shadow-sm hover:shadow-md transition-all duration-200"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200"
                   >
                     <XCircle size={16} />
                     {processing ? "Processing..." : "Reject"}
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Modal xác nhận hành động */}
+      {showConfirm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[999] animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl w-96 p-6 text-center">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              Confirm Action
+            </h3>
+            <p className="text-gray-600 text-sm mb-5">
+              {confirmAction === "Approved"
+                ? "Are you sure you want to approve this request?"
+                : "Are you sure you want to reject this request?"}
+            </p>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={handleConfirmAction}
+                className={`px-5 py-2 rounded-lg text-white text-sm ${confirmAction === "Approved"
+                  ? "bg-emerald-600 hover:bg-emerald-700"
+                  : "bg-red-600 hover:bg-red-700"
+                  }`}
+              >
+                Confirm
+              </button>
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="px-5 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>

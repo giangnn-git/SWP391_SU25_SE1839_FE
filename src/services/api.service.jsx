@@ -288,22 +288,28 @@ export const getAllPartRequestsApi = () => {
 };
 
 //  EVM Staff phê duyệt yêu cầu phụ tùng
-export const approvePartRequestApi = (id) => {
-  return axios.put(`/api/api/part-supply/${id}/approve`);
-};
+// export const approvePartRequestApi = (id) => {
+//   return axios.put(`/api/api/part-supply/${id}/approve`);
+// };
 
-//  EVM Staff từ chối yêu cầu phụ tùng
-export const rejectPartRequestApi = (id) => {
-  return axios.put(`/api/api/part-supply/${id}/reject`);
-};
+// //  EVM Staff từ chối yêu cầu phụ tùng
+// export const rejectPartRequestApi = (id) => {
+//   return axios.put(`/api/api/part-supply/${id}/reject`);
+// };
 
 export const getPartRequestDetailApi = (id) => {
   return axios.get(`/api/api/part-supply/${id}`);
 };
 
+// ✅ Chuẩn PUT request có header JSON
 export const reviewPartSupplyApi = (reviewData) => {
-  return axios.put("/api/api/part-supply/review", reviewData);
+  return axios.put("/api/api/part-supply/review", reviewData, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 };
+
 export const getAllPartsApi = async () => {
   return axios.get("/api/api/parts");
 };
