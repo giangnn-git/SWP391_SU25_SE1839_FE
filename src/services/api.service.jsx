@@ -287,16 +287,20 @@ export const getAllPartRequestsApi = () => {
   return axios.get("/api/api/part-supplies");
 };
 
-// ✅ EVM Staff phê duyệt yêu cầu phụ tùng
+//  EVM Staff phê duyệt yêu cầu phụ tùng
 export const approvePartRequestApi = (id) => {
   return axios.put(`/api/api/part-supply/${id}/approve`);
 };
 
-// ✅ EVM Staff từ chối yêu cầu phụ tùng
+//  EVM Staff từ chối yêu cầu phụ tùng
 export const rejectPartRequestApi = (id) => {
   return axios.put(`/api/api/part-supply/${id}/reject`);
-}
+};
 
 export const getPartRequestDetailApi = (id) => {
   return axios.get(`/api/api/part-supply/${id}`);
+};
+
+export const reviewPartSupplyApi = (reviewData) => {
+  return axios.put("/api/api/part-supply/review", reviewData);
 };

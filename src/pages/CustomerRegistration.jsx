@@ -26,7 +26,6 @@ import {
   createCustomerApi,
   getCustomerByVinApi,
   getCampaignByVinApi,
-  searchVehiclesByPhoneApi,
 } from "../services/api.service";
 import axios from "axios";
 
@@ -39,6 +38,7 @@ const CustomerRegistration = () => {
   const [loadingCustomer, setLoadingCustomer] = useState(false);
   const [loadingCampaign, setLoadingCampaign] = useState(false);
   const [activeDetailTab, setActiveDetailTab] = useState("customer");
+  const [customersMap, setCustomersMap] = useState({});
 
   const [formData, setFormData] = useState({
     name: "",
@@ -53,44 +53,6 @@ const CustomerRegistration = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  //  State cho tìm kiếm theo số điện thoại
-  const [phoneSearch, setPhoneSearch] = useState("");
-  const [searchingByPhone, setSearchingByPhone] = useState(false);
-
-  //  Hàm gọi API tìm kiếm theo số điện thoại
-  const handleSearchByPhone = async () => {
-    if (!phoneSearch.trim()) {
-      setError("Please enter a phone number to search.");
-      return;
-    }
-
-    try {
-      //  Fix: đảm bảo có token sau F5
-      const token = localStorage.getItem("token");
-      if (token) axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-      setSearchingByPhone(true);
-      setLoading(true);
-
-      const res = await searchVehiclesByPhoneApi(phoneSearch);
-      const data = res.data?.data?.vehicles || [];
-
-      if (data.length === 0) {
-        setError("No vehicles found for this phone number.");
-        setVehicles([]);
-      } else {
-        setError("");
-        setVehicles(data);
-      }
-    } catch (err) {
-      console.error("Error searching vehicles by phone:", err);
-      setError("Failed to search by phone number. Please try again.");
-    } finally {
-      setLoading(false);
-      setSearchingByPhone(false);
-    }
-  };
-
 
   // State cho VIN combobox
   const [vinSearch, setVinSearch] = useState("");
@@ -109,13 +71,19 @@ const CustomerRegistration = () => {
 
   const availableVehicles = vehicles.filter((v) => v.customerName === "N/A");
 
-  const filteredVehicles = registeredVehicles.filter(
-    (vehicle) =>
-      vehicle.vin?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vehicle.modelName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vehicle.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vehicle.licensePlate?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredVehicles = registeredVehicles.filter((vehicle) => {
+    const customer = customersMap[vehicle.vin];
+    const searchLower = searchTerm.toLowerCase();
+
+    return (
+      vehicle.vin?.toLowerCase().includes(searchLower) ||
+      vehicle.modelName?.toLowerCase().includes(searchLower) ||
+      vehicle.customerName?.toLowerCase().includes(searchLower) ||
+      vehicle.licensePlate?.toLowerCase().includes(searchLower) ||
+      (customer && customer.phoneNumber?.toLowerCase().includes(searchLower)) ||
+      (customer && customer.email?.toLowerCase().includes(searchLower))
+    );
+  });
 
   const totalPages = Math.ceil(filteredVehicles.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -156,6 +124,9 @@ const CustomerRegistration = () => {
       const res = await getAllVehiclesApi();
       const data = res.data?.data?.vehicles || [];
       setVehicles(data);
+
+      // Fetch customer details cho tất cả vehicles
+      await fetchCustomersForVehicles(data);
     } catch (err) {
       console.error("Error fetching vehicles:", err);
       setError("Failed to load vehicle data. Please try again.");
@@ -175,6 +146,41 @@ const CustomerRegistration = () => {
     } finally {
       setLoadingCustomer(false);
     }
+  };
+
+  const fetchCustomersForVehicles = async (vehicles) => {
+    const registeredVehicles = vehicles.filter(
+      (vehicle) => vehicle.customerName && vehicle.customerName !== "N/A"
+    );
+
+    // Fetch customer details cho tất cả registered vehicles
+    const customerPromises = registeredVehicles.map(async (vehicle) => {
+      try {
+        const response = await getCustomerByVinApi(vehicle.vin);
+        return {
+          vin: vehicle.vin,
+          customer: response.data.data,
+        };
+      } catch (err) {
+        console.error(`Error fetching customer for VIN ${vehicle.vin}:`, err);
+        return {
+          vin: vehicle.vin,
+          customer: null,
+        };
+      }
+    });
+
+    const customerResults = await Promise.all(customerPromises);
+
+    // Convert array thành object map
+    const customersMap = customerResults.reduce((acc, result) => {
+      if (result.customer) {
+        acc[result.vin] = result.customer;
+      }
+      return acc;
+    }, {});
+
+    setCustomersMap(customersMap);
   };
 
   const fetchCampaignByVin = async (vin) => {
@@ -251,7 +257,8 @@ const CustomerRegistration = () => {
       fetchVehicles();
     } catch (err) {
       setError(
-        `Failed to register customer: ${err.response?.data?.message || "Please try again."
+        `Failed to register customer: ${
+          err.response?.data?.message || "Please try again."
         }`
       );
     }
@@ -285,6 +292,49 @@ const CustomerRegistration = () => {
     return `${day.toString().padStart(2, "0")}/${month
       .toString()
       .padStart(2, "0")}/${year}`;
+  };
+
+  // Component để hiển thị thông tin khách hàng
+  const CustomerInfo = ({ vehicle }) => {
+    if (!vehicle) return null;
+
+    // Check if customer data is still loading
+    if (!customersMap.hasOwnProperty(vehicle.vin)) {
+      return (
+        <div className="space-y-1">
+          <div className="font-medium text-gray-900">
+            {vehicle.customerName}
+          </div>
+          <div className="text-xs text-gray-400">Loading contact info...</div>
+        </div>
+      );
+    }
+
+    const customer = customersMap[vehicle.vin];
+
+    return (
+      <div className="space-y-1">
+        <div className="font-medium text-gray-900">{vehicle.customerName}</div>
+        {customer ? (
+          <div className="text-xs text-gray-500 space-y-0.5">
+            {customer.phoneNumber && (
+              <div className="flex items-center gap-1">
+                <Phone size={12} />
+                {customer.phoneNumber}
+              </div>
+            )}
+            {customer.email && (
+              <div className="flex items-center gap-1">
+                <Mail size={12} />
+                {customer.email}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-xs text-gray-400">No contact info available</div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -369,7 +419,6 @@ const CustomerRegistration = () => {
         {/* Search Bar */}
         <div className="bg-white rounded-xl p-6 shadow-sm border mb-6">
           <div className="flex flex-col sm:flex-row gap-4">
-            {/*  Search theo VIN, model, customer, license plate */}
             <div className="flex-1 relative">
               <Search
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
@@ -377,40 +426,13 @@ const CustomerRegistration = () => {
               />
               <input
                 type="text"
-                placeholder="Search by VIN, model, customer name, or license plate..."
+                placeholder="Search by VIN, model, customer name, phone, email, or license plate..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               />
             </div>
 
-            {/*  Search theo số điện thoại */}
-            <div className="flex-1 relative">
-              <Phone
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                size={20}
-              />
-              <input
-                type="text"
-                placeholder="Search by phone number..."
-                value={phoneSearch}
-                onChange={(e) => setPhoneSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              />
-            </div>
-
-            {/*  Nút tìm kiếm */}
-            <button
-              onClick={handleSearchByPhone}
-              disabled={searchingByPhone}
-              className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-white transition-all ${searchingByPhone ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-                }`}
-            >
-              <Search size={18} />
-              {searchingByPhone ? "Searching..." : "Search by Phone"}
-            </button>
-
-            {/*  Reset */}
             <button
               onClick={fetchVehicles}
               className="inline-flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
@@ -504,9 +526,7 @@ const CustomerRegistration = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="text-sm text-gray-900">
-                              {vehicleData.customerName}
-                            </div>
+                            <CustomerInfo vehicle={vehicleData} />
                           </td>
                           <td className="px-6 py-4">
                             {vehicleData.licensePlate ? (
@@ -574,10 +594,11 @@ const CustomerRegistration = () => {
                       <button
                         onClick={() => handlePageChange(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className={`p-2 rounded-lg border transition-all ${currentPage === 1
-                          ? "text-gray-400 border-gray-200 cursor-not-allowed"
-                          : "text-gray-600 border-gray-300 hover:bg-white hover:shadow-sm"
-                          }`}
+                        className={`p-2 rounded-lg border transition-all ${
+                          currentPage === 1
+                            ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                            : "text-gray-600 border-gray-300 hover:bg-white hover:shadow-sm"
+                        }`}
                       >
                         <ChevronLeft size={16} />
                       </button>
@@ -586,10 +607,11 @@ const CustomerRegistration = () => {
                         <button
                           key={i + 1}
                           onClick={() => handlePageChange(i + 1)}
-                          className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${currentPage === i + 1
-                            ? "bg-blue-600 text-white shadow-sm"
-                            : "text-gray-600 hover:bg-gray-100"
-                            }`}
+                          className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                            currentPage === i + 1
+                              ? "bg-blue-600 text-white shadow-sm"
+                              : "text-gray-600 hover:bg-gray-100"
+                          }`}
                         >
                           {i + 1}
                         </button>
@@ -598,10 +620,11 @@ const CustomerRegistration = () => {
                       <button
                         onClick={() => handlePageChange(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className={`p-2 rounded-lg border transition-all ${currentPage === totalPages
-                          ? "text-gray-400 border-gray-200 cursor-not-allowed"
-                          : "text-gray-600 border-gray-300 hover:bg-white hover:shadow-sm"
-                          }`}
+                        className={`p-2 rounded-lg border transition-all ${
+                          currentPage === totalPages
+                            ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                            : "text-gray-600 border-gray-300 hover:bg-white hover:shadow-sm"
+                        }`}
                       >
                         <ChevronRight size={16} />
                       </button>
@@ -670,19 +693,21 @@ const CustomerRegistration = () => {
               <div className="flex px-6">
                 <button
                   onClick={() => setActiveDetailTab("customer")}
-                  className={`py-3 px-4 font-medium text-sm border-b-2 transition-colors ${activeDetailTab === "customer"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                    }`}
+                  className={`py-3 px-4 font-medium text-sm border-b-2 transition-colors ${
+                    activeDetailTab === "customer"
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
                 >
                   👤 Customer Information
                 </button>
                 <button
                   onClick={() => setActiveDetailTab("warranty")}
-                  className={`py-3 px-4 font-medium text-sm border-b-2 transition-colors ${activeDetailTab === "warranty"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                    }`}
+                  className={`py-3 px-4 font-medium text-sm border-b-2 transition-colors ${
+                    activeDetailTab === "warranty"
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
                 >
                   🛡️ Warranty & Campaigns
                 </button>
@@ -842,8 +867,6 @@ const CustomerRegistration = () => {
                             </div>
                           </div>
                         </div>
-
-                        {/*  ĐÃ BỎ: Affected Vehicles Count section */}
                       </div>
                     </div>
                   ) : (
@@ -1028,8 +1051,9 @@ const CustomerRegistration = () => {
                           <div
                             key={index}
                             onClick={() => handleVinSelect(vehicle.vin)}
-                            className={`px-4 py-3 cursor-pointer transition-colors hover:bg-blue-50 flex items-center justify-between ${selectedVin === vehicle.vin ? "bg-blue-50" : ""
-                              }`}
+                            className={`px-4 py-3 cursor-pointer transition-colors hover:bg-blue-50 flex items-center justify-between ${
+                              selectedVin === vehicle.vin ? "bg-blue-50" : ""
+                            }`}
                           >
                             <div>
                               <div className="font-medium text-gray-900">
