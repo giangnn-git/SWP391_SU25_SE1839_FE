@@ -304,3 +304,6 @@ export const getPartRequestDetailApi = (id) => {
 export const reviewPartSupplyApi = (reviewData) => {
   return axios.put("/api/api/part-supply/review", reviewData);
 };
+export const getAllPartsApi = async () => {
+  return axios.get("/api/api/parts");
+};

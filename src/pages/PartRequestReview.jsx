@@ -8,14 +8,13 @@ import {
   Eye,
   Loader2,
   Filter,
-  Edit3,
-  AlertCircle,
 } from "lucide-react";
 import axios from "axios";
 import {
   getAllPartRequestsApi,
+  approvePartRequestApi,
+  rejectPartRequestApi,
   getPartRequestDetailApi,
-  reviewPartSupplyApi,
 } from "../services/api.service";
 
 const PartRequestReview = () => {
@@ -28,12 +27,7 @@ const PartRequestReview = () => {
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // State cho quantity editing
-  const [editingQuantities, setEditingQuantities] = useState({});
-  const [showQuantityModal, setShowQuantityModal] = useState(false);
-  const [approveLoading, setApproveLoading] = useState(false);
-
-  // Lấy danh sách yêu cầu phụ tùng
+  // ✅ Lấy danh sách yêu cầu phụ tùng (có gọi API chi tiết để lấy part và quantity)
   const fetchRequests = async () => {
     try {
       setLoading(true);
@@ -52,22 +46,49 @@ const PartRequestReview = () => {
         data = [];
       }
 
-      const mapped = data.map((item) => ({
-        id: item.id,
-        partName: item.note?.split(" ")[1] || "N/A",
-        quantity: item.details?.[0]?.requestedQuantity || "-",
-        reason: item.note || "-",
-        status:
-          item.status === "PENDING"
-            ? "Pending"
-            : item.status === "APPROVED"
-            ? "Approved"
-            : "Rejected",
-        date: formatDate(item.createdDate),
-        requester: item.serviceCenterName || "Unknown",
-      }));
+      // 🔥 Gọi song song API chi tiết để lấy part và quantity thật
+      const detailedList = await Promise.all(
+        data.map(async (item) => {
+          try {
+            const detailRes = await getPartRequestDetailApi(item.id);
+            const details = detailRes.data?.data?.details || [];
+            const firstDetail = details[0] || {};
 
-      setRequests(mapped);
+            return {
+              id: item.id,
+              partName: firstDetail.partCode || "—",
+              quantity: firstDetail.requestedQuantity || "—",
+              reason: item.note || "-",
+              status:
+                item.status === "PENDING"
+                  ? "Pending"
+                  : item.status === "APPROVED"
+                  ? "Approved"
+                  : "Rejected",
+              date: formatDate(item.createdDate),
+              requester: item.serviceCenterName || "Unknown",
+            };
+          } catch (err) {
+            console.warn("⚠️ Failed to fetch details for request", item.id);
+            return {
+              id: item.id,
+              partName: "—",
+              quantity: "—",
+              reason: item.note || "-",
+              status:
+                item.status === "PENDING"
+                  ? "Pending"
+                  : item.status === "APPROVED"
+                  ? "Approved"
+                  : "Rejected",
+              date: formatDate(item.createdDate),
+              requester: item.serviceCenterName || "Unknown",
+            };
+          }
+        })
+      );
+
+      setRequests(detailedList);
     } catch (err) {
       console.error("❌ Error fetching part requests:", err);
     } finally {
@@ -79,7 +100,7 @@ const PartRequestReview = () => {
     fetchRequests();
   }, []);
 
-  // Lấy chi tiết 1 yêu cầu - ĐÃ SỬA: Thêm debug log
+  // ✅ Lấy chi tiết 1 yêu cầu
   const handleViewDetail = async (id) => {
     setSelectedRequest({ id, loading: true });
     setDetailLoading(true);
@@ -87,21 +108,6 @@ const PartRequestReview = () => {
     try {
       const res = await getPartRequestDetailApi(id);
       const data = res.data?.data || {};
-
-      // 🔥 DEBUG: Log toàn bộ response để xem có partCode không
-      console.log("📋 Full detail response:", data);
-      console.log("🔍 Details array:", data.details);
-
-      // Khởi tạo editing quantities
-      const initialQuantities = {};
-      if (data.details && Array.isArray(data.details)) {
-        data.details.forEach((detail) => {
-          console.log("📦 Detail item:", detail); // Debug từng detail
-          initialQuantities[detail.id] = detail.requestedQuantity || 0;
-        });
-      }
-      setEditingQuantities(initialQuantities);
-
       setSelectedRequest(data);
     } catch (err) {
       console.error("❌ Error fetching part request detail:", err);
@@ -114,212 +120,31 @@ const PartRequestReview = () => {
     }
   };
 
-  // Handle quantity change
-  const handleQuantityChange = (detailId, newQuantity) => {
-    setEditingQuantities((prev) => ({
-      ...prev,
-      [detailId]: Math.max(0, parseInt(newQuantity) || 0),
-    }));
-  };
-
-  // Hàm xử lý approve/reject với API - ĐÃ SỬA: Thêm debug
-  const handleDecision = async (action) => {
-    if (!selectedRequest) return;
-
-    console.log("🎯 Handling decision:", action);
-    console.log("📝 Selected request:", selectedRequest);
-
-    setApproveLoading(true);
+  // ✅ Xử lý phê duyệt hoặc từ chối
+  const handleDecision = async (id, decision) => {
+    setProcessing(true);
     try {
-      const token = localStorage.getItem("token");
-      if (token) {
-        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-      }
+      setRequests((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, status: decision } : r))
+      );
 
-      // Chuẩn bị data theo format API yêu cầu
-      const reviewData = {
-        partSupplyId: selectedRequest.id,
-        action: action.toUpperCase(),
-        note:
-          action === "APPROVE"
-            ? "Approved after quantity adjustment"
-            : "Rejected due to insufficient stock",
-        details:
-          selectedRequest.details?.map((detail) => ({
-            detailId: detail.id,
-            approvedQuantity:
-              action === "APPROVE" ? editingQuantities[detail.id] || 0 : 0,
-            remark:
-              action === "APPROVE"
-                ? `Approved ${editingQuantities[detail.id]} out of ${
-                    detail.requestedQuantity
-                  } requested`
-                : "Rejected - Out of stock",
-          })) || [],
-      };
+      setSelectedRequest((prev) => ({
+        ...prev,
+        status: decision.toUpperCase(),
+      }));
 
-      console.log("📤 Final review data:", reviewData);
-
-      // Gọi API
-      const response = await reviewPartSupplyApi(reviewData);
-      console.log("✅ API Response:", response.data);
-
-      // Kiểm tra response
-      if (response.data && response.data.status === "200 OK") {
-        // Cập nhật UI
-        setRequests((prev) =>
-          prev.map((req) =>
-            req.id === selectedRequest.id
-              ? {
-                  ...req,
-                  status: action === "APPROVE" ? "Approved" : "Rejected",
-                }
-              : req
-          )
-        );
-
-        setSelectedRequest((prev) => ({
-          ...prev,
-          status: action.toUpperCase(),
-        }));
-
-        setActionMessage(
-          action === "APPROVE"
-            ? "✅ Request approved successfully!"
-            : "❌ Request rejected successfully!"
-        );
-
-        // Đóng modal quantity nếu đang mở
-        setShowQuantityModal(false);
-
-        // Refresh danh sách sau 1 giây
-        setTimeout(() => {
-          fetchRequests();
-        }, 1000);
-      } else {
-        throw new Error(response.data?.message || "Unknown error");
-      }
+      setActionMessage(
+        decision === "Approved"
+          ? "✅ Request approved successfully!"
+          : "❌ Request rejected successfully!"
+      );
     } catch (err) {
       console.error("❌ Error updating request:", err);
-      console.error("❌ Error details:", err.response?.data);
-
-      // HIỂN THỊ ERROR CHI TIẾT
-      const errorMessage =
-        err.response?.data?.message ||
-        err.message ||
-        "Failed to update request status";
-      setActionMessage(`❌ ${errorMessage}`);
+      setActionMessage("Failed to update request status.");
     } finally {
-      setApproveLoading(false);
-      setTimeout(() => setActionMessage(""), 5000);
+      setProcessing(false);
+      setTimeout(() => setActionMessage(""), 2000);
     }
-  };
-
-  // 🔥 NEW: Hàm xử lý mở modal Adjust & Approve
-  const handleAdjustAndApprove = () => {
-    console.log("🔄 Opening adjust modal for request:", selectedRequest?.id);
-    setShowQuantityModal(true);
-  };
-
-  // Modal điều chỉnh quantity - ĐÃ SỬA: Thêm part code/name display
-  const renderQuantityModal = () => {
-    if (!selectedRequest || !showQuantityModal) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-60 animate-fadeIn">
-        <div className="bg-white rounded-2xl shadow-2xl w-96 p-6 relative border border-gray-100 animate-slideUp">
-          <div className="flex items-center justify-between border-b border-gray-200 pb-3 mb-4">
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Edit3 size={20} className="text-blue-600" />
-              Adjust Quantities
-            </h2>
-            <button
-              onClick={() => setShowQuantityModal(false)}
-              className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
-              disabled={approveLoading}
-            >
-              <XCircle size={20} />
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              Adjust approved quantities for each part:
-            </p>
-
-            {selectedRequest.details?.map((detail, index) => (
-              <div
-                key={detail.id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-              >
-                <div className="flex-1">
-                  {/* 🔥 HIỂN THỊ PART CODE/NAME - Sử dụng partCode nếu có, không thì dùng partId */}
-                  <p className="text-sm font-medium text-gray-900">
-                    Part: {detail.partCode || `ID: ${detail.partId}`}
-                  </p>
-                  <p className="text-xs text-gray-600">
-                    Requested: {detail.requestedQuantity}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min="0"
-                    max={detail.requestedQuantity}
-                    value={editingQuantities[detail.id] || 0}
-                    onChange={(e) =>
-                      handleQuantityChange(detail.id, e.target.value)
-                    }
-                    className="w-20 px-2 py-1 border border-gray-300 rounded text-sm text-center"
-                    disabled={approveLoading}
-                  />
-                  <span className="text-xs text-gray-500">
-                    / {detail.requestedQuantity}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-6 flex justify-end gap-3">
-            <button
-              onClick={() => setShowQuantityModal(false)}
-              disabled={approveLoading}
-              className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => handleDecision("APPROVE")}
-              disabled={approveLoading}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {approveLoading ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  Approving...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 size={16} />
-                  Confirm Approval
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* Loading indicator */}
-          {approveLoading && (
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="flex items-center gap-2 text-blue-700 text-sm">
-                <Loader2 size={16} className="animate-spin" />
-                Processing your request...
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
   };
 
   const formatDate = (arr) => {
@@ -332,8 +157,8 @@ const PartRequestReview = () => {
 
   const filteredRequests = requests.filter((req) => {
     const matchesSearch =
-      req.partName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      req.reason.toLowerCase().includes(searchTerm.toLowerCase());
+      req.partName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      req.reason?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filter === "All" ? true : req.status === filter;
     return matchesSearch && matchesFilter;
   });
@@ -342,7 +167,6 @@ const PartRequestReview = () => {
     const base =
       "inline-flex items-center justify-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border min-w-[90px] text-center";
     switch (status) {
-      case "APPROVED":
       case "Approved":
         return (
           <span
@@ -351,7 +175,6 @@ const PartRequestReview = () => {
             <CheckCircle2 size={12} /> Approved
           </span>
         );
-      case "REJECTED":
       case "Rejected":
         return (
           <span className={`${base} bg-red-50 text-red-700 border-red-200`}>
@@ -525,7 +348,7 @@ const PartRequestReview = () => {
         )}
       </div>
 
-      {/* Modal chi tiết - ĐÃ SỬA: Hiển thị part code/name */}
+      {/* Modal chi tiết */}
       {selectedRequest && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-2xl w-[500px] p-6 relative border border-gray-100 animate-slideUp">
@@ -561,17 +384,11 @@ const PartRequestReview = () => {
                   selectedRequest.details.length > 0 && (
                     <div className="mt-3 border-t border-gray-200 pt-2">
                       <b>Parts Requested:</b>
-                      <ul className="ml-4 mt-2 space-y-2">
+                      <ul className="list-disc ml-6 mt-2 space-y-1">
                         {selectedRequest.details.map((d, i) => (
-                          <li
-                            key={i}
-                            className="flex justify-between items-center bg-gray-50 p-2 rounded"
-                          >
-                            {/* 🔥 HIỂN THỊ PART CODE/NAME - Sử dụng partCode nếu có, không thì dùng partId */}
-                            <span>Part: {d.partCode || `ID: ${d.partId}`}</span>
-                            <span className="font-medium">
-                              Quantity: {d.requestedQuantity}
-                            </span>
+                          <li key={i}>
+                            Part Code: {d.partCode || "-"} – Quantity:{" "}
+                            {d.requestedQuantity}
                           </li>
                         ))}
                       </ul>
@@ -580,11 +397,11 @@ const PartRequestReview = () => {
               </div>
             )}
 
-            {/* Footer với chức năng mới  */}
             <div className="mt-8 flex items-center justify-between border-t border-gray-200 pt-4">
               <button
                 onClick={() => setSelectedRequest(null)}
-                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100 transition-all duration-200"
+                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg 
+                                           hover:bg-gray-100 transition-all duration-200"
               >
                 Close
               </button>
@@ -592,18 +409,26 @@ const PartRequestReview = () => {
               {selectedRequest.status === "PENDING" && (
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={handleAdjustAndApprove}
+                    onClick={() =>
+                      handleDecision(selectedRequest.id, "Approved")
+                    }
                     disabled={processing}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg 
+                                                   bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium 
+                                                   shadow-sm hover:shadow-md transition-all duration-200"
                   >
-                    <Edit3 size={16} />
-                    Adjust & Approve
+                    <CheckCircle2 size={16} />
+                    {processing ? "Processing..." : "Approve"}
                   </button>
 
                   <button
-                    onClick={() => handleDecision("REJECT")}
+                    onClick={() =>
+                      handleDecision(selectedRequest.id, "Rejected")
+                    }
                     disabled={processing}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg 
+                                                   bg-red-500 hover:bg-red-600 text-white text-sm font-medium 
+                                                   shadow-sm hover:shadow-md transition-all duration-200"
                   >
                     <XCircle size={16} />
                     {processing ? "Processing..." : "Reject"}
@@ -615,24 +440,10 @@ const PartRequestReview = () => {
         </div>
       )}
 
-      {/* Quantity Adjustment Modal */}
-      {renderQuantityModal()}
-
       {/* Toast */}
       {actionMessage && (
-        <div
-          className={`fixed bottom-6 right-6 px-5 py-3 rounded-xl shadow-lg text-sm font-medium animate-fadeIn flex items-center gap-2 ${
-            actionMessage.includes("✅")
-              ? "bg-emerald-600 text-white"
-              : "bg-red-600 text-white"
-          }`}
-        >
-          {actionMessage.includes("✅") ? (
-            <CheckCircle2 size={16} />
-          ) : (
-            <AlertCircle size={16} />
-          )}
-          {actionMessage.replace("✅", "").replace("❌", "")}
+        <div className="fixed bottom-6 right-6 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium animate-fadeIn">
+          {actionMessage}
         </div>
       )}
     </div>
