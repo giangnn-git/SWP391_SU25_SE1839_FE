@@ -27,70 +27,39 @@ const PartRequestReview = () => {
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // ✅ Lấy danh sách yêu cầu phụ tùng (có gọi API chi tiết để lấy part và quantity)
   const fetchRequests = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      if (token)
-        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
       const res = await getAllPartRequestsApi();
       let data = res.data;
 
-      if (Array.isArray(data?.data?.partSupplies)) {
-        data = data.data.partSupplies;
-      } else if (Array.isArray(data)) {
-        data = data;
+      if (data?.data?.partSupplies && Array.isArray(data.data.partSupplies)) {
+        const requestsData = data.data.partSupplies.map((item) => ({
+          id: item.id,
+          partName: "View Details",
+          quantity: "Multiple",
+          reason: item.note || "-",
+          status:
+            item.status === "PENDING"
+              ? "Pending"
+              : item.status === "APPROVED"
+              ? "Approved"
+              : "Rejected",
+          date: formatDate(item.createdDate),
+          requester: item.serviceCenterName || "Unknown",
+          createdBy: item.createdBy,
+          // Lưu thêm thông tin gốc
+          originalData: item,
+        }));
+
+        setRequests(requestsData);
       } else {
-        data = [];
+        setRequests([]);
       }
-
-      // 🔥 Gọi song song API chi tiết để lấy part và quantity thật
-      const detailedList = await Promise.all(
-        data.map(async (item) => {
-          try {
-            const detailRes = await getPartRequestDetailApi(item.id);
-            const details = detailRes.data?.data?.details || [];
-            const firstDetail = details[0] || {};
-
-            return {
-              id: item.id,
-              partName: firstDetail.partCode || "—",
-              quantity: firstDetail.requestedQuantity || "—",
-              reason: item.note || "-",
-              status:
-                item.status === "PENDING"
-                  ? "Pending"
-                  : item.status === "APPROVED"
-                  ? "Approved"
-                  : "Rejected",
-              date: formatDate(item.createdDate),
-              requester: item.serviceCenterName || "Unknown",
-            };
-          } catch (err) {
-            console.warn("⚠️ Failed to fetch details for request", item.id);
-            return {
-              id: item.id,
-              partName: "—",
-              quantity: "—",
-              reason: item.note || "-",
-              status:
-                item.status === "PENDING"
-                  ? "Pending"
-                  : item.status === "APPROVED"
-                  ? "Approved"
-                  : "Rejected",
-              date: formatDate(item.createdDate),
-              requester: item.serviceCenterName || "Unknown",
-            };
-          }
-        })
-      );
-
-      setRequests(detailedList);
     } catch (err) {
       console.error("❌ Error fetching part requests:", err);
+      setRequests([]);
     } finally {
       setLoading(false);
     }
@@ -100,7 +69,7 @@ const PartRequestReview = () => {
     fetchRequests();
   }, []);
 
-  // ✅ Lấy chi tiết 1 yêu cầu
+  //  Lấy chi tiết 1 yêu cầu
   const handleViewDetail = async (id) => {
     setSelectedRequest({ id, loading: true });
     setDetailLoading(true);
@@ -120,39 +89,61 @@ const PartRequestReview = () => {
     }
   };
 
-  // ✅ Xử lý phê duyệt hoặc từ chối
+  //  Xử lý phê duyệt hoặc từ chối
+
   const handleDecision = async (id, decision) => {
     setProcessing(true);
     try {
+      if (decision === "Approved") {
+        await approvePartRequestApi(id);
+      } else {
+        await rejectPartRequestApi(id);
+      }
+
+      // Update UI state
       setRequests((prev) =>
         prev.map((r) => (r.id === id ? { ...r, status: decision } : r))
       );
 
-      setSelectedRequest((prev) => ({
-        ...prev,
-        status: decision.toUpperCase(),
-      }));
+      if (selectedRequest) {
+        setSelectedRequest((prev) => ({
+          ...prev,
+          status: decision.toUpperCase(),
+        }));
+      }
 
       setActionMessage(
         decision === "Approved"
-          ? "✅ Request approved successfully!"
-          : "❌ Request rejected successfully!"
+          ? " Request approved successfully!"
+          : " Request rejected successfully!"
       );
+
+      // Refresh data sau 2 giây
+      setTimeout(() => {
+        fetchRequests();
+      }, 2000);
     } catch (err) {
-      console.error("❌ Error updating request:", err);
       setActionMessage("Failed to update request status.");
     } finally {
       setProcessing(false);
-      setTimeout(() => setActionMessage(""), 2000);
+      setTimeout(() => setActionMessage(""), 3000);
     }
   };
 
   const formatDate = (arr) => {
     if (!Array.isArray(arr)) return "-";
     const [y, m, d, hh, mm] = arr;
-    return `${d.toString().padStart(2, "0")}/${m
-      .toString()
-      .padStart(2, "0")}/${y} ${hh}:${mm}`;
+
+    return (
+      <div className="flex flex-col">
+        <span>
+          {d.toString().padStart(2, "0")}/{m.toString().padStart(2, "0")}/{y}
+        </span>
+        <span className="text-xs text-gray-500">
+          {hh.toString().padStart(2, "0")}:{mm.toString().padStart(2, "0")}
+        </span>
+      </div>
+    );
   };
 
   const filteredRequests = requests.filter((req) => {
@@ -310,10 +301,10 @@ const PartRequestReview = () => {
           <table className="w-full text-sm text-gray-700">
             <thead className="bg-emerald-50 text-gray-800">
               <tr>
-                <th className="py-3 px-4 text-left font-semibold">Part</th>
-                <th className="py-3 px-4 text-left font-semibold">Quantity</th>
+                <th className="py-3 px-4 text-left font-semibold">
+                  Service Center
+                </th>
                 <th className="py-3 px-4 text-left font-semibold">Reason</th>
-                <th className="py-3 px-4 text-left font-semibold">Requester</th>
                 <th className="py-3 px-4 text-left font-semibold">Date</th>
                 <th className="py-3 px-4 text-center font-semibold">Status</th>
                 <th className="py-3 px-4 text-center font-semibold">Actions</th>
@@ -325,10 +316,8 @@ const PartRequestReview = () => {
                   key={req.id}
                   className="border-t border-gray-100 hover:bg-emerald-50/40"
                 >
-                  <td className="py-3 px-4 font-medium">{req.partName}</td>
-                  <td className="py-3 px-4">{req.quantity}</td>
-                  <td className="py-3 px-4">{req.reason}</td>
-                  <td className="py-3 px-4">{req.requester}</td>
+                  <td className="py-3 px-4 font-medium">{req.requester}</td>
+                  <td className="py-3 px-4 max-w-xs truncate">{req.reason}</td>
                   <td className="py-3 px-4">{req.date}</td>
                   <td className="py-3 px-4 text-center">
                     {getStatusBadge(req.status)}
@@ -371,13 +360,13 @@ const PartRequestReview = () => {
                   {selectedRequest.serviceCenterName || "-"}
                 </p>
                 <p>
-                  <b>Created By:</b> {selectedRequest.createdBy || "-"}
-                </p>
-                <p>
                   <b>Note:</b> {selectedRequest.note || "-"}
                 </p>
                 <p>
                   <b>Created Date:</b> {formatDate(selectedRequest.createdDate)}
+                </p>
+                <p>
+                  <b>Status:</b> {selectedRequest.status}
                 </p>
 
                 {Array.isArray(selectedRequest.details) &&

@@ -239,6 +239,21 @@ export const createCustomerApi = (customerData) => {
   return axios.post(URL_BACKEND, data);
 };
 
+// Update customer info
+export const updateCustomerApi = (customerId, customerData) => {
+  const URL_BACKEND = `/api/api/customers/${customerId}`;
+  const data = {
+    name: customerData.name,
+    phoneNumber: customerData.phoneNumber,
+    licensePlate: customerData.licensePlate,
+    email: customerData.email,
+    address: customerData.address,
+    vin: customerData.vin,
+  };
+
+  return axios.put(URL_BACKEND, data);
+};
+
 export const updateCampaignApi = (id, campaignData) => {
   return axios.put(`/api/api/campaigns/${id}`, {
     code: campaignData.code,
