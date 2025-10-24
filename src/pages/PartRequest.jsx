@@ -6,9 +6,45 @@ import {
   getAllPartRequestsApi,
   createPartRequestApi,
   getAllPartsApi,
+  getPartRequestDetailApi,
 } from "../services/api.service";
 
-// ================== SUMMARY ==================
+/* ================== Helpers ================== */
+const REMARK_IN = "In stock";
+const REMARK_OUT = "Out of stock";
+
+const toInt = (v, fallback = null) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+};
+
+const normalizeRemark = (r) => {
+  if (!r) return "";
+  const s = String(r).trim().toLowerCase().replace(/_/g, " ");
+  if (s.includes("out")) return REMARK_OUT;
+  if (s.includes("in")) return REMARK_IN;
+  return "";
+};
+
+// Chỉ dùng cho hiển thị (sau khi đã chuẩn hoá ở handleViewRequest)
+const resolveApproved = (detail) => {
+  const a = toInt(detail?.approvedQuantity);
+  if (a !== null) return a;
+  const r = normalizeRemark(detail?.remark);
+  const req = toInt(detail?.requestedQuantity, 0);
+  if (r === REMARK_OUT) return 0;
+  if (r === REMARK_IN) return req;
+  return null;
+};
+
+const resolveRemark = (detail) => {
+  const norm = normalizeRemark(detail?.remark);
+  if (norm) return norm;
+  const qty = toInt(detail?.approvedQuantity, toInt(detail?.requestedQuantity, 0));
+  return qty > 0 ? REMARK_IN : REMARK_OUT;
+};
+
+/* ================== SUMMARY ================== */
 const PartRequestSummary = ({ summary, loading, error }) => {
   if (loading) {
     return (
@@ -32,11 +68,7 @@ const PartRequestSummary = ({ summary, loading, error }) => {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 animate-fadeIn">
       {[
         { label: "Pending Requests", value: summary?.pending, color: "yellow" },
-        {
-          label: "Approved Requests",
-          value: summary?.approved,
-          color: "green",
-        },
+        { label: "Approved Requests", value: summary?.approved, color: "green" },
         { label: "Rejected Requests", value: summary?.rejected, color: "red" },
       ].map((item, i) => (
         <div
@@ -53,7 +85,7 @@ const PartRequestSummary = ({ summary, loading, error }) => {
   );
 };
 
-// ================== TABLE ==================
+/* ================== TABLE ================== */
 const PartRequestTable = ({ requests, loading, error, onView }) => {
   const formatDate = (arr) => {
     if (!Array.isArray(arr)) return "-";
@@ -88,9 +120,7 @@ const PartRequestTable = ({ requests, loading, error, onView }) => {
         <thead className="bg-blue-50 border-b border-gray-200">
           <tr>
             <th className="py-3 px-4 text-left font-semibold">ID</th>
-            <th className="py-3 px-4 text-left font-semibold">
-              Service Center
-            </th>
+            <th className="py-3 px-4 text-left font-semibold">Service Center</th>
             <th className="py-3 px-4 text-left font-semibold">Created By</th>
             <th className="py-3 px-4 text-left font-semibold">Created Date</th>
             <th className="py-3 px-4 text-left font-semibold">Status</th>
@@ -140,7 +170,7 @@ const PartRequestTable = ({ requests, loading, error, onView }) => {
   );
 };
 
-// ================== VIEW MODAL ==================
+/* ================== VIEW MODAL ================== */
 const ViewPartRequestModal = ({ request, onClose }) => {
   if (!request) return null;
 
@@ -153,32 +183,112 @@ const ViewPartRequestModal = ({ request, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fadeIn">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border border-gray-100 animate-slideUp">
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center animate-fadeIn">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 border border-gray-100 animate-slideUp scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
         <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
           <Eye size={18} className="text-blue-600" /> Request Details
         </h2>
 
         <div className="space-y-2 text-sm text-gray-700">
-          <p>
-            <b>ID:</b> {request.id}
-          </p>
-          <p>
-            <b>Service Center:</b> {request.serviceCenterName}
-          </p>
-          <p>
-            <b>Created By:</b> {request.createdBy}
-          </p>
-          <p>
-            <b>Status:</b> {request.status}
-          </p>
-          <p>
-            <b>Note:</b> {request.note}
-          </p>
-          <p>
-            <b>Created Date:</b> {formatDate(request.createdDate)}
-          </p>
+          <p><b>ID:</b> {request.id}</p>
+          <p><b>Service Center:</b> {request.serviceCenterName}</p>
+          <p><b>Created By:</b> {request.createdBy}</p>
+          <p><b>Status:</b> {request.status}</p>
+          <p><b>Note:</b> {request.note}</p>
+          <p><b>Created Date:</b> {formatDate(request.createdDate)}</p>
+
+          {Array.isArray(request.details) && request.details.length > 0 && (
+            <div className="mt-4 border-t border-gray-200 pt-3">
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">
+                Parts Requested:
+              </h3>
+              <div className="space-y-2">
+                {request.details.map((part, index) => {
+                  const approvedUi = resolveApproved(part);
+                  const remarkUi = resolveRemark(part);
+                  return (
+                    <div
+                      key={index}
+                      className="p-3 border rounded-lg bg-gray-50 flex flex-col text-sm"
+                    >
+                      <div className="flex justify-between">
+                        <span className="font-medium text-gray-800">
+                          {part.partCode || "-"}
+                        </span>
+                        <span className="text-gray-500">
+                          Requested: {part.requestedQuantity ?? 0}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-gray-600 mt-1">
+                        <span>Approved: {approvedUi ?? "—"}</span>
+                        <span>
+                          Remark:{" "}
+                          <span
+                            className={
+                              remarkUi === REMARK_OUT
+                                ? "text-red-600 font-medium"
+                                : "text-green-600 font-medium"
+                            }
+                          >
+                            {remarkUi || "—"}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
+
+        {Array.isArray(request.details) && request.details.length > 0 && (
+          <div className="mt-5 border-t border-gray-200 pt-4">
+            <h3 className="text-sm font-semibold text-gray-800 mb-3">
+              🧩 Parts Requested
+            </h3>
+
+            <div className="grid gap-3">
+              {request.details.map((part, index) => {
+                const approvedUi = resolveApproved(part);
+                const remarkUi = resolveRemark(part);
+                return (
+                  <div
+                    key={index}
+                    className="p-4 border border-gray-200 rounded-xl bg-gray-50 shadow-sm"
+                  >
+                    <div className="flex justify-between mb-1">
+                      <span className="font-semibold text-gray-800">
+                        {part.partCode || "-"}
+                      </span>
+                      <span className="text-xs text-gray-500">#{index + 1}</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>
+                        Requested: <b>{part.requestedQuantity ?? 0}</b>
+                      </span>
+                      <span>
+                        Approved: <b>{approvedUi ?? "—"}</b>
+                      </span>
+                    </div>
+                    <div className="mt-1 text-sm text-gray-600">
+                      Remark:{" "}
+                      <span
+                        className={
+                          remarkUi === REMARK_OUT
+                            ? "text-red-600 font-medium"
+                            : "text-green-600 font-medium"
+                        }
+                      >
+                        {remarkUi || "—"}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="mt-6 flex justify-end">
           <button
@@ -193,13 +303,11 @@ const ViewPartRequestModal = ({ request, onClose }) => {
   );
 };
 
-// ================== MODAL (fixed & improved) ==================
+/* ================== CREATE MODAL ================== */
 const CreatePartRequestModal = ({ onClose, onCreated }) => {
   const [parts, setParts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [rows, setRows] = useState([
-    { category: "", partId: "", quantity: "" },
-  ]);
+  const [rows, setRows] = useState([{ category: "", partId: "", quantity: "" }]);
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -210,15 +318,16 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
       try {
         const res = await getAllPartsApi();
         if (res.status === 200 && res.data?.data?.partList) {
-          const partList = res.data.data.partList;
-          setParts(partList);
-          setCategories([...new Set(partList.map((p) => p.partCategory))]);
-        } else setError("⚠️ Unexpected response from server.");
+          const list = res.data.data.partList;
+          setParts(list);
+          setCategories([...new Set(list.map((p) => p.partCategory))]);
+          setError("");
+        } else {
+          setError("⚠️ Unexpected response format from server.");
+        }
       } catch (err) {
         console.error("❌ Failed to fetch parts:", err);
-        setError(
-          "Failed to load part list. Please check backend API or network."
-        );
+        setError("Failed to load part list.");
       }
     };
     fetchParts();
@@ -252,7 +361,6 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
       return;
     }
 
-    // ✅ Convert partId → partCode
     const details = rows.map((r) => {
       const part = parts.find((p) => p.id === parseInt(r.partId));
       return {
@@ -262,13 +370,9 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
     });
 
     const payload = { note, details };
-    console.log("🚀 Sending payload:", payload);
-
     try {
       setLoading(true);
       const res = await createPartRequestApi(payload);
-      console.log("✅ Response:", res);
-
       if (res?.status === 200 || res?.status === 201) {
         setSuccess("✅ Request created successfully!");
       } else {
@@ -276,15 +380,16 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
           "⚠️ Backend returned non-200, but request may have succeeded."
         );
       }
-
       onCreated && onCreated();
       setTimeout(() => onClose(), 800);
     } catch (err) {
       console.error("❌ Error creating part request:", err);
       if (err.response?.status === 500) {
-        setSuccess("⚠️ Request created successfully (backend returned 500).");
+        setSuccess(
+          "⚠️ Backend returned 500, but request was likely created successfully."
+        );
         onCreated && onCreated();
-        setTimeout(() => onClose(), 800);
+        setTimeout(() => onClose(), 1000);
       } else {
         setError("Failed to create request. Please try again.");
       }
@@ -294,33 +399,25 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fadeIn">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 border border-gray-100">
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center animate-fadeIn">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 border border-gray-100 animate-slideUp scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
           New Part Request
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Requested Parts */}
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-2">
               Requested Parts
             </label>
 
             {rows.map((row, idx) => {
-              const filtered = parts.filter(
-                (p) => p.partCategory === row.category
-              );
+              const filtered = parts.filter((p) => p.partCategory === row.category);
               return (
-                <div
-                  key={idx}
-                  className="flex items-center gap-3 mb-3 flex-wrap"
-                >
+                <div key={idx} className="flex items-center gap-3 mb-3 flex-wrap">
                   <select
                     value={row.category}
-                    onChange={(e) =>
-                      handleChange(idx, "category", e.target.value)
-                    }
+                    onChange={(e) => handleChange(idx, "category", e.target.value)}
                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm flex-1"
                   >
                     <option value="">Select Category</option>
@@ -333,9 +430,7 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
 
                   <select
                     value={row.partId}
-                    onChange={(e) =>
-                      handleChange(idx, "partId", e.target.value)
-                    }
+                    onChange={(e) => handleChange(idx, "partId", e.target.value)}
                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm flex-1"
                     disabled={!row.category}
                   >
@@ -351,9 +446,7 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
                     type="number"
                     placeholder="Quantity"
                     value={row.quantity}
-                    onChange={(e) =>
-                      handleChange(idx, "quantity", e.target.value)
-                    }
+                    onChange={(e) => handleChange(idx, "quantity", e.target.value)}
                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-28"
                   />
 
@@ -372,14 +465,15 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
 
             <button
               type="button"
-              onClick={handleAdd}
+              onClick={() =>
+                setRows([...rows, { category: "", partId: "", quantity: "" }])
+              }
               className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
             >
               <PlusCircle size={16} /> Add Part
             </button>
           </div>
 
-          {/* Note */}
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-1">
               Note <span className="text-red-500">*</span>
@@ -393,7 +487,6 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
             />
           </div>
 
-          {/* Feedback */}
           {error && (
             <div className="text-sm text-red-600 bg-red-50 border border-red-200 p-2 rounded-lg">
               {error}
@@ -405,8 +498,7 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
             </div>
           )}
 
-          {/* Buttons */}
-          <div className="flex justify-end gap-3">
+          <div className="flex justify-end gap-3 pt-1">
             <button
               type="button"
               onClick={onClose}
@@ -417,11 +509,8 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
             <button
               type="submit"
               disabled={loading}
-              className={`px-5 py-2 rounded-lg text-sm font-medium text-white transition ${
-                loading
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700"
-              }`}
+              className={`px-5 py-2 rounded-lg text-sm font-medium text-white transition ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+                }`}
             >
               {loading ? "Submitting..." : "Create Request"}
             </button>
@@ -432,7 +521,7 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
   );
 };
 
-// ================== MAIN PAGE ==================
+/* ================== MAIN PAGE ================== */
 const PartRequestManagement = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -446,8 +535,7 @@ const PartRequestManagement = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      if (token)
-        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      if (token) axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       const res = await getAllPartRequestsApi();
       let data = res.data?.data?.partSupplies || [];
       setRequests(data);
@@ -463,10 +551,48 @@ const PartRequestManagement = () => {
     fetchRequests();
   }, []);
 
+  // ✅ Chuẩn hoá detail theo status tổng
+  const handleViewRequest = async (req) => {
+    try {
+      const res = await getPartRequestDetailApi(req.id);
+      const raw = res.data?.data || req;
+
+      const status = String(raw.status || "").toUpperCase();
+      const details = (raw.details || []).map((d) => {
+        const requested = toInt(d.requestedQuantity, 0);
+        let approved = toInt(d.approvedQuantity, null);
+        let remark = normalizeRemark(d.remark);
+
+        if (status === "APPROVED") {
+          approved = requested;
+          remark = REMARK_IN;
+        } else if (status === "REJECTED") {
+          approved = 0;
+          remark = REMARK_OUT;
+        } else {
+          // PENDING
+          if (approved === null) {
+            if (remark === REMARK_OUT) approved = 0;
+            else if (remark === REMARK_IN) approved = requested;
+            else approved = null;
+          }
+          if (!remark) remark = (toInt(approved, 0) > 0) ? REMARK_IN : REMARK_OUT;
+        }
+
+        return { ...d, approvedQuantity: approved, remark };
+      });
+
+      setSelectedRequest({ ...raw, details });
+    } catch (err) {
+      console.error("❌ Error fetching request details:", err);
+      setSelectedRequest(req);
+    }
+  };
+
   const filteredRequests = requests.filter((r) => {
     const matchSearch = searchTerm
       ? r.note?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.serviceCenterName?.toLowerCase().includes(searchTerm.toLowerCase())
+      r.serviceCenterName?.toLowerCase().includes(searchTerm.toLowerCase())
       : true;
 
     const matchStatus =
@@ -504,19 +630,12 @@ const PartRequestManagement = () => {
         </p>
       </div>
 
-      <PartRequestSummary
-        summary={summaryStats}
-        loading={loading}
-        error={error}
-      />
+      <PartRequestSummary summary={summaryStats} loading={loading} error={error} />
 
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3 flex-wrap">
           <div className="relative">
-            <Search
-              size={18}
-              className="absolute left-3 top-2.5 text-gray-400"
-            />
+            <Search size={18} className="absolute left-3 top-2.5 text-gray-400" />
             <input
               type="text"
               placeholder="Search by note or service center..."
@@ -548,7 +667,7 @@ const PartRequestManagement = () => {
         requests={filteredRequests}
         loading={loading}
         error={error}
-        onView={setSelectedRequest}
+        onView={handleViewRequest}
       />
 
       {selectedRequest && (
