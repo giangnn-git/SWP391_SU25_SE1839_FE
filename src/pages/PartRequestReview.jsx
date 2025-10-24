@@ -13,9 +13,28 @@ import axios from "axios";
 import {
   getAllPartRequestsApi,
   getPartRequestDetailApi,
+  reviewPartSupplyApi,
 } from "../services/api.service";
-import { reviewPartSupplyApi } from "../services/api.service";
 
+// === Remark constants & helpers ===
+const REMARK_IN = "In stock";
+const REMARK_OUT = "Out of stock";
+
+const normalizeRemark = (r) => {
+  if (!r) return "";
+  const s = String(r).trim().toLowerCase().replace(/_/g, " ");
+  if (s.includes("out")) return REMARK_OUT;
+  if (s.includes("in")) return REMARK_IN;
+  return "";
+};
+
+// Luôn suy ra remark hợp lệ để hiển thị (dù BE trả null/format khác)
+const resolveRemark = (d) => {
+  const normalized = normalizeRemark(d?.remark);
+  if (normalized) return normalized;
+  const qty = Number(d?.approvedQuantity ?? d?.requestedQuantity ?? 0);
+  return qty > 0 ? REMARK_IN : REMARK_OUT;
+};
 
 const PartRequestReview = () => {
   const [requests, setRequests] = useState([]);
@@ -27,7 +46,7 @@ const PartRequestReview = () => {
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // ✅ Thêm biến trạng thái cho modal xác nhận
+  // ✅ Modal xác nhận
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmAction, setConfirmAction] = useState("");
   const [confirmId, setConfirmId] = useState(null);
@@ -51,7 +70,7 @@ const PartRequestReview = () => {
         data = [];
       }
 
-      // 🔥 Gọi song song API chi tiết để lấy part và quantity thật
+      // 🔥 Lấy chi tiết từng request
       const detailedList = await Promise.all(
         data.map(async (item) => {
           try {
@@ -73,8 +92,7 @@ const PartRequestReview = () => {
               date: formatDate(item.createdDate),
               requester: item.serviceCenterName || "Unknown",
             };
-          } catch (err) {
-            console.warn("⚠️ Failed to fetch details for request", item.id);
+          } catch {
             return {
               id: item.id,
               partName: "—",
@@ -105,75 +123,116 @@ const PartRequestReview = () => {
     fetchRequests();
   }, []);
 
-  // ✅ Lấy chi tiết 1 yêu cầu
+  // ✅ Xem chi tiết
   const handleViewDetail = async (id) => {
     setSelectedRequest({ id, loading: true });
     setDetailLoading(true);
-
     try {
       const res = await getPartRequestDetailApi(id);
       const data = res.data?.data || {};
-      setSelectedRequest(data);
-    } catch (err) {
-      console.error("❌ Error fetching part request detail:", err);
+      // chuẩn hoá remark trước khi set vào state
       setSelectedRequest({
-        id,
-        error: "Failed to load details. Please try again.",
+        ...data,
+        details: (data.details || []).map((d) => ({
+          ...d,
+          remark: normalizeRemark(d.remark),
+        })),
       });
+    } catch (err) {
+      console.error("❌ Error fetching detail:", err);
+      setSelectedRequest({ id, error: "Failed to load details." });
     } finally {
       setDetailLoading(false);
     }
   };
 
-  // ✅ Mở modal xác nhận thay vì alert
+  // ✅ Modal xác nhận hành động
   const handleDecision = (id, decision) => {
+    // Nếu là REJECT thì tự động set remark = "Out of stock"
+    if (
+      decision === "Rejected" &&
+      selectedRequest &&
+      Array.isArray(selectedRequest.details)
+    ) {
+      const updatedDetails = selectedRequest.details.map((d) => ({
+        ...d,
+        remark: REMARK_OUT,
+        approvedQuantity: 0,
+      }));
+      setSelectedRequest((prev) => ({
+        ...prev,
+        details: updatedDetails,
+      }));
+    }
+
     setConfirmId(id);
     setConfirmAction(decision);
     setShowConfirm(true);
   };
 
-  // ✅ Khi người dùng xác nhận hành động (Approve/Reject)
+  // ✅ Gửi duyệt / từ chối
   const handleConfirmAction = async () => {
     if (!confirmId || !selectedRequest) return;
     setProcessing(true);
 
     try {
-      const actionType = confirmAction === "Approved" ? "APPROVE" : "REJECT";
-
-      // ✅ Tạo payload đúng chuẩn BE
       const payload = {
-        partSupplyId: selectedRequest?.id || confirmId, // đảm bảo không null
+        partSupplyId: selectedRequest.id,
         action: confirmAction === "Approved" ? "APPROVE" : "REJECT",
         note:
           confirmAction === "Approved"
             ? "Approved after checking stock availability"
             : "Rejected due to insufficient stock",
-        details: (selectedRequest?.details || []).map((d, index) => ({
-          detailId: d?.id ?? d?.detailId ?? index + 1, // đảm bảo có giá trị
+        details: (selectedRequest.details || []).map((d, i) => ({
+          detailId: d.id || d.detailId || i + 1,
           approvedQuantity:
             confirmAction === "Approved"
-              ? d?.requestedQuantity ?? 0
+              ? Number(d.approvedQuantity ?? d.requestedQuantity ?? 0)
               : 0,
-          remark: confirmAction === "Approved" ? "In stock" : "Out of stock",
+          remark:
+            d.remark ||
+            (confirmAction === "Approved" ? REMARK_IN : REMARK_OUT),
         })),
       };
 
-      console.log("📦 Payload gửi BE:", JSON.stringify(payload, null, 2));
+      console.log("📦 Payload gửi BE:", payload);
 
-
-      // ✅ Gọi API PUT
       const res = await reviewPartSupplyApi(payload);
-      console.log("✅ BE Response:", res.data);
+      console.log("✅ API Response:", res.data);
 
-      // Cập nhật UI sau khi thành công
-      setRequests((prev) =>
-        prev.map((r) => (r.id === confirmId ? { ...r, status: confirmAction } : r))
-      );
-
+      // ✅ Cập nhật ngay trên giao diện (modal)
       setSelectedRequest((prev) => ({
         ...prev,
         status: confirmAction.toUpperCase(),
+        note:
+          confirmAction === "Approved"
+            ? "Approved after checking stock availability"
+            : "Rejected due to insufficient stock",
+        details: (prev.details || []).map((d) => ({
+          ...d,
+          approvedQuantity:
+            confirmAction === "Approved"
+              ? Number(d.approvedQuantity ?? d.requestedQuantity ?? 0)
+              : 0,
+          remark: confirmAction === "Approved" ? REMARK_IN : REMARK_OUT,
+        })),
       }));
+
+      // ✅ Cập nhật ngay trong bảng danh sách
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === selectedRequest.id
+            ? {
+              ...r,
+              status: confirmAction,
+              reason:
+                confirmAction === "Approved"
+                  ? "Approved after checking stock availability"
+                  : "Rejected due to insufficient stock",
+            }
+            : r
+        )
+      );
 
       setActionMessage(
         confirmAction === "Approved"
@@ -189,11 +248,11 @@ const PartRequestReview = () => {
       setActionMessage("Failed to update request on server.");
     } finally {
       setProcessing(false);
-      setTimeout(() => setActionMessage(""), 2500);
+      setTimeout(() => setActionMessage(""), 3000);
     }
   };
 
-
+  // ✅ Định dạng ngày
   const formatDate = (arr) => {
     if (!Array.isArray(arr)) return "-";
     const [y, m, d, hh, mm] = arr;
@@ -202,6 +261,7 @@ const PartRequestReview = () => {
       .padStart(2, "0")}/${y} ${hh}:${mm}`;
   };
 
+  // ✅ Lọc theo trạng thái + tìm kiếm
   const filteredRequests = requests.filter((req) => {
     const matchesSearch =
       req.partName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -210,19 +270,19 @@ const PartRequestReview = () => {
     return matchesSearch && matchesFilter;
   });
 
-  const getStatusBadge = (status) => {
+  // ✅ Trạng thái
+  const getStatusBadge = (status = "") => {
+    const s = status.toUpperCase();
     const base =
       "inline-flex items-center justify-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border min-w-[90px] text-center";
-    switch (status) {
-      case "Approved":
+    switch (s) {
+      case "APPROVED":
         return (
-          <span
-            className={`${base} bg-green-50 text-green-700 border-green-200`}
-          >
+          <span className={`${base} bg-green-50 text-green-700 border-green-200`}>
             <CheckCircle2 size={12} /> Approved
           </span>
         );
-      case "Rejected":
+      case "REJECTED":
         return (
           <span className={`${base} bg-red-50 text-red-700 border-red-200`}>
             <XCircle size={12} /> Rejected
@@ -230,9 +290,7 @@ const PartRequestReview = () => {
         );
       default:
         return (
-          <span
-            className={`${base} bg-yellow-50 text-yellow-700 border-yellow-200`}
-          >
+          <span className={`${base} bg-yellow-50 text-yellow-700 border-yellow-200`}>
             <Clock4 size={12} /> Pending
           </span>
         );
@@ -244,7 +302,7 @@ const PartRequestReview = () => {
   const totalRejected = requests.filter((r) => r.status === "Rejected").length;
 
   return (
-    <div className="p-8 animate-fadeIn bg-gradient-to-br from-gray-50 to-white min-h-screen">
+    <div className="p-8 bg-gradient-to-br from-gray-50 to-white min-h-screen animate-fadeIn">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -262,56 +320,48 @@ const PartRequestReview = () => {
         </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI */}
       <div className="grid grid-cols-3 gap-5 mb-8">
-        <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-500/90 rounded-lg text-white">
-              <CheckCircle2 size={20} />
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-800">
-                Approved Requests
-              </h3>
-              <p className="text-2xl font-bold text-green-700">
-                {totalApproved}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-yellow-500/90 rounded-lg text-white">
-              <Clock4 size={20} />
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-800">
-                Pending Requests
-              </h3>
-              <p className="text-2xl font-bold text-yellow-700">
-                {totalPending}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-red-500/90 rounded-lg text-white">
-              <XCircle size={20} />
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-800">
-                Rejected Requests
-              </h3>
-              <p className="text-2xl font-bold text-red-700">{totalRejected}</p>
+        {[
+          {
+            title: "Approved Requests",
+            count: totalApproved,
+            color: "green",
+            icon: <CheckCircle2 size={20} />,
+          },
+          {
+            title: "Pending Requests",
+            count: totalPending,
+            color: "yellow",
+            icon: <Clock4 size={20} />,
+          },
+          {
+            title: "Rejected Requests",
+            count: totalRejected,
+            color: "red",
+            icon: <XCircle size={20} />,
+          },
+        ].map((card, idx) => (
+          <div
+            key={idx}
+            className={`flex items-center justify-between bg-${card.color}-50 border border-${card.color}-200 rounded-xl p-4`}
+          >
+            <div className="flex items-center gap-3">
+              <div className={`p-2 bg-${card.color}-500/90 rounded-lg text-white`}>
+                {card.icon}
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-800">{card.title}</h3>
+                <p className={`text-2xl font-bold text-${card.color}-700`}>
+                  {card.count}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        ))}
       </div>
 
-      {/* Filter bar */}
+      {/* Filter */}
       <div className="bg-white border border-gray-200 rounded-2xl shadow-md p-5 mb-8 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Filter size={18} className="text-gray-500" />
@@ -356,13 +406,13 @@ const PartRequestReview = () => {
           <table className="w-full text-sm text-gray-700">
             <thead className="bg-emerald-50 text-gray-800">
               <tr>
-                <th className="py-3 px-4 text-left font-semibold">Part</th>
-                <th className="py-3 px-4 text-left font-semibold">Quantity</th>
-                <th className="py-3 px-4 text-left font-semibold">Reason</th>
-                <th className="py-3 px-4 text-left font-semibold">Requester</th>
-                <th className="py-3 px-4 text-left font-semibold">Date</th>
-                <th className="py-3 px-4 text-center font-semibold">Status</th>
-                <th className="py-3 px-4 text-center font-semibold">Actions</th>
+                <th className="py-3 px-4 text-left">Part</th>
+                <th className="py-3 px-4 text-left">Quantity</th>
+                <th className="py-3 px-4 text-left">Reason</th>
+                <th className="py-3 px-4 text-left">Requester</th>
+                <th className="py-3 px-4 text-left">Date</th>
+                <th className="py-3 px-4 text-center">Status</th>
+                <th className="py-3 px-4 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -382,7 +432,7 @@ const PartRequestReview = () => {
                   <td className="py-3 px-4 text-center">
                     <button
                       onClick={() => handleViewDetail(req.id)}
-                      className="px-3 py-1 text-xs bg-emerald-100 text-emerald-700 border border-emerald-300 rounded hover:bg-emerald-600 hover:text-white transition flex items-center gap-1"
+                      className="px-3 py-1 text-xs bg-emerald-100 text-emerald-700 border border-emerald-300 rounded hover:bg-emerald-600 hover:text-white flex items-center gap-1"
                     >
                       <Eye size={14} /> View
                     </button>
@@ -397,11 +447,10 @@ const PartRequestReview = () => {
       {/* Modal chi tiết */}
       {selectedRequest && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-2xl w-[500px] p-6 relative border border-gray-100 animate-slideUp">
+          <div className="bg-white rounded-2xl shadow-2xl w-[520px] p-6 relative border border-gray-100 animate-slideUp">
             <div className="flex items-center justify-between border-b border-gray-200 pb-3 mb-4">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Eye size={20} className="text-emerald-600" />
-                Request Details
+                <Eye size={20} className="text-emerald-600" /> Request Details
               </h2>
               {getStatusBadge(selectedRequest.status)}
             </div>
@@ -423,22 +472,136 @@ const PartRequestReview = () => {
                   <b>Note:</b> {selectedRequest.note || "-"}
                 </p>
                 <p>
-                  <b>Created Date:</b>{" "}
-                  {formatDate(selectedRequest.createdDate)}
+                  <b>Created Date:</b> {formatDate(selectedRequest.createdDate)}
                 </p>
 
                 {Array.isArray(selectedRequest.details) &&
                   selectedRequest.details.length > 0 && (
-                    <div className="mt-3 border-t border-gray-200 pt-2">
-                      <b>Parts Requested:</b>
-                      <ul className="list-disc ml-6 mt-2 space-y-1">
-                        {selectedRequest.details.map((d, i) => (
-                          <li key={i}>
-                            Part Code: {d.partCode || "-"} – Quantity:{" "}
-                            {d.requestedQuantity}
-                          </li>
-                        ))}
-                      </ul>
+                    <div className="mt-3 border-t border-gray-200 pt-3">
+                      <b className="block mb-2 text-gray-800">
+                        Parts Requested:
+                      </b>
+
+                      <div className="space-y-3">
+                        {selectedRequest.details.map((d, i) => {
+                          const remarkUi = resolveRemark(d);
+                          const isPending =
+                            selectedRequest.status?.toUpperCase() ===
+                            "PENDING";
+
+                          return (
+                            <div
+                              key={i}
+                              className="p-3 border rounded-lg bg-gray-50"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium text-gray-800">
+                                  {d.partCode || "-"}
+                                </span>
+                                {/* số thứ tự giống #1, #2 */}
+                                <span className="text-xs text-gray-400">
+                                  #{i + 1}
+                                </span>
+                              </div>
+
+                              {/* Nếu PENDING => cho chỉnh; ngược lại => hiển thị như ảnh */}
+                              {isPending ? (
+                                <>
+                                  {/* Approved Quantity (input) */}
+                                  <div className="mt-2 flex items-center gap-2">
+                                    <label className="text-sm font-medium text-gray-700 w-32">
+                                      Approved Quantity:
+                                    </label>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={
+                                        d.approvedQuantity ??
+                                        d.requestedQuantity ??
+                                        0
+                                      }
+                                      onChange={(e) => {
+                                        const updated = [
+                                          ...selectedRequest.details,
+                                        ];
+                                        updated[i].approvedQuantity = Number(
+                                          e.target.value
+                                        );
+                                        setSelectedRequest((prev) => ({
+                                          ...prev,
+                                          details: updated,
+                                        }));
+                                      }}
+                                      className="border border-gray-300 rounded-lg px-2 py-1 text-sm w-24 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                    />
+                                  </div>
+
+                                  {/* Remark (select) */}
+                                  <div className="mt-2 flex items-center gap-2">
+                                    <label className="text-sm font-medium text-gray-700 w-32">
+                                      Remark:
+                                    </label>
+                                    <select
+                                      value={remarkUi}
+                                      onChange={(e) => {
+                                        const updated = [
+                                          ...selectedRequest.details,
+                                        ];
+                                        updated[i].remark = e.target.value;
+                                        setSelectedRequest((prev) => ({
+                                          ...prev,
+                                          details: updated,
+                                        }));
+                                      }}
+                                      className="border border-gray-300 rounded-lg px-2 py-1 text-sm flex-1 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                                    >
+                                      <option value={REMARK_IN}>
+                                        In stock
+                                      </option>
+                                      <option value={REMARK_OUT}>
+                                        Out of stock
+                                      </option>
+                                    </select>
+                                  </div>
+
+                                  {/* Requested (static) */}
+                                  <div className="mt-2 text-sm text-gray-500">
+                                    Requested: {d.requestedQuantity}
+                                  </div>
+                                </>
+                              ) : (
+                                // === HIỂN THỊ NHƯ ẢNH ===
+                                <div className="mt-2 space-y-1">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-gray-600">
+                                      Requested: {d.requestedQuantity}
+                                    </span>
+                                    <span className="text-gray-800">
+                                      <b>Approved:</b>{" "}
+                                      {Number(
+                                        d.approvedQuantity ??
+                                        d.requestedQuantity ??
+                                        0
+                                      )}
+                                    </span>
+                                  </div>
+                                  <div className="text-gray-600">
+                                    Remark:{" "}
+                                    <span
+                                      className={`font-semibold ${remarkUi === REMARK_IN
+                                        ? "text-emerald-600"
+                                        : "text-red-600"
+                                        }`}
+                                    >
+                                      {remarkUi}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
               </div>
@@ -447,26 +610,30 @@ const PartRequestReview = () => {
             <div className="mt-8 flex items-center justify-between border-t border-gray-200 pt-4">
               <button
                 onClick={() => setSelectedRequest(null)}
-                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100 transition-all duration-200"
+                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100"
               >
                 Close
               </button>
 
-              {selectedRequest.status === "PENDING" && (
+              {selectedRequest.status?.toUpperCase() === "PENDING" && (
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => handleDecision(selectedRequest.id, "Approved")}
+                    onClick={() =>
+                      handleDecision(selectedRequest.id, "Approved")
+                    }
                     disabled={processing}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium shadow-sm"
                   >
                     <CheckCircle2 size={16} />
                     {processing ? "Processing..." : "Approve"}
                   </button>
 
                   <button
-                    onClick={() => handleDecision(selectedRequest.id, "Rejected")}
+                    onClick={() =>
+                      handleDecision(selectedRequest.id, "Rejected")
+                    }
                     disabled={processing}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-medium shadow-sm"
                   >
                     <XCircle size={16} />
                     {processing ? "Processing..." : "Reject"}
