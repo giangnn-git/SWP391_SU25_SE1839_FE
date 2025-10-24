@@ -293,27 +293,24 @@ export const getCampaignByVinApi = (vin) => {
   return axios.get(`/api/api/campaign?vin=${vin}`);
 };
 
-//Part Request
+// create Part Request
 export const createPartRequestApi = (data) => {
   return axios.post("/api/api/part-supply", data);
 };
 
+// Get all part requests
 export const getAllPartRequestsApi = () => {
   return axios.get("/api/api/part-supplies");
 };
 
-
+// Get part request detail by ID
 export const getPartRequestDetailApi = (id) => {
   return axios.get(`/api/api/part-supply/${id}`);
 };
 
-// ✅ Chuẩn PUT request có header JSON
+// Approve or Reject part supply request
 export const reviewPartSupplyApi = (reviewData) => {
-  return axios.put("/api/api/part-supply/review", reviewData, {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  return axios.put("/api/api/part-supply/review", reviewData, {});
 };
 
 export const getAllPartsApi = async () => {
