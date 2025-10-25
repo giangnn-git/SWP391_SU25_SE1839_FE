@@ -285,7 +285,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
           </div>
 
           {/* Parts */}
-          <div>
+          {/* <div>
             <label className="block text-sm font-semibold text-gray-900 mb-3">
               Requested Parts
             </label>
@@ -379,7 +379,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
               <Plus size={18} />
               Add Part
             </button>
-          </div>
+          </div> */}
 
           {/* Attachments */}
           <div>

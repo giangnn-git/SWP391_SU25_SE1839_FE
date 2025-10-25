@@ -158,6 +158,8 @@ const ViewVehicleModal = ({ vehicle, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-[2px]">
+      {/* // <div className="fixed inset-0 bg-black/30 flex items-center justify-end z-50 backdrop-blur-[0px]"> */}
+
       <div className="bg-white rounded-2xl shadow-2xl w-[500px] max-h-[90vh] overflow-hidden animate-fadeIn border border-gray-100 relative">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-200 p-6 pb-4">
@@ -217,11 +219,10 @@ const ViewVehicleModal = ({ vehicle, onClose }) => {
                   <div className="flex justify-between items-center">
                     <span className="font-medium text-blue-800">Status:</span>
                     <span
-                      className={`px-2 py-1 rounded-md text-xs font-semibold ${
-                        vehicle.isInProduction
-                          ? "bg-green-100 text-green-700 border border-green-200"
-                          : "bg-gray-200 text-gray-600 border border-gray-300"
-                      }`}
+                      className={`px-2 py-1 rounded-md text-xs font-semibold ${vehicle.isInProduction
+                        ? "bg-green-100 text-green-700 border border-green-200"
+                        : "bg-gray-200 text-gray-600 border border-gray-300"
+                        }`}
                     >
                       {vehicle.isInProduction
                         ? "In Production"

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
-import { ArrowLeft, Image as ImageIcon, Loader, AlertCircle, Car, RefreshCcw } from "lucide-react";
+import { ArrowLeft, Image as ImageIcon, Loader, AlertCircle, Car, RefreshCcw, Eye, X } from "lucide-react";
+import ViewVehicleModal from "../components/vehicles/ViewVehicleModal";
 import axios from "../services/axios.customize";
 
 const ClaimDetail = () => {
@@ -14,6 +15,11 @@ const ClaimDetail = () => {
     const [selectedStatus, setSelectedStatus] = useState("");
     const [updating, setUpdating] = useState(false);
     const [reason, setReason] = useState("");
+    const [selectedVehicle, setSelectedVehicle] = useState(null);
+
+
+    // View Policy modal control
+    const [showPolicyModal, setShowPolicyModal] = useState(false);
 
     // Parts
     const [editedParts, setEditedParts] = useState([]);
@@ -115,20 +121,19 @@ const ClaimDetail = () => {
                 })),
             };
 
-            await axios.put(`/api/api/claims/${id}`, payload);
+            await axios.patch(`/api/api/claims/${id}`, payload);
             toast.success("Updated successfully!");
 
-            setClaimDetail((prev) => ({
-                ...prev,
-                fcr: {
-                    ...prev.fcr,
-                    currentStatus: selectedStatus,
-                },
-                parts: editedParts,
-            }));
+            // Fetch latest claim data after update
+            const res = await axios.get(`/api/api/claims/${id}`);
+            const updatedData = res.data.data;
 
-            setIsEditingParts(false);
+            // Update local state with new detail
+            setClaimDetail(updatedData);
+            setSelectedStatus(updatedData.fcr?.currentStatus || "");
+            setEditedParts(updatedData.partCLiam || []);
             setReason("");
+            setIsEditingParts(false);
         } catch (err) {
             console.error("Failed to update claim:", err);
             toast.error("Failed to update");
@@ -136,6 +141,7 @@ const ClaimDetail = () => {
             setUpdating(false);
         }
     };
+
 
     const formatDateTime = (dateArray) => {
         if (!Array.isArray(dateArray) || dateArray.length < 3) return "–";
@@ -235,6 +241,35 @@ const ClaimDetail = () => {
                     </div>
                 </div>
 
+                {/* View Policy */}
+                <button
+                    title="View Details"
+                    className="flex items-center justify-center bg-blue-600 text-white hover:bg-blue-700 rounded-md p-2 transition shadow-sm"
+                    onClick={() => {
+                        // Giả lập object vehicle từ modelId
+                        const ModelVehicle = {
+                            id: fcr?.modelId,
+                            name: fcr?.modelName,
+                            releaseYear: fcr?.productYear,
+                            isInProduction: true, // tạm đặt true
+                            description: "Vehicle description placeholder",
+                        };
+                        setSelectedVehicle(ModelVehicle);
+                        setShowPolicyModal(true);
+                    }}
+                >
+                    <Eye size={16} />
+                </button>
+
+                {/* View Vehicle Modal */}
+                {showPolicyModal && selectedVehicle && (
+                    <ViewVehicleModal
+                        vehicle={selectedVehicle} // dùng object giả
+                        onClose={() => setShowPolicyModal(false)}
+                    />
+                )}
+
+
                 {/* Claim Status & Parts */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
                     <div className="flex justify-between items-center mb-4">
@@ -287,6 +322,7 @@ const ClaimDetail = () => {
                             </div>
                         )}
                     </div>
+
 
                     {/* Add Part */}
                     {isEditingParts && (
@@ -447,6 +483,7 @@ const ClaimDetail = () => {
                     </div>
                 </div>
             )}
+
         </div>
     );
 };
