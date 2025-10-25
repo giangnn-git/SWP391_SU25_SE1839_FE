@@ -239,6 +239,21 @@ export const createCustomerApi = (customerData) => {
   return axios.post(URL_BACKEND, data);
 };
 
+// Update customer info
+export const updateCustomerApi = (customerId, customerData) => {
+  const URL_BACKEND = `/api/api/customers/${customerId}`;
+  const data = {
+    name: customerData.name,
+    phoneNumber: customerData.phoneNumber,
+    licensePlate: customerData.licensePlate,
+    email: customerData.email,
+    address: customerData.address,
+    vin: customerData.vin,
+  };
+
+  return axios.put(URL_BACKEND, data);
+};
+
 export const updateCampaignApi = (id, campaignData) => {
   return axios.put(`/api/api/campaigns/${id}`, {
     code: campaignData.code,
@@ -278,25 +293,26 @@ export const getCampaignByVinApi = (vin) => {
   return axios.get(`/api/api/campaign?vin=${vin}`);
 };
 
-//Part Request
+// create Part Request
 export const createPartRequestApi = (data) => {
   return axios.post("/api/api/part-supply", data);
 };
 
+// Get all part requests
 export const getAllPartRequestsApi = () => {
   return axios.get("/api/api/part-supplies");
 };
 
-// ✅ EVM Staff phê duyệt yêu cầu phụ tùng
-export const approvePartRequestApi = (id) => {
-  return axios.put(`/api/api/part-supply/${id}/approve`);
-};
-
-// ✅ EVM Staff từ chối yêu cầu phụ tùng
-export const rejectPartRequestApi = (id) => {
-  return axios.put(`/api/api/part-supply/${id}/reject`);
-}
-
+// Get part request detail by ID
 export const getPartRequestDetailApi = (id) => {
   return axios.get(`/api/api/part-supply/${id}`);
+};
+
+// Approve or Reject part supply request
+export const reviewPartSupplyApi = (reviewData) => {
+  return axios.put("/api/api/part-supply/review", reviewData, {});
+};
+
+export const getAllPartsApi = async () => {
+  return axios.get("/api/api/parts");
 };

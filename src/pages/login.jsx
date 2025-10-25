@@ -21,18 +21,28 @@ const LoginPage = () => {
 
     try {
       const res = await userLoginApi(user, password);
+      console.log("Full response:", res);
       const data = res.data?.data;
       const token = data?.token;
-      const decoded = jwtDecode(token);
 
-      const phone = data.phone;
-      const requiresPasswordChange = data.requiresPasswordChange;
-
-      if (!token) {
-        setError("Token not received from server!");
+      if (!token || typeof token !== "string") {
+        setError("Invalid token received from server!");
         setLoading(false);
         return;
       }
+
+      let decoded;
+      try {
+        decoded = jwtDecode(token);
+      } catch (decodeError) {
+        console.error("Token decode error:", decodeError);
+        setError("Invalid token format!");
+        setLoading(false);
+        return;
+      }
+
+      const phone = data.phone;
+      const requiresPasswordChange = data.requiresPasswordChange;
 
       storage.set("token", token);
       storage.set("userEmail", decoded.sub);

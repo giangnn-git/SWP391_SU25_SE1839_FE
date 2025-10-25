@@ -91,9 +91,8 @@ const ViewPartPolicyModal = ({ showModal, selectedPolicy, onClose }) => {
                 <div>
                   <p className="text-sm text-gray-600">Policy Status</p>
                   <p
-                    className={`font-medium ${
-                      isActive ? "text-green-700" : "text-red-700"
-                    }`}
+                    className={`font-medium ${isActive ? "text-green-700" : "text-red-700"
+                      }`}
                   >
                     {isActive ? "Active" : "Expired"}
                   </p>
