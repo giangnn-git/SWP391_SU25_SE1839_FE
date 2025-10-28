@@ -58,7 +58,7 @@ export const forgotPasswordApi = async (email) => {
 //toggle status
 export const toggleUserStatusApi = (userId, isActive) => {
   const statusPath = isActive ? "active" : "inactive";
-  return axios.put(`/api/auth/users/${statusPath}/${userId}`);
+  return axios.patch(`/api/auth/users/${statusPath}/${userId}`);
 };
 
 // // Delete user
@@ -73,7 +73,7 @@ export const toggleUserStatusApi = (userId, isActive) => {
 
 //get all SC
 export const getServiceCentersApi = () => {
-  return axios.get("/api/api/servicecenters");
+  return axios.get("/api/api/service-centers");
 };
 
 //
@@ -145,6 +145,12 @@ export const getAllCampaignsApi = () => {
 
 export const createCampaignApi = (campaignData) => {
   return axios.post("/api/api/campaigns", campaignData);
+};
+
+// {Campaign Notification API}
+
+export const sendCampaignNotificationApi = (campaignId) => {
+  return axios.post(`/api/api/campaigns/${campaignId}/notify`);
 };
 
 // {Claim API}
@@ -272,12 +278,12 @@ export const updateCampaignApi = (id, campaignData) => {
 
 // Get performance report (Service Center Performance)
 export const getPerformanceReportApi = () => {
-  return axios.get("/api/api/reports/performances");
+  return axios.get("/api/api/report/performances");
 };
 
 // { Reports - Resolution Time Distribution }
 export const getCompletedDurationReportApi = () => {
-  return axios.get("/api/api/reports/completed-duration");
+  return axios.get("/api/api/report/completed-duration");
 };
 
 //{Get Customer by VIN}

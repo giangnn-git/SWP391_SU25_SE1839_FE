@@ -21,7 +21,6 @@ const LoginPage = () => {
 
     try {
       const res = await userLoginApi(user, password);
-      console.log("Full response:", res);
       const data = res.data?.data;
       const token = data?.token;
 
@@ -59,14 +58,25 @@ const LoginPage = () => {
         navigate("/", { replace: true });
       }
     } catch (err) {
+      console.error("Login error:", err);
+
       if (err.response) {
-        setError(err.response.data?.message || "Login failed!");
+        const errorData = err.response.data;
+
+        // hiển thị errorCode từ BE
+        const errorCode = errorData?.errorCode;
+
+        if (errorCode) {
+          setError(errorCode);
+        } else {
+          // Fallback nếu không có errorCode
+          setError(err.response.data?.message || "Login failed!");
+        }
       } else if (err.request) {
         setError("Cannot connect to server. Please try again later!");
       } else {
         setError("Unexpected error: " + err.message);
       }
-      console.error("Login error:", err);
     } finally {
       setLoading(false);
     }

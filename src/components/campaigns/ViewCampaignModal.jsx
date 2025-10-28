@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { sendCampaignNotificationApi } from "../../services/api.service";
 import {
   X,
   Calendar,
@@ -10,9 +11,14 @@ import {
   CheckCircle2,
   Clock,
   MapPin,
+  Mail,
+  Loader,
 } from "lucide-react";
 
 const ViewCampaignModal = ({ campaign, onClose }) => {
+  const [isSending, setIsSending] = useState(false);
+  const [notificationResult, setNotificationResult] = useState(null);
+
   if (!campaign) return null;
 
   // Format số vehicles
@@ -40,6 +46,54 @@ const ViewCampaignModal = ({ campaign, onClose }) => {
       },
     };
     return configs[status] || configs.UPCOMING;
+  };
+
+  // Hàm gửi thông báo
+  const handleSendNotification = async () => {
+    if (campaign.totalVehicles <= 0) {
+      setNotificationResult({
+        type: "error",
+        message:
+          "Cannot send notification: No vehicles affected by this campaign",
+      });
+      return;
+    }
+
+    setIsSending(true);
+    setNotificationResult(null);
+
+    try {
+      const response = await sendCampaignNotificationApi(campaign.id);
+
+      if (response.status === 200) {
+        const successMessage =
+          response.data.message ||
+          "Notification sent successfully to all affected customers";
+
+        setNotificationResult({
+          type: "success",
+          message: successMessage, // Hiển thị message từ BE
+        });
+      }
+    } catch (error) {
+      console.error("Notification error:", error);
+
+      //   Lấy message lỗi từ BE response nếu có
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.errorCode?.includes(
+          "Unresolved compilation problems"
+        )
+          ? "Notification service is temporarily unavailable. Please try again later."
+          : "Failed to send notification. Please contact support.";
+
+      setNotificationResult({
+        type: "error",
+        message: errorMessage,
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const statusConfig = getStatusConfig(campaign.status);
@@ -79,6 +133,28 @@ const ViewCampaignModal = ({ campaign, onClose }) => {
         {/* Content - Scrollable */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-6">
+            {/* Notification Result */}
+            {notificationResult && (
+              <div
+                className={`p-4 rounded-lg border ${
+                  notificationResult.type === "success"
+                    ? "bg-green-50 border-green-200 text-green-800"
+                    : "bg-red-50 border-red-200 text-red-800"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {notificationResult.type === "success" ? (
+                    <CheckCircle2 size={18} />
+                  ) : (
+                    <AlertTriangle size={18} />
+                  )}
+                  <span className="font-medium">
+                    {notificationResult.message}
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Basic Information */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left Column */}
@@ -298,14 +374,53 @@ const ViewCampaignModal = ({ campaign, onClose }) => {
           </div>
         </div>
 
-        {/* Footer - Fixed */}
-        <div className="flex justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">
-          <button
-            onClick={onClose}
-            className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors font-medium"
-          >
-            Close
-          </button>
+        {/* Footer - Updated với button Send Notification */}
+        <div className="flex justify-between items-center p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+          <div className="text-sm text-gray-600">
+            {campaign.totalVehicles > 0 ? (
+              <span className="flex items-center gap-1">
+                <Users size={16} />
+                Ready to notify {formatVehicles(campaign.totalVehicles)}{" "}
+                affected customer(s)
+              </span>
+            ) : (
+              <span className="text-orange-600 flex items-center gap-1">
+                <AlertTriangle size={16} />
+                No vehicles to notify
+              </span>
+            )}
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={handleSendNotification}
+              disabled={isSending || campaign.totalVehicles <= 0}
+              className={`px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors ${
+                campaign.totalVehicles > 0
+                  ? "bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
+            >
+              {isSending ? (
+                <>
+                  <Loader size={18} className="animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Mail size={18} />
+                  Send Notification
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={onClose}
+              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors font-medium"
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>

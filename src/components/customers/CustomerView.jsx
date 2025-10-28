@@ -34,7 +34,7 @@ const CustomerView = ({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
@@ -68,10 +68,11 @@ const CustomerView = ({
                   </span>
                 )}
               </div>
-              {campaignData && (
+              {/* FIX: Campaign data là array nên cần xử lý đúng */}
+              {campaignData && campaignData.length > 0 && (
                 <div className="text-sm text-green-600 font-medium mt-2 flex items-center gap-1">
                   <Shield size={14} />
-                  Active Campaign: {campaignData.name}
+                  Active Campaigns: {campaignData.length} campaign(s) found
                 </div>
               )}
             </div>
@@ -104,8 +105,8 @@ const CustomerView = ({
           </div>
         </div>
 
-        {/* Tab Content */}
-        <div className="overflow-y-auto max-h-96">
+        {/* Tab Content - FIX: Thay max-h-96 bằng flex-1 để chiếm không gian còn lại */}
+        <div className="overflow-y-auto flex-1">
           {/* Customer Information Tab */}
           {activeDetailTab === "customer" && (
             <div className="p-6 space-y-4">
@@ -171,10 +172,10 @@ const CustomerView = ({
 
           {/* Warranty & Campaigns Tab */}
           {activeDetailTab === "warranty" && (
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-6">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <Shield className="text-orange-600" size={18} />
-                Warranty Campaign
+                Warranty Campaigns
               </h3>
 
               {loadingCampaign ? (
@@ -184,80 +185,88 @@ const CustomerView = ({
                     Loading campaign details...
                   </span>
                 </div>
-              ) : campaignData ? (
+              ) : campaignData && campaignData.length > 0 ? (
                 <div className="space-y-4">
-                  <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="font-semibold text-gray-900 text-lg mb-1">
-                          {campaignData.name}
-                        </div>
-                        {campaignData.code && (
-                          <div className="text-sm text-gray-600">
-                            Code: {campaignData.code}
+                  {campaignData.map((campaign, index) => (
+                    <div
+                      key={campaign.id || index}
+                      className="bg-orange-50 rounded-xl p-4 border border-orange-200"
+                    >
+                      {/* Campaign Header */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-900 text-lg mb-1">
+                            {campaign.name}
                           </div>
-                        )}
+                          {campaign.code && (
+                            <div className="text-sm text-gray-600">
+                              Code: {campaign.code}
+                            </div>
+                          )}
+                        </div>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                          <CheckCircle size={12} className="mr-1" />
+                          Active
+                        </span>
                       </div>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
-                        <CheckCircle size={12} className="mr-1" />
-                        Active
-                      </span>
+
+                      {/* Campaign Description */}
+                      {campaign.description && (
+                        <div className="text-sm text-gray-700 mb-4 p-3 bg-white rounded-lg border">
+                          {campaign.description}
+                        </div>
+                      )}
+
+                      {/* Campaign Dates */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Calendar size={14} className="text-gray-400" />
+                            <span className="text-gray-600 font-medium">
+                              Campaign Period:
+                            </span>
+                          </div>
+                          <div className="ml-6 space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Start:</span>
+                              <span className="font-medium">
+                                {formatDate(campaign.startDate)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">End:</span>
+                              <span className="font-medium">
+                                {formatDate(campaign.endDate)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Calendar size={14} className="text-gray-400" />
+                            <span className="text-gray-600 font-medium">
+                              Production Period:
+                            </span>
+                          </div>
+                          <div className="ml-6 space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">From:</span>
+                              <span className="font-medium">
+                                {formatDate(campaign.produceDateFrom)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">To:</span>
+                              <span className="font-medium">
+                                {formatDate(campaign.produceDateTo)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-
-                    {campaignData.description && (
-                      <div className="text-sm text-gray-700 mb-4 p-3 bg-white rounded-lg border">
-                        {campaignData.description}
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Calendar size={14} className="text-gray-400" />
-                          <span className="text-gray-600 font-medium">
-                            Campaign Period:
-                          </span>
-                        </div>
-                        <div className="ml-6 space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Start:</span>
-                            <span className="font-medium">
-                              {formatDate(campaignData.startDate)}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">End:</span>
-                            <span className="font-medium">
-                              {formatDate(campaignData.endDate)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Calendar size={14} className="text-gray-400" />
-                          <span className="text-gray-600 font-medium">
-                            Production Period:
-                          </span>
-                        </div>
-                        <div className="ml-6 space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">From:</span>
-                            <span className="font-medium">
-                              {formatDate(campaignData.produceDateFrom)}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">To:</span>
-                            <span className="font-medium">
-                              {formatDate(campaignData.produceDateTo)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-xl">

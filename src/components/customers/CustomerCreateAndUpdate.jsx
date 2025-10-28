@@ -11,7 +11,7 @@ import {
   Check,
   Save,
   Lock,
-} from "lucide-react"; //
+} from "lucide-react";
 import {
   createCustomerApi,
   updateCustomerApi,
@@ -58,7 +58,7 @@ const CustomerCreate = ({
   const availableVehicles = vehicles.filter((v) => v.customerName === "N/A");
   const isEditMode = Boolean(editCustomer);
 
-  //  CHỈ HIỂN THỊ AVAILABLE VEHICLES CHO CREATE MODE
+  // CHỈ HIỂN THỊ AVAILABLE VEHICLES CHO CREATE MODE
   const filteredVins = isEditMode
     ? []
     : availableVehicles.filter(
@@ -76,22 +76,20 @@ const CustomerCreate = ({
     setSelectedVin(vin);
     setVinSearch(vin);
     setShowVinDropdown(false);
-    setFormData((prev) => ({ ...prev, vin })); //
+    setFormData((prev) => ({ ...prev, vin }));
   };
 
   const handleVinInputChange = (value) => {
     setVinSearch(value);
     setSelectedVin(value);
-    setFormData((prev) => ({ ...prev, vin: value })); //
+    setFormData((prev) => ({ ...prev, vin: value }));
     if (!isEditMode) {
       setShowVinDropdown(true);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    //  IMPROVED VALIDATION
+  const validateForm = () => {
+    // Kiểm tra required fields
     const requiredFields = {
       "Customer Name": formData.name,
       "Phone Number": formData.phoneNumber,
@@ -99,11 +97,53 @@ const CustomerCreate = ({
     };
 
     const missingFields = Object.entries(requiredFields)
-      .filter(([_, value]) => !value)
+      .filter(([_, value]) => !value || value.trim() === "")
       .map(([field]) => field);
 
     if (missingFields.length > 0) {
       setError(`Please fill all required fields: ${missingFields.join(", ")}`);
+      return false;
+    }
+
+    // Validate phone number (chỉ số, 10-11 ký tự)
+    const phoneRegex = /^[0-9]{10,11}$/;
+    const cleanPhone = formData.phoneNumber.replace(/\D/g, "");
+    if (!phoneRegex.test(cleanPhone)) {
+      setError("Phone number must be 10-11 digits");
+      return false;
+    }
+
+    // Validate license plate format: 63A-003.33
+    if (formData.licensePlate && formData.licensePlate.trim() !== "") {
+      const licensePlateRegex = /^[0-9]{2}[A-Z]{1}-[0-9]{3}\.[0-9]{2}$/;
+      if (!licensePlateRegex.test(formData.licensePlate.trim())) {
+        setError("Wrong License plate format");
+        return false;
+      }
+    }
+
+    // Validate email format (nếu có email)
+    if (formData.email && formData.email.trim() !== "") {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        setError("Please enter a valid email address");
+        return false;
+      }
+    }
+
+    // Validate VIN format (nếu cần)
+    if (formData.vin && formData.vin.length < 5) {
+      setError("VIN must be at least 5 characters long");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
       return;
     }
 
@@ -111,14 +151,19 @@ const CustomerCreate = ({
       setLoading(true);
       setError("");
 
+      // Chuẩn bị data theo đúng format BE expect
       const submitData = {
         name: formData.name.trim(),
-        phoneNumber: formData.phoneNumber.trim(),
+        phoneNumber: formData.phoneNumber.trim().replace(/\D/g, ""), // Chỉ giữ số
         licensePlate: formData.licensePlate.trim(),
-        email: formData.email.trim(),
-        address: formData.address.trim(),
-        vin: isEditMode ? editCustomer.vin : selectedVin,
+        email: formData.email.trim() || null, // Gửi null nếu empty
+        address: formData.address.trim() || null, // Gửi null nếu empty
+        vin: isEditMode
+          ? editCustomer.vin
+          : (selectedVin || formData.vin).trim(),
       };
+
+      console.log("Submitting data:", submitData); // Debug log
 
       if (isEditMode) {
         await updateCustomerApi(editCustomer.id, submitData);
@@ -143,11 +188,29 @@ const CustomerCreate = ({
       }
     } catch (err) {
       console.error("Customer operation error:", err);
-      setError(
-        `Failed to ${isEditMode ? "update" : "register"} customer: ${
-          err.response?.data?.message || "Please try again."
-        }`
-      );
+
+      let errorMsg = `Failed to ${
+        isEditMode ? "update" : "register"
+      } customer: `;
+
+      if (err.response?.data) {
+        const responseData = err.response.data;
+        errorMsg +=
+          responseData.message ||
+          responseData.errorCode ||
+          "Please check your data and try again.";
+
+        // Hiển thị chi tiết lỗi từ BE nếu có
+        if (responseData.details) {
+          errorMsg += ` Details: ${responseData.details}`;
+        }
+      } else if (err.request) {
+        errorMsg += "Cannot connect to server. Please try again later.";
+      } else {
+        errorMsg += "Unexpected error occurred.";
+      }
+
+      setError(errorMsg);
       if (onError) {
         onError(errorMsg);
       }
@@ -155,6 +218,23 @@ const CustomerCreate = ({
       setLoading(false);
     }
   };
+
+  // Đóng dropdown khi click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        vinDropdownRef.current &&
+        !vinDropdownRef.current.contains(event.target)
+      ) {
+        setShowVinDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -244,9 +324,13 @@ const CustomerCreate = ({
                   value={formData.licensePlate}
                   onChange={handleChange}
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  placeholder="e.g. 51A-12345"
+                  placeholder="e.g. 63A-003.33"
                 />
               </div>
+              <p className="text-xs text-gray-500">
+                Format: 63A-003.33 (2 digits, 1 letter, dash, 3 digits, dot, 2
+                digits)
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -297,7 +381,7 @@ const CustomerCreate = ({
             </label>
             <div className="relative">
               {isEditMode ? (
-                //  DISPLAY MODE CHO EDIT
+                // DISPLAY MODE CHO EDIT
                 <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
                   <Lock size={16} className="text-gray-400" />
                   <span className="font-mono text-gray-700">
@@ -308,7 +392,7 @@ const CustomerCreate = ({
                   </span>
                 </div>
               ) : (
-                // 🔥 EDIT MODE CHO CREATE
+                // EDIT MODE CHO CREATE
                 <>
                   <input
                     type="text"

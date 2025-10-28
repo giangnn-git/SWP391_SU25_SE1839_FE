@@ -91,6 +91,7 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
   };
 
   // Handle form submission
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -135,14 +136,25 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
           onCampaignCreated(response.data);
         }
         onClose();
-      }, 10000);
+      }, 2000);
     } catch (error) {
       console.error("Error creating campaign:", error);
-      setErrors({
-        submit:
-          error.response?.data?.message ||
-          "Failed to create campaign. Please try again.",
-      });
+
+      //  chỉ hiển thị errorCode từ BE
+      const errorCode = error.response?.data?.errorCode;
+
+      if (errorCode) {
+        setErrors({
+          submit: errorCode,
+        });
+      } else {
+        // Fallback nếu không có errorCode
+        setErrors({
+          submit:
+            error.response?.data?.message ||
+            "Failed to create campaign. Please try again.",
+        });
+      }
     } finally {
       setLoading(false);
     }
