@@ -29,22 +29,10 @@ const normalizeRemark = (r) => {
 
 const normalizePartDetail = (detail, requestStatus) => {
   const requestedQty = toInt(detail.requestedQuantity);
+  const approvedQty = toInt(detail.approvedQuantity);
 
-  let approvedQty = toInt(detail.approvedQuantity);
-  let remark = normalizeRemark(detail.remark);
-
-  if (
-    (approvedQty === 0 || detail.approvedQuantity === null) &&
-    requestStatus !== "PENDING"
-  ) {
-    if (requestStatus === "APPROVED") {
-      approvedQty = requestedQty;
-      remark = REMARK_IN;
-    } else if (requestStatus === "REJECTED") {
-      approvedQty = 0;
-      remark = REMARK_OUT;
-    }
-  }
+  //LUÔN DÙNG DATA TỪ BE VÀ ĐẢM BẢO CONSISTENCY
+  const remark = approvedQty > 0 ? REMARK_IN : REMARK_OUT;
 
   return {
     ...detail,

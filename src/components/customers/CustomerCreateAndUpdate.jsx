@@ -193,12 +193,22 @@ const CustomerCreate = ({
         isEditMode ? "update" : "register"
       } customer: `;
 
+      // ƯU TIÊN HIỂN THỊ errorCode TRƯỚC, SAU ĐÓ MỚI ĐẾN message HOẶC FALLBACK
       if (err.response?.data) {
         const responseData = err.response.data;
-        errorMsg +=
-          responseData.message ||
-          responseData.errorCode ||
-          "Please check your data and try again.";
+
+        // ƯU TIÊN 1: Hiển thị errorCode nếu có
+        if (responseData.errorCode) {
+          errorMsg += responseData.errorCode;
+        }
+        // ƯU TIÊN 2: Hiển thị message nếu không có errorCode
+        else if (responseData.message) {
+          errorMsg += responseData.message;
+        }
+        // FALLBACK: Thông báo mặc định
+        else {
+          errorMsg += "Please check your data and try again.";
+        }
 
         // Hiển thị chi tiết lỗi từ BE nếu có
         if (responseData.details) {

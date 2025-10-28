@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  PlusCircle,
-  Filter,
-  Search,
-  X,
-  Settings,
-} from "lucide-react";
+import { PlusCircle, Filter, Search, X, Settings } from "lucide-react";
 import { getAllPartPoliciesApi } from "../../../services/api.service";
 import PartPolicyTable from "./PartPolicyTable";
 import ViewPartPolicyModal from "./ViewPartPolicy";
@@ -40,7 +34,15 @@ const PartPolicyManagement = () => {
 
       const partPolicies =
         response.data?.data?.partPolicies || response.data?.data || [];
-      setPolicies(partPolicies);
+
+      //  Sắp xếp tăng dần theo startDate
+      const sortedPolicies = [...partPolicies].sort((a, b) => {
+        const dateA = new Date(a.startDate);
+        const dateB = new Date(b.startDate);
+        return dateA - dateB; // Tăng dần (cũ -> mới)
+      });
+
+      setPolicies(sortedPolicies);
     } catch (err) {
       console.error("Error fetching part policies:", err);
       setError("Failed to load part policies. Please try again.");
@@ -57,9 +59,9 @@ const PartPolicyManagement = () => {
   const filteredPolicies = policies.filter((policy) => {
     const matchesSearch = searchTerm
       ? policy.partName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      policy.partCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      policy.policyCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      policy.id?.toString().includes(searchTerm)
+        policy.partCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        policy.policyCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        policy.id?.toString().includes(searchTerm)
       : true;
 
     const matchesPart = filterPartName
@@ -78,8 +80,8 @@ const PartPolicyManagement = () => {
       filterStatus === ""
         ? true
         : filterStatus === "available"
-          ? new Date(policy.endDate) > new Date()
-          : new Date(policy.endDate) <= new Date();
+        ? new Date(policy.endDate) > new Date()
+        : new Date(policy.endDate) <= new Date();
 
     return (
       matchesSearch &&
@@ -132,7 +134,8 @@ const PartPolicyManagement = () => {
       if (updatedPolicy) {
         const newStatus = updatedPolicy.status;
         setSuccess(
-          `Policy ${newStatus === "ACTIVE" ? "activated" : "deactivated"
+          `Policy ${
+            newStatus === "ACTIVE" ? "activated" : "deactivated"
           } successfully!`
         );
       } else {
@@ -335,28 +338,31 @@ const PartPolicyManagement = () => {
           <div className="flex gap-2">
             <button
               onClick={() => setFilterStatus("")}
-              className={`px-4 py-2 text-sm rounded-lg transition-all ${filterStatus === ""
-                ? "bg-blue-600 text-white shadow-sm"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
+              className={`px-4 py-2 text-sm rounded-lg transition-all ${
+                filterStatus === ""
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
             >
               All
             </button>
             <button
               onClick={() => setFilterStatus("available")}
-              className={`px-4 py-2 text-sm rounded-lg transition-all ${filterStatus === "available"
-                ? "bg-green-600 text-white shadow-sm"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
+              className={`px-4 py-2 text-sm rounded-lg transition-all ${
+                filterStatus === "available"
+                  ? "bg-green-600 text-white shadow-sm"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
             >
               Available
             </button>
             <button
               onClick={() => setFilterStatus("expired")}
-              className={`px-4 py-2 text-sm rounded-lg transition-all ${filterStatus === "expired"
-                ? "bg-red-600 text-white shadow-sm"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
+              className={`px-4 py-2 text-sm rounded-lg transition-all ${
+                filterStatus === "expired"
+                  ? "bg-red-600 text-white shadow-sm"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
             >
               Expired
             </button>

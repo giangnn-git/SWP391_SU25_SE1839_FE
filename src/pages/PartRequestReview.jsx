@@ -8,8 +8,10 @@ import {
   Eye,
   Loader2,
   Filter,
+  AlertTriangle,
+  Info,
+  X,
 } from "lucide-react";
-import axios from "axios";
 import {
   getAllPartRequestsApi,
   getPartRequestDetailApi,
@@ -30,22 +32,10 @@ const normalizeRemark = (r) => {
 
 const normalizeReviewDetail = (detail, requestStatus) => {
   const requestedQty = Number(detail?.requestedQuantity ?? 0);
+  const approvedQty = Number(detail?.approvedQuantity ?? 0);
 
-  let approvedQty = Number(detail?.approvedQuantity ?? 0);
-  let remark = normalizeRemark(detail?.remark);
-
-  if (
-    (approvedQty === 0 || detail?.approvedQuantity === null) &&
-    requestStatus !== "PENDING"
-  ) {
-    if (requestStatus === "APPROVED") {
-      approvedQty = requestedQty;
-      remark = REMARK_IN;
-    } else if (requestStatus === "REJECTED") {
-      approvedQty = 0;
-      remark = REMARK_OUT;
-    }
-  }
+  // ✅ LUÔN DÙNG DATA TỪ BE VÀ ĐẢM BẢO CONSISTENCY
+  const remark = approvedQty > 0 ? REMARK_IN : REMARK_OUT;
 
   return {
     ...detail,
@@ -58,11 +48,91 @@ const normalizeReviewDetail = (detail, requestStatus) => {
   };
 };
 
-const resolveRemark = (d) => {
-  const normalized = normalizeRemark(d?.remark);
-  if (normalized) return normalized;
-  const qty = Number(d?.approvedQuantity ?? d?.requestedQuantity ?? 0);
-  return qty > 0 ? REMARK_IN : REMARK_OUT;
+// ✅ VALIDATION HELPER
+const validatePartDetails = (details) => {
+  const errors = [];
+  const hasErrors = details.some((d) => {
+    const approvedQty = Number(d.approvedQuantity ?? 0);
+    return (
+      (approvedQty === 0 && d.remark === REMARK_IN) ||
+      (approvedQty > 0 && d.remark === REMARK_OUT)
+    );
+  });
+
+  return {
+    isValid: !hasErrors,
+    message: hasErrors
+      ? "Please ensure approved quantity matches remark (In stock = quantity > 0, Out of stock = quantity = 0)"
+      : "",
+  };
+};
+
+// ✅ COMPONENT TOAST MESSAGE
+const ToastMessage = ({ type, message, onClose, duration = 5000 }) => {
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsVisible(false);
+      setTimeout(onClose, 300);
+    }, duration);
+
+    return () => clearTimeout(timer);
+  }, [duration, onClose]);
+
+  const config = {
+    success: {
+      bg: "bg-green-50 border-green-200",
+      text: "text-green-800",
+      icon: <CheckCircle2 size={20} className="text-green-600" />,
+      title: "Success",
+    },
+    error: {
+      bg: "bg-red-50 border-red-200",
+      text: "text-red-800",
+      icon: <XCircle size={20} className="text-red-600" />,
+      title: "Error",
+    },
+    warning: {
+      bg: "bg-yellow-50 border-yellow-200",
+      text: "text-yellow-800",
+      icon: <AlertTriangle size={20} className="text-yellow-600" />,
+      title: "Warning",
+    },
+    info: {
+      bg: "bg-blue-50 border-blue-200",
+      text: "text-blue-800",
+      icon: <Info size={20} className="text-blue-600" />,
+      title: "Info",
+    },
+  };
+
+  const { bg, text, icon, title } = config[type] || config.info;
+
+  if (!isVisible) return null;
+
+  return (
+    <div
+      className={`fixed top-6 right-6 ${bg} border ${text} rounded-xl shadow-lg p-4 min-w-80 max-w-md animate-slideInRight z-[1000]`}
+    >
+      <div className="flex items-start gap-3">
+        <div className="flex-shrink-0 mt-0.5">{icon}</div>
+        <div className="flex-1">
+          <h4 className="font-semibold text-sm mb-1">{title}</h4>
+          <p className="text-sm">{message}</p>
+        </div>
+        <button
+          onClick={() => {
+            setIsVisible(false);
+            setTimeout(onClose, 300);
+          }}
+          className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X size={16} />
+        </button>
+      </div>
+    </div>
+  );
 };
 
 const PartRequestReview = () => {
@@ -72,16 +142,23 @@ const PartRequestReview = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
+  const [messageType, setMessageType] = useState("");
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
-
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmAction, setConfirmAction] = useState("");
   const [confirmId, setConfirmId] = useState(null);
 
+  // ✅ HÀM HIỂN THỊ MESSAGE THỐNG NHẤT
+  const showMessage = (message, type = "info") => {
+    setActionMessage(message);
+    setMessageType(type);
+  };
+
   const fetchRequests = async () => {
     try {
       setLoading(true);
+      setActionMessage("");
 
       const res = await getAllPartRequestsApi();
       let data = res.data;
@@ -101,17 +178,22 @@ const PartRequestReview = () => {
           date: formatDate(item.createdDate),
           requester: item.serviceCenterName || "Unknown",
           createdBy: item.createdBy,
-
           originalData: item,
         }));
 
         setRequests(requestsData);
       } else {
         setRequests([]);
+        showMessage("No part requests data found", "info");
       }
     } catch (err) {
-      console.error("❌ Error fetching part requests:", err);
       setRequests([]);
+      showMessage(
+        err.response?.data?.errorCode ||
+          err.response?.data?.message ||
+          "Failed to load part requests. Please try again.",
+        "error"
+      );
     } finally {
       setLoading(false);
     }
@@ -128,7 +210,6 @@ const PartRequestReview = () => {
       const res = await getPartRequestDetailApi(id);
       const data = res.data?.data || {};
 
-      // Chuẩn hoá data với helper function
       const normalizedDetails = (data.details || []).map((detail) =>
         normalizeReviewDetail(detail, data.status)
       );
@@ -139,11 +220,11 @@ const PartRequestReview = () => {
         status: data.status || "PENDING",
       });
     } catch (err) {
-      console.error("❌ Error fetching part request detail:", err);
       setSelectedRequest({
         id,
         error: "Failed to load details. Please try again.",
       });
+      showMessage("Failed to load request details. Please try again.", "error");
     } finally {
       setDetailLoading(false);
     }
@@ -173,6 +254,14 @@ const PartRequestReview = () => {
 
   const handleConfirmAction = async () => {
     if (!confirmId || !selectedRequest) return;
+
+    // ✅ VALIDATION TRƯỚC KHI GỬI
+    const validation = validatePartDetails(selectedRequest.details || []);
+    if (!validation.isValid) {
+      showMessage(validation.message, "error");
+      return;
+    }
+
     setProcessing(true);
 
     try {
@@ -185,31 +274,29 @@ const PartRequestReview = () => {
             : "Rejected due to insufficient stock",
         details: (selectedRequest.details || []).map((d) => ({
           detailId: d.id,
-          approvedQuantity:
-            confirmAction === "Approved"
-              ? Number(d.approvedQuantity ?? d.requestedQuantity ?? 0)
-              : 0,
-          remark: confirmAction === "Approved" ? REMARK_IN : REMARK_OUT,
+          approvedQuantity: Number(d.approvedQuantity ?? 0),
+          remark: d.remark,
         })),
       };
 
-      console.log("📦 Payload gửi BE:", JSON.stringify(payload, null, 2));
-
       const res = await reviewPartSupplyApi(payload);
-      console.log("✅ API Response:", res.data);
 
       const responseData = res.data?.data;
       if (responseData) {
-        const normalizedDetails = (responseData.details || []).map((detail) =>
-          normalizeReviewDetail(detail, responseData.status)
-        );
+        const normalizedDetails = (responseData.details || []).map((detail) => {
+          const approvedQty = Number(detail.approvedQuantity ?? 0);
+          return {
+            ...detail,
+            approvedQuantity: approvedQty,
+            remark: approvedQty > 0 ? REMARK_IN : REMARK_OUT,
+          };
+        });
 
         setSelectedRequest({
           ...responseData,
           details: normalizedDetails,
         });
 
-        // Cập nhật danh sách requests
         setRequests((prev) =>
           prev.map((r) =>
             r.id === selectedRequest.id
@@ -223,19 +310,24 @@ const PartRequestReview = () => {
         );
       }
 
-      setActionMessage(
+      showMessage(
         confirmAction === "Approved"
-          ? "✅ Request approved successfully!"
-          : "❌ Request rejected successfully!"
+          ? "Request approved successfully!"
+          : "Request rejected successfully!",
+        "success"
       );
 
       setShowConfirm(false);
       setTimeout(() => fetchRequests(), 1000);
     } catch (err) {
-      setActionMessage("Failed to update request on server.");
+      showMessage(
+        err.response?.data?.errorCode ||
+          err.response?.data?.message ||
+          "Failed to update request. Please try again.",
+        "error"
+      );
     } finally {
       setProcessing(false);
-      setTimeout(() => setActionMessage(""), 3000);
     }
   };
 
@@ -294,6 +386,12 @@ const PartRequestReview = () => {
     }
   };
 
+  // ✅ CHECK VALIDATION FOR CURRENT SELECTED REQUEST
+  const hasValidationErrors =
+    selectedRequest &&
+    Array.isArray(selectedRequest.details) &&
+    !validatePartDetails(selectedRequest.details).isValid;
+
   const totalApproved = requests.filter((r) => r.status === "Approved").length;
   const totalPending = requests.filter((r) => r.status === "Pending").length;
   const totalRejected = requests.filter((r) => r.status === "Rejected").length;
@@ -316,6 +414,15 @@ const PartRequestReview = () => {
           </div>
         </div>
       </div>
+
+      {/* ✅ TOAST MESSAGE */}
+      {actionMessage && (
+        <ToastMessage
+          type={messageType}
+          message={actionMessage}
+          onClose={() => setActionMessage("")}
+        />
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-3 gap-5 mb-8">
@@ -448,7 +555,7 @@ const PartRequestReview = () => {
         )}
       </div>
 
-      {/*  Modal  */}
+      {/* Modal */}
       {selectedRequest && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-2xl w-[520px] max-h-[90vh] overflow-y-auto p-6 relative border border-gray-100 animate-slideUp">
@@ -544,16 +651,17 @@ const PartRequestReview = () => {
                                         max={d.requestedQuantity}
                                         value={d.approvedQuantity}
                                         onChange={(e) => {
+                                          const newQuantity = Number(
+                                            e.target.value
+                                          );
                                           const updatedDetails = [
                                             ...selectedRequest.details,
                                           ];
                                           updatedDetails[i] = {
                                             ...updatedDetails[i],
-                                            approvedQuantity: Number(
-                                              e.target.value
-                                            ),
+                                            approvedQuantity: newQuantity,
                                             remark:
-                                              Number(e.target.value) > 0
+                                              newQuantity > 0
                                                 ? REMARK_IN
                                                 : REMARK_OUT,
                                           };
@@ -572,15 +680,19 @@ const PartRequestReview = () => {
                                       <select
                                         value={d.remark}
                                         onChange={(e) => {
+                                          const newRemark = e.target.value;
                                           const updatedDetails = [
                                             ...selectedRequest.details,
                                           ];
                                           updatedDetails[i] = {
                                             ...updatedDetails[i],
-                                            remark: e.target.value,
+                                            remark: newRemark,
                                             approvedQuantity:
-                                              e.target.value === REMARK_IN
-                                                ? d.requestedQuantity
+                                              newRemark === REMARK_IN
+                                                ? Math.max(
+                                                    1,
+                                                    d.approvedQuantity || 1
+                                                  )
                                                 : 0,
                                           };
                                           setSelectedRequest((prev) => ({
@@ -599,6 +711,24 @@ const PartRequestReview = () => {
                                       </select>
                                     </div>
                                   </div>
+
+                                  {/* ✅ VALIDATION MESSAGES */}
+                                  {d.approvedQuantity === 0 &&
+                                    d.remark === REMARK_IN && (
+                                      <p className="text-xs text-red-600 mt-2 flex items-center gap-1">
+                                        <XCircle size={12} />
+                                        In stock requires approved quantity
+                                        greater than 0
+                                      </p>
+                                    )}
+                                  {d.approvedQuantity > 0 &&
+                                    d.remark === REMARK_OUT && (
+                                      <p className="text-xs text-red-600 mt-2 flex items-center gap-1">
+                                        <XCircle size={12} />
+                                        Out of stock requires approved quantity
+                                        = 0
+                                      </p>
+                                    )}
                                 </>
                               ) : (
                                 <div className="space-y-2">
@@ -657,7 +787,7 @@ const PartRequestReview = () => {
                     onClick={() =>
                       handleDecision(selectedRequest.id, "Approved")
                     }
-                    disabled={processing}
+                    disabled={processing || hasValidationErrors}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50"
                   >
                     <CheckCircle2 size={16} />
@@ -681,7 +811,7 @@ const PartRequestReview = () => {
         </div>
       )}
 
-      {/*  Modal xác nhận hành động */}
+      {/* Modal xác nhận hành động */}
       {showConfirm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[999] animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-2xl w-96 p-6 text-center animate-slideUp">
@@ -721,13 +851,6 @@ const PartRequestReview = () => {
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Toast */}
-      {actionMessage && (
-        <div className="fixed bottom-6 right-6 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium animate-fadeIn">
-          {actionMessage}
         </div>
       )}
     </div>

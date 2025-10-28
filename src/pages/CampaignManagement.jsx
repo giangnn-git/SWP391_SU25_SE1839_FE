@@ -31,6 +31,13 @@ const CampaignManagement = () => {
       .padStart(2, "0")}/${year}`;
   };
 
+  // Hàm parse date array sang Date object để sort
+  const parseDateArrayToDate = (dateArray) => {
+    if (!dateArray || dateArray.length !== 3) return new Date(0);
+    const [year, month, day] = dateArray;
+    return new Date(year, month - 1, day);
+  };
+
   // Check campaign status với format dd/mm/yyyy
   const getCampaignStatus = (campaign) => {
     const today = new Date();
@@ -57,8 +64,15 @@ const CampaignManagement = () => {
       const response = await getAllCampaignsApi();
       const campaignsData = response.data?.data?.campaigns || [];
 
+      // Sắp xếp tăng dần theo start date
+      const sortedCampaigns = [...campaignsData].sort((a, b) => {
+        const dateA = parseDateArrayToDate(a.startDate);
+        const dateB = parseDateArrayToDate(b.startDate);
+        return dateA - dateB; // Tăng dần (cũ -> mới)
+      });
+
       // Format data với status và dates dd/mm/yyyy
-      const formattedCampaigns = campaignsData.map((campaign) => ({
+      const formattedCampaigns = sortedCampaigns.map((campaign) => ({
         ...campaign,
         status: getCampaignStatus(campaign),
         formattedStartDate: formatDate(campaign.startDate),
@@ -81,22 +95,9 @@ const CampaignManagement = () => {
   }, []);
 
   // Handle campaign creation success
-  const handleCampaignCreated = (newCampaign) => {
-    // Format the new campaign to match existing structure
-    const formattedCampaign = {
-      ...newCampaign,
-      status: getCampaignStatus(newCampaign),
-      formattedStartDate: formatDate(newCampaign.startDate),
-      formattedEndDate: formatDate(newCampaign.endDate),
-      formattedProduceFrom: formatDate(newCampaign.produceDateFrom),
-      formattedProduceTo: formatDate(newCampaign.produceDateTo),
-    };
-
-    // Add new campaign to the list
-    setCampaigns((prev) => [formattedCampaign, ...prev]);
+  const handleCampaignCreated = () => {
+    fetchCampaigns(); // reload danh sách
     setShowCreateModal(false);
-
-    console.log("Campaign created successfully:", formattedCampaign);
   };
 
   // Handle campaign update success
