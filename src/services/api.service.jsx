@@ -272,12 +272,12 @@ export const updateCampaignApi = (id, campaignData) => {
 
 // Get performance report (Service Center Performance)
 export const getPerformanceReportApi = () => {
-  return axios.get("/api/api/reports/performances");
+  return axios.get("/api/api/report/performances");
 };
 
 // { Reports - Resolution Time Distribution }
 export const getCompletedDurationReportApi = () => {
-  return axios.get("/api/api/reports/completed-duration");
+  return axios.get("/api/api/report/completed-duration");
 };
 
 //{Get Customer by VIN}

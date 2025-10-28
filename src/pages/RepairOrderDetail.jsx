@@ -25,7 +25,7 @@ const RepairOrderDetail = () => {
   // Fetch both order info and technician list
   const fetchOrderAndTechs = async () => {
     try {
-      const res = await axios.get(`/api/api/repairOrders/${id}`);
+      const res = await axios.get(`/api/api/repair-orders/${id}`);
       const data = res.data?.data || {};
       setOrder(data.filterOrderResponse || {});
       setTechs(data.getTechnicalsResponse?.technicians || []);
@@ -41,7 +41,7 @@ const RepairOrderDetail = () => {
   const fetchDetails = async () => {
     try {
       setLoadingTab(true);
-      const res = await axios.get(`/api/api/repairDetails/${id}`);
+      const res = await axios.get(`/api/api/repair-details/${id}`);
       setDetails(res.data?.data?.repairDetails || []);
     } catch (err) {
       console.error("Failed to fetch repair details:", err);
@@ -54,7 +54,7 @@ const RepairOrderDetail = () => {
   const fetchSteps = async () => {
     try {
       setLoadingTab(true);
-      const res = await axios.get(`/api/api/repairSteps/${id}`);
+      const res = await axios.get(`/api/api/repair-steps/${id}`);
       setSteps(res.data?.data?.repairSteps || []);
     } catch (err) {
       console.error("Failed to fetch repair steps:", err);
@@ -68,7 +68,7 @@ const RepairOrderDetail = () => {
     if (!selectedTech) return toast.error("Please select a technician");
     try {
       setUpdating(true);
-      await axios.put(`/api/api/repairOrders/${id}`, { technicalName: selectedTech });
+      await axios.put(`/api/api/repair-orders/${id}`, { technicalName: selectedTech });
       toast.success("Technician updated successfully!");
       await fetchOrderAndTechs();
       setSelectedTech("");
@@ -226,8 +226,8 @@ const RepairOrderDetail = () => {
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-2 px-6 py-4 font-medium transition ${activeTab === tab.key
-                    ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
-                    : "text-gray-600 hover:text-blue-500 hover:bg-gray-50"
+                  ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
+                  : "text-gray-600 hover:text-blue-500 hover:bg-gray-50"
                   }`}
               >
                 {tab.icon}
@@ -258,7 +258,7 @@ const RepairOrderDetail = () => {
   );
 };
 
-// --- Subcomponents ---
+//Sub components
 
 const QuickStat = ({ label, value, icon, bg }) => (
   <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -311,31 +311,34 @@ const TechnicianTab = ({ currentTech, techs, selectedTech, setSelectedTech, hand
     )}
 
     {/* Assign technician */}
-    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-      <h4 className="font-semibold text-gray-900 mb-4">Assign Technician</h4>
-      <div className="flex gap-3">
-        <select
-          value={selectedTech}
-          onChange={(e) => setSelectedTech(e.target.value)}
-          className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-        >
-          <option value="">Select technician...</option>
-          {techs.map((t) => (
-            <option key={t.id} value={t.name}>
-              {t.name} - {t.message} ({t.countJob} jobs)
-            </option>
-          ))}
-        </select>
+    {!currentTech && (
+      <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+        <h4 className="font-semibold text-gray-900 mb-4">Assign Technician</h4>
+        <div className="flex gap-3">
+          <select
+            value={selectedTech}
+            onChange={(e) => setSelectedTech(e.target.value)}
+            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+          >
+            <option value="">Select technician...</option>
+            {techs.map((t) => (
+              <option key={t.id} value={t.name}>
+                {t.name} - {t.message} ({t.countJob} jobs)
+              </option>
+            ))}
+          </select>
 
-        <button
-          onClick={handleAssignTech}
-          disabled={updating || !selectedTech}
-          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
-        >
-          {updating ? <Loader size={18} className="animate-spin" /> : "Assign"}
-        </button>
+          <button
+            onClick={handleAssignTech}
+            disabled={updating || !selectedTech}
+            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+          >
+            {updating ? <Loader size={18} className="animate-spin" /> : "Assign"}
+          </button>
+        </div>
       </div>
-    </div>
+    )}
+
   </div>
 );
 
