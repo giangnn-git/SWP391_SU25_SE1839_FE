@@ -270,50 +270,60 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
           </div>
 
           {/* Vehicle Select */}
-          {vehicles.length > 0 && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Select Vehicle (VIN - License Plate){" "}
-                <span className="text-red-500">*</span>
-              </label>
-              <select
-                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${errors.vin ? "border-red-300 bg-red-50" : "border-gray-300"
-                  }`}
-                value={formData.vin}
-                onChange={(e) => {
-                  const selectedVin = e.target.value;
-                  handleInputChange("vin", selectedVin);
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Select Vehicle (VIN - License Plate) <span className="text-red-500">*</span>
+            </label>
+            <select
+              className={`w-full px-4 py-2.5 border rounded-lg transition ${errors.vin ? "border-red-300 bg-red-50" : "border-gray-300"
+                } ${!formData.phone?.trim()
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "focus:ring-2 focus:ring-blue-500"
+                }`}
+              value={formData.vin}
+              disabled={!formData.phone?.trim() || vehicles.length === 0}
+              onChange={(e) => {
+                const selectedVin = e.target.value;
+                handleInputChange("vin", selectedVin);
 
-                  const selectedItem = vehicles.find(
-                    (v) => v.vehicle.vin === selectedVin
-                  );
+                const selectedItem = vehicles.find(
+                  (v) => v.vehicle.vin === selectedVin
+                );
 
-                  if (selectedItem?.recall) {
-                    setRecallInfo(selectedItem.recall);
-                  } else {
-                    setRecallInfo(null);
-                  }
-                }}
-              >
-                <option value="">Choose vehicle</option>
-                {vehicles.map((item, i) => (
-                  <option key={i} value={item.vehicle.vin}>
-                    {item.vehicle.vin} - {item.vehicle.licensePlate}
-                  </option>
-                ))}
-              </select>
-              {errors.vin && (
-                <p className="text-red-600 text-xs mt-1">{errors.vin}</p>
+                if (selectedItem?.recall) {
+                  setRecallInfo(selectedItem.recall);
+                } else {
+                  setRecallInfo(null);
+                }
+              }}
+            >
+              {!formData.phone?.trim() ? (
+                <option value="">Enter phone first to select vehicle</option>
+              ) : vehicles.length > 0 ? (
+                <>
+                  <option value="">Choose vehicle</option>
+                  {vehicles.map((item, i) => (
+                    <option key={i} value={item.vehicle.vin}>
+                      {item.vehicle.vin} - {item.vehicle.licensePlate}
+                    </option>
+                  ))}
+                </>
+              ) : (
+                <option value="">No vehicles found</option>
               )}
+            </select>
 
-            </div>
-          )}
+            {errors.vin && (
+              <p className="text-red-600 text-xs mt-1">{errors.vin}</p>
+            )}
+          </div>
+
 
           {/* Recall */}
           {recallInfo && (
             <div className="p-3 border rounded-md bg-yellow-50 mb-3">
               <h4 className="font-semibold text-yellow-700">
-                Xe này đang có chiến dịch Recall: {recallInfo.name} ({recallInfo.code})
+                This vehicle is under a Recall campaign.: {recallInfo.name} ({recallInfo.code})
               </h4>
               <p className="text-sm text-gray-600 mb-2">{recallInfo.description}</p>
               <label className="flex items-center gap-2">
@@ -324,7 +334,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
                     setFormData({ ...formData, agreeRecall: e.target.checked })
                   }
                 />
-                <span>Đồng ý tham gia Recall</span>
+                <span>Agree to participate in Recall</span>
               </label>
             </div>
           )}

@@ -242,7 +242,13 @@ const ClaimDetail = () => {
                             }
                         />
                         <InfoItem label="Claim Date" value={formatDateTime(fcr?.claimDate)} />
+
+                        <InfoItem
+                            label="Recall Status"
+                            value={fcr?.statusRecall === "AGREED_RECALL" ? "AGREED_RECALL" : (fcr?.statusRecall || "No Recall")}
+                        />
                     </div>
+
                     {fcr?.description && (
                         <div className="mt-6">
                             <h3 className="text-lg font-semibold text-gray-900 mb-2">Description</h3>
@@ -251,8 +257,9 @@ const ClaimDetail = () => {
                     )}
                 </div>
 
-                {/* Vehicle Information */}
-                <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+
+
+                {/* <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
                     <div className="flex items-center gap-2 mb-4">
                         <Car size={22} className="text-blue-600" />
                         <h2 className="text-xl font-bold text-gray-900">Vehicle Information</h2>
@@ -264,7 +271,7 @@ const ClaimDetail = () => {
                         <InfoItem label="Mileage" value={`${fcr?.milege || 0} km`} />
                         <InfoItem label="Production Year" value={fcr?.productYear} />
                     </div>
-                </div>
+                </div> */}
 
                 {/* View Policy */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
@@ -292,7 +299,7 @@ const ClaimDetail = () => {
                             <span>View Policy</span>
                         </button>
                     </div>
-
+                    {/* Vehicle Information */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <InfoItem label="Model Name" value={fcr?.modelName} />
                         <InfoItem label="VIN" value={fcr?.vin} />
@@ -461,31 +468,43 @@ const ClaimDetail = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {editedParts.map((part, i) => (
-                                    <tr key={i} className="hover:bg-gray-50">
-                                        <td className="py-3 px-4 text-sm text-gray-900 font-medium">{part.name}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-700">{part.category}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-700">{part.description}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-700 text-right">
-                                            {isEditingParts ? (
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    value={part.quantity}
-                                                    className="border border-gray-300 rounded-md px-2 py-1 w-20 text-right"
-                                                    onChange={(e) => {
-                                                        const newParts = [...editedParts];
-                                                        newParts[i].quantity = Number(e.target.value);
-                                                        setEditedParts(newParts);
-                                                    }}
-                                                />
-                                            ) : (
-                                                <span className="font-semibold">{part.quantity}</span>
-                                            )}
+                                {editedParts.length > 0 ? (
+                                    editedParts.map((part, i) => (
+                                        <tr key={i} className="hover:bg-gray-50">
+                                            <td className="py-3 px-4 text-sm text-gray-900 font-medium">{part.name}</td>
+                                            <td className="py-3 px-4 text-sm text-gray-700">{part.category}</td>
+                                            <td className="py-3 px-4 text-sm text-gray-700">{part.description}</td>
+                                            <td className="py-3 px-4 text-sm text-gray-700 text-right">
+                                                {isEditingParts ? (
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={part.quantity}
+                                                        className="border border-gray-300 rounded-md px-2 py-1 w-20 text-right"
+                                                        onChange={(e) => {
+                                                            const newParts = [...editedParts];
+                                                            newParts[i].quantity = Number(e.target.value);
+                                                            setEditedParts(newParts);
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <span className="font-semibold">{part.quantity}</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td
+                                            colSpan="4"
+                                            className="py-6 text-center text-gray-500 italic"
+                                        >
+                                            No parts have been added yet.
                                         </td>
                                     </tr>
-                                ))}
+                                )}
                             </tbody>
+
                         </table>
                     </div>
                 </div>
