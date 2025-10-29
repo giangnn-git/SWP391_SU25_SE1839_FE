@@ -62,7 +62,7 @@ const SupplyChain = () => {
         warehouse: item.serviceCenterName || "Unknown Warehouse",
         address: item.serviceCenterAddress || "Unknown Address",
         quantity: item.quantity ?? 0,
-        unit: item.unit || "UNIT",
+        unit: item.unit || "UNKNOWN",
         partId: item.partId,
         serviceCenterId: item.serviceCenterId,
       }));
@@ -123,18 +123,32 @@ const SupplyChain = () => {
 
   const isAuthorized =
     currentUser?.role?.toUpperCase() === "ADMIN" ||
-    currentUser?.role?.toUpperCase() === "EVM_STAFF";
+    currentUser?.role?.toUpperCase() === "EVM_STAFF" ||
+    currentUser?.role?.toUpperCase() === "SC_STAFF";
 
   if (!isAuthorized) {
+    // DEBUG info in access denied page
     return (
       <div className="flex flex-col items-center justify-center h-screen text-center bg-gray-50 text-gray-700">
         <div className="bg-white shadow-md rounded-lg p-8 max-w-md border border-gray-200">
           <h2 className="text-xl font-semibold text-red-600 mb-2">
             🚫 Access Denied
           </h2>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 mb-4">
             You do not have permission to access this page.
           </p>
+          {/* DEBUG INFO */}
+          <div className="text-xs bg-gray-100 p-3 rounded-lg text-left mt-4">
+            <p>
+              <strong>Your Role:</strong> {currentUser?.role || "Unknown"}
+            </p>
+            <p>
+              <strong>Normalized:</strong> {userRole || "Unknown"}
+            </p>
+            <p>
+              <strong>Required Roles:</strong> ADMIN, EVM_STAFF, SC_STAFF
+            </p>
+          </div>
         </div>
       </div>
     );

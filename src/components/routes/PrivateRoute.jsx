@@ -39,7 +39,10 @@ const PrivateRoute = ({ children, allowedRoles = [] }) => {
 
     //  Supply Chain — chỉ ADMIN + EVM_STAFF
     if (path.startsWith("/supply-chain")) {
-      allowed = userRole === "ADMIN" || userRole === "EVM_STAFF";
+      allowed =
+        userRole === "ADMIN" ||
+        userRole === "EVM_STAFF" ||
+        userRole === "SC_STAFF";
     }
 
     //  Customer Registration — chỉ SC_STAFF

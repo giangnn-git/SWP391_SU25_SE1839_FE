@@ -102,7 +102,7 @@ const router = createBrowserRouter([
       {
         path: "vehicles",
         element: (
-          <PrivateRoute allowedRoles={["ADMIN"]}>
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
             <VehicleManagement />
           </PrivateRoute>
         ),
@@ -122,7 +122,7 @@ const router = createBrowserRouter([
       {
         path: "supply-chain",
         element: (
-          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF", "SC_STAFF"]}>
             <SupplyChain />
           </PrivateRoute>
         ),
@@ -137,7 +137,7 @@ const router = createBrowserRouter([
           </PrivateRoute>
         ),
       },
-      //Part Approve - chỉ EVM 
+      //Part Approve - chỉ EVM
       {
         path: "part-requests-review",
         element: (

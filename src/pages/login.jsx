@@ -42,6 +42,7 @@ const LoginPage = () => {
 
       const phone = data.phone;
       const requiresPasswordChange = data.requiresPasswordChange;
+      const scName = data.scName;
 
       storage.set("token", token);
       storage.set("userEmail", decoded.sub);
@@ -51,6 +52,7 @@ const LoginPage = () => {
       storage.set("userPhone", phone);
       storage.set("serviceCenterId", decoded.serviceCenterId);
       storage.set("requiresPasswordChange", requiresPasswordChange);
+      storage.set("scName", scName);
 
       if (requiresPasswordChange === true) {
         navigate("/change-password", { replace: true });

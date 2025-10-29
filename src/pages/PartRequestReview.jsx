@@ -712,7 +712,7 @@ const PartRequestReview = () => {
                                     </div>
                                   </div>
 
-                                  {/* ✅ VALIDATION MESSAGES */}
+                                  {/* VALIDATION MESSAGES */}
                                   {d.approvedQuantity === 0 &&
                                     d.remark === REMARK_IN && (
                                       <p className="text-xs text-red-600 mt-2 flex items-center gap-1">
