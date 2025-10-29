@@ -21,11 +21,13 @@ const RepairOrderDetail = () => {
   const [selectedTech, setSelectedTech] = useState("");
   const [updating, setUpdating] = useState(false);
   const [currentTech, setCurrentTech] = useState(null);
+  const [updatingStepId, setUpdatingStepId] = useState(null);
+
 
   // Fetch both order info and technician list
   const fetchOrderAndTechs = async () => {
     try {
-      const res = await axios.get(`/api/api/repairOrders/${id}`);
+      const res = await axios.get(`/api/api/repair-orders/${id}`);
       const data = res.data?.data || {};
       setOrder(data.filterOrderResponse || {});
       setTechs(data.getTechnicalsResponse?.technicians || []);
@@ -41,7 +43,7 @@ const RepairOrderDetail = () => {
   const fetchDetails = async () => {
     try {
       setLoadingTab(true);
-      const res = await axios.get(`/api/api/repairDetails/${id}`);
+      const res = await axios.get(`/api/api/repair-details/${id}`);
       setDetails(res.data?.data?.repairDetails || []);
     } catch (err) {
       console.error("Failed to fetch repair details:", err);
@@ -54,8 +56,8 @@ const RepairOrderDetail = () => {
   const fetchSteps = async () => {
     try {
       setLoadingTab(true);
-      const res = await axios.get(`/api/api/repairSteps/${id}`);
-      setSteps(res.data?.data?.repairSteps || []);
+      const res = await axios.get(`/api/api/repair-steps/${id}`);
+      setSteps(res.data?.data || []);
     } catch (err) {
       console.error("Failed to fetch repair steps:", err);
     } finally {
@@ -63,12 +65,31 @@ const RepairOrderDetail = () => {
     }
   };
 
+  // Update repair steps
+  const handleUpdateStatus = async (stepId, newStatus) => {
+    try {
+      setUpdatingStepId(stepId);
+      await axios.patch(`/api/api/repair-steps/${stepId}`, { status: newStatus });
+      toast.success("Status update successful");
+      await Promise.all([
+        fetchSteps(),
+        fetchOrderAndTechs(),
+      ]);
+    } catch (err) {
+      console.error(err);
+      toast.error("Update status failed");
+    } finally {
+      setUpdatingStepId(null);
+    }
+  };
+
+
   // Assign or reassign technician
   const handleAssignTech = async () => {
     if (!selectedTech) return toast.error("Please select a technician");
     try {
       setUpdating(true);
-      await axios.put(`/api/api/repairOrders/${id}`, { technicalName: selectedTech });
+      await axios.put(`/api/api/repair-orders/${id}`, { technicalName: selectedTech });
       toast.success("Technician updated successfully!");
       await fetchOrderAndTechs();
       setSelectedTech("");
@@ -151,6 +172,89 @@ const RepairOrderDetail = () => {
     );
   };
 
+  const renderSteps = (data) => {
+    if (loadingTab)
+      return (
+        <div className="flex justify-center py-12">
+          <Loader className="animate-spin h-8 w-8 text-blue-600" />
+        </div>
+      );
+
+    if (!data || data.length === 0)
+      return (
+        <div className="text-center py-12">
+          <AlertCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500 font-medium">No steps available</p>
+          <p className="text-gray-400 text-sm mt-1">There are no repair steps to display</p>
+        </div>
+      );
+
+    return (
+      <div className="space-y-6">
+        {data.map((step) => (
+          <div
+            key={step.stepId}
+            className="relative border border-gray-200 bg-white shadow-sm rounded-2xl p-5 hover:shadow-md transition duration-200"
+          >
+            {/* Header */}
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-lg font-semibold text-gray-900">{step.title}</h3>
+
+              {currentTech && !["COMPLETED", "CANCELLED"].includes(step.status) && (
+                <div className="flex items-center gap-2">
+                  <select
+                    className="border border-gray-300 text-sm rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(e) => handleUpdateStatus(step.stepId, e.target.value)}
+                    disabled={updatingStepId === step.stepId}
+                    defaultValue=""
+                  >
+                    <option value="" disabled>Change status...</option>
+                    {step.nextStatuses.map((status) => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </select>
+
+                  {updatingStepId === step.stepId && (
+                    <Loader className="animate-spin h-4 w-4 text-blue-600" />
+                  )}
+                </div>
+              )}
+
+            </div>
+
+            {/* Info */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-2 text-sm text-gray-700">
+              <p>
+                <span className="font-medium text-gray-900">Estimated Hour:</span> {step.estimatedHour}
+              </p>
+              <p>
+                <span className="font-medium text-gray-900">Actual Hour:</span> {step.actualHour}
+              </p>
+              <div className="ml-auto">
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${step.status === "PENDING"
+                    ? "bg-yellow-100 text-yellow-700"
+                    : step.status === "IN_PROGRESS"
+                      ? "bg-blue-100 text-blue-700"
+                      : step.status === "WAITING"
+                        ? "bg-purple-100 text-purple-700"
+                        : step.status === "CANCELLED"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-green-100 text-green-700"
+                    }`}
+                >
+                  {step.status}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+
+
   if (loading)
     return (
       <div className="flex justify-center items-center h-screen bg-gray-50">
@@ -226,8 +330,8 @@ const RepairOrderDetail = () => {
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-2 px-6 py-4 font-medium transition ${activeTab === tab.key
-                    ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
-                    : "text-gray-600 hover:text-blue-500 hover:bg-gray-50"
+                  ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
+                  : "text-gray-600 hover:text-blue-500 hover:bg-gray-50"
                   }`}
               >
                 {tab.icon}
@@ -249,7 +353,7 @@ const RepairOrderDetail = () => {
             ) : activeTab === "details" ? (
               renderTable(details)
             ) : (
-              renderTable(steps)
+              renderSteps(steps)
             )}
           </div>
         </div>
@@ -258,7 +362,7 @@ const RepairOrderDetail = () => {
   );
 };
 
-// --- Subcomponents ---
+//Sub components
 
 const QuickStat = ({ label, value, icon, bg }) => (
   <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -311,31 +415,34 @@ const TechnicianTab = ({ currentTech, techs, selectedTech, setSelectedTech, hand
     )}
 
     {/* Assign technician */}
-    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-      <h4 className="font-semibold text-gray-900 mb-4">Assign Technician</h4>
-      <div className="flex gap-3">
-        <select
-          value={selectedTech}
-          onChange={(e) => setSelectedTech(e.target.value)}
-          className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-        >
-          <option value="">Select technician...</option>
-          {techs.map((t) => (
-            <option key={t.id} value={t.name}>
-              {t.name} - {t.message} ({t.countJob} jobs)
-            </option>
-          ))}
-        </select>
+    {!currentTech && (
+      <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+        <h4 className="font-semibold text-gray-900 mb-4">Assign Technician</h4>
+        <div className="flex gap-3">
+          <select
+            value={selectedTech}
+            onChange={(e) => setSelectedTech(e.target.value)}
+            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+          >
+            <option value="">Select technician...</option>
+            {techs.map((t) => (
+              <option key={t.id} value={t.name}>
+                {t.name} - {t.message} ({t.countJob} jobs)
+              </option>
+            ))}
+          </select>
 
-        <button
-          onClick={handleAssignTech}
-          disabled={updating || !selectedTech}
-          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
-        >
-          {updating ? <Loader size={18} className="animate-spin" /> : "Assign"}
-        </button>
+          <button
+            onClick={handleAssignTech}
+            disabled={updating || !selectedTech}
+            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+          >
+            {updating ? <Loader size={18} className="animate-spin" /> : "Assign"}
+          </button>
+        </div>
       </div>
-    </div>
+    )}
+
   </div>
 );
 

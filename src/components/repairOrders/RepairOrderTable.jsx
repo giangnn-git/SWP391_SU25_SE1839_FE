@@ -13,7 +13,7 @@ const RepairOrderTable = ({
   setOrders,
 }) => {
   const [assigning, setAssigning] = useState(null);
-  const [selectedTechs, setSelectedTechs] = useState({}); // lưu theo orderId
+  const [selectedTechs, setSelectedTechs] = useState({});
   const navigate = useNavigate();
 
   const getProgressColor = (progress) => {
@@ -36,7 +36,7 @@ const RepairOrderTable = ({
 
     try {
       setAssigning(orderId);
-      const res = await axios.put(`/api/api/repairOrders/${orderId}`, {
+      const res = await axios.put(`/api/api/repair-orders/${orderId}`, {
         technicalName: tech,
       });
       toast.success("Technician assigned successfully!");
@@ -96,6 +96,9 @@ const RepairOrderTable = ({
               <th className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">
                 ID
               </th>
+              {/* <th className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Claim ID
+              </th> */}
               <th className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">
                 Model
               </th>
@@ -127,6 +130,9 @@ const RepairOrderTable = ({
                   <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                     RO-{String(order.repairOrderId).padStart(3, "0")}
                   </td>
+                  {/* <td className="px-6 py-4 text-sm font-semibold text-gray-900">
+                    RO-{String(order.).padStart(3, "0")}
+                  </td> */}
                   <td className="px-6 py-4 text-sm text-gray-700 font-medium">
                     {order.modelName}
                   </td>

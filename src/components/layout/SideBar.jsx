@@ -26,6 +26,8 @@ const Sidebar = () => {
   const isAdmin = currentUser?.role === "ADMIN";
   const isEvmStaff = currentUser?.role === "EVM_STAFF";
   const isScStaff = currentUser?.role === "SC_STAFF";
+  const isTech = currentUser?.role === "TECHNICIAN";
+
 
   //  Style đồng bộ cho icon
   const iconStyle = "text-gray-600 group-hover:text-blue-600 transition-colors";
@@ -54,7 +56,7 @@ const Sidebar = () => {
       : []),
 
     // Warranty Claims — chỉ dành cho SC Staff
-    ...(isScStaff || isAdmin
+    ...(isScStaff || isAdmin || isTech || isEvmStaff
       ? [
           {
             name: "Warranty Claims",
@@ -67,7 +69,7 @@ const Sidebar = () => {
       : []),
 
     // Repair Orders — chỉ dành cho SC Staff
-    ...(isScStaff || isAdmin
+    ...(isScStaff || isAdmin || isTech
       ? [
           {
             name: "Repair Orders",

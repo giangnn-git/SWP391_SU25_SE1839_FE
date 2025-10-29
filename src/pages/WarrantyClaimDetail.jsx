@@ -142,6 +142,31 @@ const ClaimDetail = () => {
         }
     };
 
+    const handleSaveParts = async () => {
+        try {
+            setUpdating(true);
+            const payload = {
+                parts: editedParts.map((p) => ({
+                    id: p.id,
+                    quantity: Number(p.quantity),
+                })),
+            };
+
+            await axios.put(`/api/api/claims/part-claims/${id}`, payload);
+            toast.success("Parts saved successfully!");
+
+            const res = await axios.get(`/api/api/claims/${id}`);
+            setClaimDetail(res.data.data);
+            setEditedParts(res.data.data.partCLiam || []);
+            setIsEditingParts(false);
+        } catch (err) {
+            console.error("Failed to save parts:", err);
+            toast.error("Failed to save parts");
+        } finally {
+            setUpdating(false);
+        }
+    };
+
 
     const formatDateTime = (dateArray) => {
         if (!Array.isArray(dateArray) || dateArray.length < 3) return "–";
@@ -217,7 +242,13 @@ const ClaimDetail = () => {
                             }
                         />
                         <InfoItem label="Claim Date" value={formatDateTime(fcr?.claimDate)} />
+
+                        <InfoItem
+                            label="Recall Status"
+                            value={fcr?.statusRecall === "AGREED_RECALL" ? "AGREED_RECALL" : (fcr?.statusRecall || "No Recall")}
+                        />
                     </div>
+
                     {fcr?.description && (
                         <div className="mt-6">
                             <h3 className="text-lg font-semibold text-gray-900 mb-2">Description</h3>
@@ -226,8 +257,9 @@ const ClaimDetail = () => {
                     )}
                 </div>
 
-                {/* Vehicle Information */}
-                <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+
+
+                {/* <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
                     <div className="flex items-center gap-2 mb-4">
                         <Car size={22} className="text-blue-600" />
                         <h2 className="text-xl font-bold text-gray-900">Vehicle Information</h2>
@@ -239,27 +271,45 @@ const ClaimDetail = () => {
                         <InfoItem label="Mileage" value={`${fcr?.milege || 0} km`} />
                         <InfoItem label="Production Year" value={fcr?.productYear} />
                     </div>
-                </div>
+                </div> */}
 
                 {/* View Policy */}
-                <button
-                    title="View Details"
-                    className="flex items-center justify-center bg-blue-600 text-white hover:bg-blue-700 rounded-md p-2 transition shadow-sm"
-                    onClick={() => {
-                        // Giả lập object vehicle từ modelId
-                        const ModelVehicle = {
-                            id: fcr?.modelId,
-                            name: fcr?.modelName,
-                            releaseYear: fcr?.productYear,
-                            isInProduction: true, // tạm đặt true
-                            description: "Vehicle description placeholder",
-                        };
-                        setSelectedVehicle(ModelVehicle);
-                        setShowPolicyModal(true);
-                    }}
-                >
-                    <Eye size={16} />
-                </button>
+                <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <Car size={22} className="text-blue-600" />
+                            <h2 className="text-xl font-bold text-gray-900">Vehicle Information</h2>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                const ModelVehicle = {
+                                    id: fcr?.modelId,
+                                    name: fcr?.modelName,
+                                    releaseYear: fcr?.productYear,
+                                    isInProduction: true,
+                                    description: "Vehicle description placeholder",
+                                };
+                                setSelectedVehicle(ModelVehicle);
+                                setShowPolicyModal(true);
+                            }}
+                            className="flex items-center gap-2 bg-blue-600 text-white font-medium px-4 py-2 rounded-md shadow-sm hover:bg-blue-700 transition"
+                        >
+                            <Eye size={16} />
+                            <span>View Policy</span>
+                        </button>
+                    </div>
+                    {/* Vehicle Information */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <InfoItem label="Model Name" value={fcr?.modelName} />
+                        <InfoItem label="VIN" value={fcr?.vin} />
+                        <InfoItem label="License Plate" value={fcr?.licensePlate} />
+                        <InfoItem label="Mileage" value={`${fcr?.milege || 0} km`} />
+                        <InfoItem label="Production Year" value={fcr?.productYear} />
+                    </div>
+                </div>
+
+
 
                 {/* View Vehicle Modal */}
                 {showPolicyModal && selectedVehicle && (
@@ -277,12 +327,16 @@ const ClaimDetail = () => {
                             <RefreshCcw size={20} className="text-blue-600" />
                             <h2 className="text-lg font-bold text-gray-900">Claim Status & Parts</h2>
                         </div>
-                        <button
-                            onClick={() => setIsEditingParts(!isEditingParts)}
-                            className="px-3 py-1 text-sm bg-gray-100 rounded-md hover:bg-gray-200 transition"
-                        >
-                            {isEditingParts ? "Cancel Edit" : "Edit Parts"}
-                        </button>
+                        {fcr?.currentStatus === "PENDING" &&
+                            (!editedParts?.length || editedParts.length === 0) && (
+                                <button
+                                    onClick={() => setIsEditingParts(!isEditingParts)}
+                                    className="px-3 py-1 text-sm bg-gray-100 rounded-md hover:bg-gray-200 transition"
+                                >
+                                    {isEditingParts ? "Cancel Edit" : "Edit Parts"}
+                                </button>
+                            )}
+
                     </div>
 
                     {/* Status + Reason + Update */}
@@ -305,8 +359,21 @@ const ClaimDetail = () => {
                                 className={`px-4 py-2 rounded-lg text-white font-medium ${updating ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700 transition"
                                     }`}
                             >
-                                {updating ? "Updating..." : "Update"}
+                                {updating ? "Updating..." : "Update Status"}
                             </button>
+
+                            {isEditingParts && fcr?.currentStatus === "PENDING" && (
+                                <button
+                                    onClick={handleSaveParts}
+                                    disabled={updating}
+                                    className={`px-4 py-2 ml-3 rounded-lg text-white font-medium ${updating ? "bg-gray-400" : "bg-green-600 hover:bg-green-700 transition"
+                                        }`}
+                                >
+                                    {updating ? "Saving..." : "Save Parts"}
+                                </button>
+                            )}
+
+
                         </div>
 
                         {selectedStatus === "REJECTED" && (
@@ -401,31 +468,43 @@ const ClaimDetail = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {editedParts.map((part, i) => (
-                                    <tr key={i} className="hover:bg-gray-50">
-                                        <td className="py-3 px-4 text-sm text-gray-900 font-medium">{part.name}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-700">{part.category}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-700">{part.description}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-700 text-right">
-                                            {isEditingParts ? (
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    value={part.quantity}
-                                                    className="border border-gray-300 rounded-md px-2 py-1 w-20 text-right"
-                                                    onChange={(e) => {
-                                                        const newParts = [...editedParts];
-                                                        newParts[i].quantity = Number(e.target.value);
-                                                        setEditedParts(newParts);
-                                                    }}
-                                                />
-                                            ) : (
-                                                <span className="font-semibold">{part.quantity}</span>
-                                            )}
+                                {editedParts.length > 0 ? (
+                                    editedParts.map((part, i) => (
+                                        <tr key={i} className="hover:bg-gray-50">
+                                            <td className="py-3 px-4 text-sm text-gray-900 font-medium">{part.name}</td>
+                                            <td className="py-3 px-4 text-sm text-gray-700">{part.category}</td>
+                                            <td className="py-3 px-4 text-sm text-gray-700">{part.description}</td>
+                                            <td className="py-3 px-4 text-sm text-gray-700 text-right">
+                                                {isEditingParts ? (
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={part.quantity}
+                                                        className="border border-gray-300 rounded-md px-2 py-1 w-20 text-right"
+                                                        onChange={(e) => {
+                                                            const newParts = [...editedParts];
+                                                            newParts[i].quantity = Number(e.target.value);
+                                                            setEditedParts(newParts);
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <span className="font-semibold">{part.quantity}</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td
+                                            colSpan="4"
+                                            className="py-6 text-center text-gray-500 italic"
+                                        >
+                                            No parts have been added yet.
                                         </td>
                                     </tr>
-                                ))}
+                                )}
                             </tbody>
+
                         </table>
                     </div>
                 </div>

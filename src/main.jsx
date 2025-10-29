@@ -42,7 +42,7 @@ const router = createBrowserRouter([
       {
         path: "warranty-claims",
         element: (
-          <PrivateRoute allowedRoles={["ADMIN", "SC_STAFF"]}>
+          <PrivateRoute allowedRoles={["ADMIN", "SC_STAFF", "TECHNICIAN", "EVM_STAFF"]}>
             <WarrantyClaims />
           </PrivateRoute>
         ),
@@ -52,7 +52,7 @@ const router = createBrowserRouter([
       {
         path: "claim/:id",
         element: (
-          <PrivateRoute allowedRoles={["ADMIN", "SC_STAFF"]}>
+          <PrivateRoute allowedRoles={["ADMIN", "SC_STAFF", "EVM_STAFF"]}>
             <ClaimDetail />
           </PrivateRoute>
         ),
@@ -62,7 +62,7 @@ const router = createBrowserRouter([
       {
         path: "repair-orders",
         element: (
-          <PrivateRoute allowedRoles={["ADMIN", "SC_STAFF"]}>
+          <PrivateRoute allowedRoles={["ADMIN", "SC_STAFF", "TECHNICIAN"]}>
             <RepairOrders />
           </PrivateRoute>
         ),
@@ -72,7 +72,7 @@ const router = createBrowserRouter([
       {
         path: "repair-orders/:id",
         element: (
-          <PrivateRoute allowedRoles={["ADMIN", "SC_STAFF"]}>
+          <PrivateRoute allowedRoles={["ADMIN", "SC_STAFF", "TECHNICIAN"]}>
             <RepairOrderDetail />
           </PrivateRoute>
         ),

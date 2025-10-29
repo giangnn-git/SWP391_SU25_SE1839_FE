@@ -3,25 +3,22 @@ import { PlusCircle, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import axios from "../services/axios.customize";
-import RepairOrderModal from "../components/repairOrders/RepairOrderModal";
 import RepairOrderTable from "../components/repairOrders/RepairOrderTable";
 import RepairOrderSummary from "../components/repairOrders/RepairOrderSummary";
 
 
 const RepairOrdersManagement = () => {
   const [orders, setOrders] = useState([]);
-  const [technicians, setTechnicians] = useState([]);
   const [sor, setSor] = useState({});
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
   const fetchRepairOrders = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("/api/api/repairOrders");
+      const res = await axios.get("/api/api/repair-orders");
       setOrders(res.data?.data?.fors || []);
       setSor(res.data?.data?.sor || []);
     } catch (err) {
@@ -32,22 +29,9 @@ const RepairOrdersManagement = () => {
     }
   };
 
-  // const fetchTechnicians = async () => {
-  //   try {
-  //     const res = await axios.get(
-  //       "/api/auth/techinicals"
-  //     );
-  //     setTechnicians(res.data?.data?.technicians || []);
-  //   } catch (err) {
-  //     console.error("Error fetching technicians:", err);
-  //     setError("Failed to load technicians.");
-  //   }
-  // };
-
 
   useEffect(() => {
     fetchRepairOrders();
-    // fetchTechnicians();
   }, []);
 
   const handleOrderCreated = (newOrder) => {
@@ -95,13 +79,6 @@ const RepairOrdersManagement = () => {
             />
           </div>
 
-          {/* <button
-                        className="flex items-center bg-black text-white hover:bg-gray-800 px-4 py-2 rounded-md transition"
-                        onClick={() => setShowCreateModal(true)}
-                    >
-                        <PlusCircle size={18} className="mr-2" />
-                     
-                    </button> */}
         </div>
       </div>
 
@@ -116,13 +93,6 @@ const RepairOrdersManagement = () => {
         setOrders={setOrders}
       />
 
-      {/* Modal */}
-      {/* {showCreateModal && (
-                <RepairOrderModal
-                    onClose={() => setShowCreateModal(false)}
-                    onOrderCreated={handleOrderCreated}
-                />
-            )} */}
     </div>
   );
 };

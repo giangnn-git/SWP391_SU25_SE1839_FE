@@ -11,6 +11,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
     phone: "",
     vin: "",
     priority: "NORMAL",
+    agreeRecall: false,
     partClaims: [{ category: "", partId: "", quantity: "" }],
     attachments: [],
   });
@@ -21,6 +22,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
   const [errors, setErrors] = useState({});
   const [categories, setCategories] = useState([]);
   const [partsByCategory, setPartsByCategory] = useState({});
+  const [recallInfo, setRecallInfo] = useState(null);
 
   // Fetch categories when the modal loads
   useEffect(() => {
@@ -55,22 +57,45 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
       toast.error("Please enter customer phone");
       return;
     }
+
     try {
       const res = await axios.get(`/api/api/claims/vehicle/${formData.phone}`);
-      const list = res.data.data?.vehicles || [];
-      setVehicles(list);
+      const data = res.data?.data;
+
+      const list = Array.isArray(data)
+        ? data.map((item) => ({
+          vehicle: item.vehicle,
+          recall: item.code
+            ? {
+              code: item.code,
+              name: item.name,
+              description: item.description,
+              startDate: item.startDate,
+              endDate: item.endDate,
+              status: item.status,
+            }
+            : null,
+        }))
+        : [];
 
       if (list.length === 0) {
         toast.error("No vehicles found for this phone number");
       } else {
         toast.success("Vehicles fetched successfully");
       }
+
+      console.log("Fetched vehicles:", list);
+
+      setVehicles(list);
+      setRecallInfo(null);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to fetch vehicles:", err);
       toast.error("Failed to fetch vehicles");
       setVehicles([]);
     }
   };
+
+
 
   // Validate form fields
   const validateForm = () => {
@@ -94,6 +119,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
         description: formData.description,
         mileage: parseInt(formData.mileage),
         vin: formData.vin,
+        agreeRecall: formData.agreeRecall,
         priority: formData.priority,
         partClaims: formData.partClaims
           .filter((p) => p.partId && p.quantity)
@@ -114,7 +140,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
       });
 
       toast.success("Claim created successfully!");
-      onClaimCreated(res.data.data); // Update table in parent component
+      onClaimCreated(res.data.data);
       onClose();
     } catch (err) {
       console.error(err);
@@ -244,28 +270,72 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
           </div>
 
           {/* Vehicle Select */}
-          {vehicles.length > 0 && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Select Vehicle (VIN - License Plate){" "}
-                <span className="text-red-500">*</span>
-              </label>
-              <select
-                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${errors.vin ? "border-red-300 bg-red-50" : "border-gray-300"
-                  }`}
-                value={formData.vin}
-                onChange={(e) => handleInputChange("vin", e.target.value)}
-              >
-                <option value="">Choose vehicle</option>
-                {vehicles.map((v, i) => (
-                  <option key={i} value={v.vin}>
-                    {v.vin} - {v.licensePlate}
-                  </option>
-                ))}
-              </select>
-              {errors.vin && (
-                <p className="text-red-600 text-xs mt-1">{errors.vin}</p>
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Select Vehicle (VIN - License Plate) <span className="text-red-500">*</span>
+            </label>
+            <select
+              className={`w-full px-4 py-2.5 border rounded-lg transition ${errors.vin ? "border-red-300 bg-red-50" : "border-gray-300"
+                } ${!formData.phone?.trim()
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "focus:ring-2 focus:ring-blue-500"
+                }`}
+              value={formData.vin}
+              disabled={!formData.phone?.trim() || vehicles.length === 0}
+              onChange={(e) => {
+                const selectedVin = e.target.value;
+                handleInputChange("vin", selectedVin);
+
+                const selectedItem = vehicles.find(
+                  (v) => v.vehicle.vin === selectedVin
+                );
+
+                if (selectedItem?.recall) {
+                  setRecallInfo(selectedItem.recall);
+                } else {
+                  setRecallInfo(null);
+                }
+              }}
+            >
+              {!formData.phone?.trim() ? (
+                <option value="">Enter phone first to select vehicle</option>
+              ) : vehicles.length > 0 ? (
+                <>
+                  <option value="">Choose vehicle</option>
+                  {vehicles.map((item, i) => (
+                    <option key={i} value={item.vehicle.vin}>
+                      {item.vehicle.vin} - {item.vehicle.licensePlate}
+                    </option>
+                  ))}
+                </>
+              ) : (
+                <option value="">No vehicles found</option>
               )}
+            </select>
+
+            {errors.vin && (
+              <p className="text-red-600 text-xs mt-1">{errors.vin}</p>
+            )}
+          </div>
+
+
+          {/* Recall */}
+          {recallInfo && (
+            <div className="p-3 border rounded-md bg-yellow-50 mb-3">
+              <h4 className="font-semibold text-yellow-700">
+                This vehicle is under a Recall campaign.: {recallInfo.name} ({recallInfo.code})
+              </h4>
+              <p className="text-sm text-gray-600 mb-2">{recallInfo.description}</p>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={formData.agreeRecall}
+                  onChange={(e) =>
+                    setFormData({ ...formData, agreeRecall: e.target.checked })
+                  }
+                />
+                <span>Agree to participate in Recall</span>
+              </label>
             </div>
           )}
 
@@ -283,103 +353,6 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
               <option value="HIGH">High</option>
             </select>
           </div>
-
-          {/* Parts */}
-          {/* <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-3">
-              Requested Parts
-            </label>
-            <div className="space-y-3">
-              {formData.partClaims.map((part, idx) => {
-                const partsList = partsByCategory[part.category] || [];
-                return (
-                  <div key={idx} className="flex gap-2 items-end">
-                    <div className="flex-1">
-                      <select
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition"
-                        value={part.category}
-                        onChange={(e) =>
-                          handlePartChange(idx, "category", e.target.value)
-                        }
-                      >
-                        <option value="">Select Category</option>
-                        {categories.map((c, i) => (
-                          <option key={i} value={c}>
-                            {c}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="flex-1">
-                      <select
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition"
-                        value={part.partId}
-                        onChange={(e) =>
-                          handlePartChange(idx, "partId", e.target.value)
-                        }
-                        disabled={!part.category}
-                      >
-                        <option value="">Select Part</option>
-                        {partsList.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="w-24">
-                      <input
-                        type="number"
-                        placeholder="Qty"
-                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition"
-                        value={part.quantity}
-                        onChange={(e) =>
-                          handlePartChange(idx, "quantity", e.target.value)
-                        }
-                      />
-                    </div>
-
-                    {formData.partClaims.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newParts = formData.partClaims.filter(
-                            (_, i) => i !== idx
-                          );
-                          setFormData({
-                            ...formData,
-                            partClaims: newParts,
-                          });
-                        }}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                      >
-                        <X size={20} />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                setFormData({
-                  ...formData,
-                  partClaims: [
-                    ...formData.partClaims,
-                    { category: "", partId: "", quantity: "" },
-                  ],
-                })
-              }
-              className="mt-3 flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold transition"
-            >
-              <Plus size={18} />
-              Add Part
-            </button>
-          </div> */}
 
           {/* Attachments */}
           <div>
