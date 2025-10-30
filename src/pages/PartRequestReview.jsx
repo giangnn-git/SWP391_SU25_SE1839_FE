@@ -11,6 +11,8 @@ import {
   AlertTriangle,
   Info,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   getAllPartRequestsApi,
@@ -22,19 +24,11 @@ import {
 const REMARK_IN = "In stock";
 const REMARK_OUT = "Out of stock";
 
-const normalizeRemark = (r) => {
-  if (!r) return "";
-  const s = String(r).trim().toLowerCase().replace(/_/g, " ");
-  if (s.includes("out") || s.includes("reject")) return REMARK_OUT;
-  if (s.includes("in")) return REMARK_IN;
-  return "";
-};
-
 const normalizeReviewDetail = (detail, requestStatus) => {
   const requestedQty = Number(detail?.requestedQuantity ?? 0);
   const approvedQty = Number(detail?.approvedQuantity ?? 0);
 
-  // ✅ LUÔN DÙNG DATA TỪ BE VÀ ĐẢM BẢO CONSISTENCY
+  //  LUÔN DÙNG DATA TỪ BE VÀ ĐẢM BẢO CONSISTENCY
   const remark = approvedQty > 0 ? REMARK_IN : REMARK_OUT;
 
   return {
@@ -48,7 +42,7 @@ const normalizeReviewDetail = (detail, requestStatus) => {
   };
 };
 
-// ✅ VALIDATION HELPER
+//  VALIDATION HELPER
 const validatePartDetails = (details) => {
   const errors = [];
   const hasErrors = details.some((d) => {
@@ -67,7 +61,7 @@ const validatePartDetails = (details) => {
   };
 };
 
-// ✅ COMPONENT TOAST MESSAGE
+//  COMPONENT TOAST MESSAGE
 const ToastMessage = ({ type, message, onClose, duration = 5000 }) => {
   const [isVisible, setIsVisible] = useState(true);
 
@@ -149,7 +143,10 @@ const PartRequestReview = () => {
   const [confirmAction, setConfirmAction] = useState("");
   const [confirmId, setConfirmId] = useState(null);
 
-  // ✅ HÀM HIỂN THỊ MESSAGE THỐNG NHẤT
+  // ✅ THÊM PAGINATION STATE
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
   const showMessage = (message, type = "info") => {
     setActionMessage(message);
     setMessageType(type);
@@ -255,7 +252,6 @@ const PartRequestReview = () => {
   const handleConfirmAction = async () => {
     if (!confirmId || !selectedRequest) return;
 
-    // ✅ VALIDATION TRƯỚC KHI GỬI
     const validation = validatePartDetails(selectedRequest.details || []);
     if (!validation.isValid) {
       showMessage(validation.message, "error");
@@ -297,17 +293,24 @@ const PartRequestReview = () => {
           details: normalizedDetails,
         });
 
-        setRequests((prev) =>
-          prev.map((r) =>
-            r.id === selectedRequest.id
-              ? {
-                  ...r,
-                  status: confirmAction,
-                  reason: responseData.note,
-                }
-              : r
-          )
-        );
+        // THÊM REQUEST MỚI VÀO ĐẦU LIST
+        setRequests((prev) => {
+          // Tạo request mới với data cập nhật
+          const updatedRequest = {
+            id: responseData.id,
+            partName: "View Details",
+            quantity: "Multiple",
+            reason: responseData.note || "-",
+            status: confirmAction,
+            date: formatDate(responseData.createdDate),
+            requester: responseData.serviceCenterName || "Unknown",
+            createdBy: responseData.createdBy,
+            originalData: responseData,
+          };
+
+          const filteredPrev = prev.filter((r) => r.id !== selectedRequest.id);
+          return [updatedRequest, ...filteredPrev];
+        });
       }
 
       showMessage(
@@ -318,7 +321,6 @@ const PartRequestReview = () => {
       );
 
       setShowConfirm(false);
-      setTimeout(() => fetchRequests(), 1000);
     } catch (err) {
       showMessage(
         err.response?.data?.errorCode ||
@@ -355,6 +357,19 @@ const PartRequestReview = () => {
     return matchesSearch && matchesFilter;
   });
 
+  // PAGINATION LOGIC
+  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentRequests = filteredRequests.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
+
+  // RESET PAGE KHI FILTER/SEARCH THAY ĐỔI
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, searchTerm]);
+
   const getStatusBadge = (status) => {
     const base =
       "inline-flex items-center justify-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border min-w-[90px] text-center";
@@ -386,7 +401,6 @@ const PartRequestReview = () => {
     }
   };
 
-  // ✅ CHECK VALIDATION FOR CURRENT SELECTED REQUEST
   const hasValidationErrors =
     selectedRequest &&
     Array.isArray(selectedRequest.details) &&
@@ -415,7 +429,7 @@ const PartRequestReview = () => {
         </div>
       </div>
 
-      {/* ✅ TOAST MESSAGE */}
+      {/* TOAST MESSAGE */}
       {actionMessage && (
         <ToastMessage
           type={messageType}
@@ -511,47 +525,126 @@ const PartRequestReview = () => {
             <Loader2 className="mx-auto animate-spin mb-2" /> Loading
             requests...
           </div>
-        ) : filteredRequests.length === 0 ? (
+        ) : currentRequests.length === 0 ? (
           <div className="p-8 text-center text-gray-500 italic">
             No part requests found.
           </div>
         ) : (
-          <table className="w-full text-sm text-gray-700">
-            <thead className="bg-emerald-50 text-gray-800">
-              <tr>
-                <th className="py-3 px-4 text-left font-semibold">
-                  Service Center
-                </th>
-                <th className="py-3 px-4 text-left font-semibold">Reason</th>
-                <th className="py-3 px-4 text-left font-semibold">Date</th>
-                <th className="py-3 px-4 text-center font-semibold">Status</th>
-                <th className="py-3 px-4 text-center font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRequests.map((req) => (
-                <tr
-                  key={req.id}
-                  className="border-t border-gray-100 hover:bg-emerald-50/40"
-                >
-                  <td className="py-3 px-4 font-medium">{req.requester}</td>
-                  <td className="py-3 px-4 max-w-xs truncate">{req.reason}</td>
-                  <td className="py-3 px-4">{req.date}</td>
-                  <td className="py-3 px-4 text-center">
-                    {getStatusBadge(req.status)}
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <button
-                      onClick={() => handleViewDetail(req.id)}
-                      className="px-3 py-1 text-xs bg-emerald-100 text-emerald-700 border border-emerald-300 rounded hover:bg-emerald-600 hover:text-white transition flex items-center gap-1"
-                    >
-                      <Eye size={14} /> View
-                    </button>
-                  </td>
+          <>
+            <table className="w-full text-sm text-gray-700">
+              <thead className="bg-emerald-50 text-gray-800">
+                <tr>
+                  <th className="py-3 px-4 text-left font-semibold">
+                    Service Center
+                  </th>
+                  <th className="py-3 px-4 text-left font-semibold">Reason</th>
+                  <th className="py-3 px-4 text-left font-semibold">Date</th>
+                  <th className="py-3 px-4 text-center font-semibold">
+                    Status
+                  </th>
+                  <th className="py-3 px-4 text-center font-semibold">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {currentRequests.map((req) => (
+                  <tr
+                    key={req.id}
+                    className="border-t border-gray-100 hover:bg-emerald-50/40"
+                  >
+                    <td className="py-3 px-4 font-medium">{req.requester}</td>
+                    <td className="py-3 px-4 max-w-xs truncate">
+                      {req.reason}
+                    </td>
+                    <td className="py-3 px-4">{req.date}</td>
+                    <td className="py-3 px-4 text-center">
+                      {getStatusBadge(req.status)}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        onClick={() => handleViewDetail(req.id)}
+                        className="px-3 py-1 text-xs bg-emerald-100 text-emerald-700 border border-emerald-300 rounded hover:bg-emerald-600 hover:text-white transition flex items-center gap-1"
+                      >
+                        <Eye size={14} /> View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/*  PAGINATION */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
+                <div className="text-sm text-gray-600">
+                  Showing{" "}
+                  <span className="font-semibold">{startIndex + 1}</span>-
+                  <span className="font-semibold">
+                    {Math.min(
+                      startIndex + itemsPerPage,
+                      filteredRequests.length
+                    )}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-semibold">
+                    {filteredRequests.length}
+                  </span>{" "}
+                  requests
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={currentPage === 1}
+                    className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  >
+                    <ChevronLeft size={16} />
+                    Previous
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(
+                        (page) =>
+                          page === 1 ||
+                          page === totalPages ||
+                          Math.abs(page - currentPage) <= 1
+                      )
+                      .map((page, index, array) => (
+                        <React.Fragment key={page}>
+                          {index > 0 && array[index - 1] !== page - 1 && (
+                            <span className="px-2 text-gray-400">...</span>
+                          )}
+                          <button
+                            onClick={() => setCurrentPage(page)}
+                            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                              currentPage === page
+                                ? "bg-emerald-600 text-white"
+                                : "text-gray-600 hover:bg-gray-100"
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        </React.Fragment>
+                      ))}
+                  </div>
+
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  >
+                    Next
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

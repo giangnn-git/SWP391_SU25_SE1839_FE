@@ -1,5 +1,12 @@
 import { useState, useEffect } from "react";
-import { PlusCircle, Search, Trash2, Eye } from "lucide-react";
+import {
+  PlusCircle,
+  Search,
+  Trash2,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import axios from "../services/axios.customize";
 import { Link } from "react-router-dom";
 import {
@@ -12,6 +19,22 @@ import {
 /* ================== Helpers ================== */
 const REMARK_IN = "In stock";
 const REMARK_OUT = "Out of stock";
+
+const formatDate = (arr) => {
+  if (!Array.isArray(arr)) return "-";
+  const [y, m, d, hh, mm] = arr;
+
+  return (
+    <div className="flex flex-col">
+      <span>
+        {d.toString().padStart(2, "0")}/{m.toString().padStart(2, "0")}/{y}
+      </span>
+      <span className="text-xs text-gray-500">
+        {hh.toString().padStart(2, "0")}:{mm.toString().padStart(2, "0")}
+      </span>
+    </div>
+  );
+};
 
 const toInt = (v, fallback = 0) => {
   if (v === null || v === undefined) return fallback;
@@ -29,10 +52,12 @@ const normalizeRemark = (r) => {
 
 const normalizePartDetail = (detail, requestStatus) => {
   const requestedQty = toInt(detail.requestedQuantity);
-  const approvedQty = toInt(detail.approvedQuantity);
 
-  //LUÔN DÙNG DATA TỪ BE VÀ ĐẢM BẢO CONSISTENCY
-  const remark = approvedQty > 0 ? REMARK_IN : REMARK_OUT;
+  // CHỈ SET approvedQuantity VÀ remark KHI CÓ DATA TỪ EVM STAFF
+  const hasEVMData = detail.approvedQuantity !== null || detail.remark !== null;
+
+  const approvedQty = hasEVMData ? toInt(detail.approvedQuantity) : null;
+  const remark = hasEVMData ? (approvedQty > 0 ? REMARK_IN : REMARK_OUT) : null;
 
   return {
     ...detail,
@@ -41,6 +66,7 @@ const normalizePartDetail = (detail, requestStatus) => {
     requestedQuantity: requestedQty,
     approvedQuantity: approvedQty,
     remark: remark,
+    hasEVMData: hasEVMData,
   };
 };
 /* ================== SUMMARY ================== */
@@ -89,15 +115,17 @@ const PartRequestSummary = ({ summary, loading, error }) => {
 };
 
 /* ================== TABLE ================== */
-const PartRequestTable = ({ requests, loading, error, onView }) => {
-  const formatDate = (arr) => {
-    if (!Array.isArray(arr)) return "-";
-    const [y, m, d, hh, mm] = arr;
-    return `${d.toString().padStart(2, "0")}/${m
-      .toString()
-      .padStart(2, "0")}/${y} ${hh}:${mm}`;
-  };
-
+const PartRequestTable = ({
+  requests,
+  loading,
+  error,
+  onView,
+  currentPage,
+  totalPages,
+  totalItems,
+  onPageChange,
+  itemsPerPage,
+}) => {
   if (loading)
     return (
       <div className="text-center py-6 text-gray-500">Loading requests...</div>
@@ -117,8 +145,11 @@ const PartRequestTable = ({ requests, loading, error, onView }) => {
       </div>
     );
 
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+
   return (
-    <div className="overflow-x-auto bg-white border border-gray-200 rounded-xl shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-white">
       <table className="min-w-full text-sm text-gray-700">
         <thead className="bg-blue-50 border-b border-gray-200">
           <tr>
@@ -171,6 +202,63 @@ const PartRequestTable = ({ requests, loading, error, onView }) => {
           ))}
         </tbody>
       </table>
+
+      {/* PAGINATION COMPONENT */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
+          <div className="text-sm text-gray-600">
+            Showing <span className="font-semibold">{startIndex + 1}</span>-
+            <span className="font-semibold">{endIndex}</span> of{" "}
+            <span className="font-semibold">{totalItems}</span> requests
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            >
+              <ChevronLeft size={16} />
+              Previous
+            </button>
+
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(
+                  (page) =>
+                    page === 1 ||
+                    page === totalPages ||
+                    Math.abs(page - currentPage) <= 1
+                )
+                .map((page, index, array) => (
+                  <div key={page}>
+                    {index > 0 && array[index - 1] !== page - 1 && (
+                      <span className="px-2 text-gray-400">...</span>
+                    )}
+                    <button
+                      onClick={() => onPageChange(page)}
+                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                        currentPage === page
+                          ? "bg-blue-600 text-white"
+                          : "text-gray-600 hover:bg-gray-100"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  </div>
+                ))}
+            </div>
+
+            <button
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            >
+              Next
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -178,14 +266,6 @@ const PartRequestTable = ({ requests, loading, error, onView }) => {
 /* ================== VIEW MODAL ================== */
 const ViewPartRequestModal = ({ request, onClose }) => {
   if (!request) return null;
-
-  const formatDate = (arr) => {
-    if (!Array.isArray(arr)) return "-";
-    const [y, m, d, hh, mm] = arr;
-    return `${d.toString().padStart(2, "0")}/${m
-      .toString()
-      .padStart(2, "0")}/${y} ${hh}:${mm}`;
-  };
 
   const normalizedDetails = Array.isArray(request.details)
     ? request.details.map((detail) =>
@@ -250,21 +330,29 @@ const ViewPartRequestModal = ({ request, onClose }) => {
                         Requested: {part.requestedQuantity}
                       </span>
                     </div>
-                    <div className="flex justify-between text-gray-600 mt-1">
-                      <span>Approved: {part.approvedQuantity}</span>
-                      <span>
-                        Remark:{" "}
-                        <span
-                          className={
-                            part.remark === REMARK_OUT
-                              ? "text-red-600 font-medium"
-                              : "text-green-600 font-medium"
-                          }
-                        >
-                          {part.remark}
+
+                    {/* CHỈ HIỆN APPROVED DATA KHI CÓ DATA TỪ EVM STAFF */}
+                    {part.hasEVMData ? (
+                      <div className="flex justify-between text-gray-600 mt-1">
+                        <span>Approved: {part.approvedQuantity}</span>
+                        <span>
+                          Remark:{" "}
+                          <span
+                            className={
+                              part.remark === REMARK_OUT
+                                ? "text-red-600 font-medium"
+                                : "text-green-600 font-medium"
+                            }
+                          >
+                            {part.remark}
+                          </span>
                         </span>
-                      </span>
-                    </div>
+                      </div>
+                    ) : (
+                      <div className="text-gray-500 text-xs mt-1 italic">
+                        Waiting for EVM staff review...
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -348,39 +436,63 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
       const part = parts.find((p) => p.id === parseInt(r.partId));
       return {
         partCode: part?.code || "",
+        partName: part?.name || "",
         requestedQuantity: parseInt(r.quantity),
+        partId: parseInt(r.partId),
       };
     });
 
-    const payload = { note, details };
+    const payload = {
+      note: note.trim(),
+      details: details,
+    };
+
     try {
       setLoading(true);
       const res = await createPartRequestApi(payload);
+
       if (res?.status === 200 || res?.status === 201) {
         setSuccess(" Request created successfully!");
+
+        const responseData = res.data?.data || res.data;
+
+        if (responseData) {
+          onCreated && onCreated(responseData);
+        } else {
+          console.log(" No response data, not calling onCreated");
+          // Không gọi onCreated nếu không có data
+        }
+
+        setTimeout(() => onClose(), 1500);
       } else {
-        setSuccess(
-          "⚠️ Backend returned non-200, but request may have succeeded."
-        );
+        setError(" Backend returned unexpected status.");
       }
-      onCreated && onCreated();
-      setTimeout(() => onClose(), 800);
     } catch (err) {
-      console.error("❌ Error creating part request:", err);
-      if (err.response?.status === 500) {
-        setSuccess(
-          "⚠️ Backend returned 500, but request was likely created successfully."
-        );
-        onCreated && onCreated();
-        setTimeout(() => onClose(), 1000);
+      console.error("Error creating part request:", err);
+
+      if (err.response) {
+        const { status, data } = err.response;
+
+        if (status === 500) {
+          if (data?.errorCode?.includes("Failed to convert value")) {
+            setError(
+              " Server error: Invalid data format. Please check part selection."
+            );
+          } else {
+            setError(" Server error. Please try again.");
+          }
+        } else if (status === 400) {
+          setError(" Bad request. Please check your input data.");
+        } else {
+          setError(` Error ${status}: ${data?.message || "Unknown error"}`);
+        }
       } else {
-        setError("Failed to create request. Please try again.");
+        setError(" Network error. Please check your connection.");
       }
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center animate-fadeIn">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 border border-gray-100 animate-slideUp scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
@@ -441,6 +553,7 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
                     onChange={(e) =>
                       handleChange(idx, "quantity", e.target.value)
                     }
+                    min="1"
                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-28"
                   />
 
@@ -459,9 +572,7 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
 
             <button
               type="button"
-              onClick={() =>
-                setRows([...rows, { category: "", partId: "", quantity: "" }])
-              }
+              onClick={handleAdd}
               className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
             >
               <PlusCircle size={16} /> Add Part
@@ -478,6 +589,7 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
               onChange={(e) => setNote(e.target.value)}
               rows="3"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+              required
             />
           </div>
 
@@ -496,7 +608,8 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-100 transition"
+              disabled={loading}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-100 transition disabled:opacity-50"
             >
               Cancel
             </button>
@@ -528,17 +641,17 @@ const PartRequestManagement = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
 
+  // THÊM PAGINATION STATE
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
   const fetchRequests = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      if (token)
-        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       const res = await getAllPartRequestsApi();
       let data = res.data?.data?.partSupplies || [];
       setRequests(data);
     } catch (err) {
-      console.error("❌ Error fetching requests:", err);
       setError("Failed to fetch part requests!");
     } finally {
       setLoading(false);
@@ -549,7 +662,40 @@ const PartRequestManagement = () => {
     fetchRequests();
   }, []);
 
-  //  Chuẩn hoá detail theo status tổng
+  // HANDLE ADD NEW REQUEST TO BEGINNING OF LIST
+  const handleNewRequestCreated = (newRequest) => {
+    if (
+      newRequest &&
+      newRequest.id &&
+      newRequest.serviceCenterName &&
+      newRequest.createdBy
+    ) {
+      const newRequestObj = {
+        id: newRequest.id,
+        serviceCenterName: newRequest.serviceCenterName,
+        createdBy: newRequest.createdBy,
+        createdDate: newRequest.createdDate,
+        status: newRequest.status || "PENDING",
+        note: newRequest.note,
+        details: newRequest.details || newRequest.requestedParts || [],
+      };
+
+      setRequests((prev) => {
+        if (prev.some((req) => req.id === newRequest.id)) {
+          return prev;
+        }
+
+        const updated = [newRequestObj, ...prev];
+
+        return updated;
+      });
+
+      setCurrentPage(1);
+    } else {
+      console.log(" Incomplete data from BE, skipping...");
+    }
+  };
+  // Chuẩn hoá detail theo status tổng
   const handleViewRequest = async (req) => {
     try {
       const res = await getPartRequestDetailApi(req.id);
@@ -567,7 +713,7 @@ const PartRequestManagement = () => {
 
       setSelectedRequest(normalizedData);
     } catch (err) {
-      console.error("❌ Error fetching request details:", err);
+      console.error(" Error fetching request details:", err);
 
       const normalizedData = {
         ...req,
@@ -590,6 +736,23 @@ const PartRequestManagement = () => {
 
     return matchSearch && matchStatus;
   });
+
+  //  PAGINATION LOGIC
+  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentRequests = filteredRequests.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
+
+  //  RESET PAGE KHI FILTER/SEARCH THAY ĐỔI
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchTerm]);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
 
   const summaryStats = {
     pending: requests.filter((r) => r.status === "PENDING").length,
@@ -659,10 +822,15 @@ const PartRequestManagement = () => {
       </div>
 
       <PartRequestTable
-        requests={filteredRequests}
+        requests={currentRequests} //  SỬ DỤNG CURRENT REQUESTS (PAGINATED)
         loading={loading}
         error={error}
         onView={handleViewRequest}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={filteredRequests.length}
+        onPageChange={handlePageChange}
+        itemsPerPage={itemsPerPage}
       />
 
       {selectedRequest && (
@@ -675,7 +843,7 @@ const PartRequestManagement = () => {
       {showCreateModal && (
         <CreatePartRequestModal
           onClose={() => setShowCreateModal(false)}
-          onCreated={fetchRequests}
+          onCreated={handleNewRequestCreated}
         />
       )}
     </div>

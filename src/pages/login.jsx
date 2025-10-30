@@ -49,10 +49,9 @@ const LoginPage = () => {
       storage.set("isLoggedIn", true);
       storage.set("id", decoded.id || decoded.userId || "");
       storage.set("userName", decoded.name);
-      storage.set("userPhone", phone);
+      storage.set("userPhone", decoded.phone);
       storage.set("serviceCenterId", decoded.serviceCenterId);
-      storage.set("requiresPasswordChange", requiresPasswordChange);
-      storage.set("scName", scName);
+      storage.set("requiresPasswordChange", decoded.requiresPasswordChange);
 
       if (requiresPasswordChange === true) {
         navigate("/change-password", { replace: true });

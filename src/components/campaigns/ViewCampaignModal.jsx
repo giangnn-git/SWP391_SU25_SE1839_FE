@@ -13,6 +13,7 @@ import {
   MapPin,
   Mail,
   Loader,
+  List,
 } from "lucide-react";
 
 const ViewCampaignModal = ({ campaign, onClose }) => {
@@ -72,13 +73,12 @@ const ViewCampaignModal = ({ campaign, onClose }) => {
 
         setNotificationResult({
           type: "success",
-          message: successMessage, // Hiển thị message từ BE
+          message: successMessage,
         });
       }
     } catch (error) {
       console.error("Notification error:", error);
 
-      //   Lấy message lỗi từ BE response nếu có
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.errorCode?.includes(
@@ -274,6 +274,68 @@ const ViewCampaignModal = ({ campaign, onClose }) => {
               </div>
             </div>
 
+            {/*   AFFECTED VEHICLE MODELS */}
+            {campaign.affectedModels && campaign.affectedModels.length > 0 && (
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <List size={18} className="text-gray-500" />
+                  <h3 className="font-semibold text-gray-900">
+                    Affected Vehicle Models
+                  </h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {campaign.affectedModels.map((model, index) => (
+                    <div
+                      key={model.id || index}
+                      className="p-3 bg-white border border-gray-300 rounded-lg flex items-center gap-3"
+                    >
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <Car size={16} className="text-blue-600" />
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          {model.name}
+                        </div>
+                        {model.releaseYear && (
+                          <div className="text-xs text-gray-500">
+                            Release: {model.releaseYear}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/*   NẾU CAMPAIGN CÓ affectedModelIds THAY VÌ affectedModels */}
+            {campaign.affectedModelIds &&
+              campaign.affectedModelIds.length > 0 && (
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                  <div className="flex items-center gap-2 mb-3">
+                    <List size={18} className="text-gray-500" />
+                    <h3 className="font-semibold text-gray-900">
+                      Affected Vehicle Models
+                    </h3>
+                  </div>
+                  <div className="p-4 bg-white border border-gray-300 rounded-lg">
+                    <div className="text-sm text-gray-700 mb-2">
+                      This campaign affects the following model IDs:
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {campaign.affectedModelIds.map((modelId, index) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                        >
+                          Model #{modelId}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
             {/* Description */}
             <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
               <div className="flex items-center gap-2 mb-3">
@@ -374,7 +436,7 @@ const ViewCampaignModal = ({ campaign, onClose }) => {
           </div>
         </div>
 
-        {/* Footer - Updated với button Send Notification */}
+        {/* Footer */}
         <div className="flex justify-between items-center p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">
           <div className="text-sm text-gray-600">
             {campaign.totalVehicles > 0 ? (

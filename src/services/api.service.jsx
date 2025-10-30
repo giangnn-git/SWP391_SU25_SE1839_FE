@@ -132,9 +132,9 @@ export const updatePartPolicyStatusApi = (partPolicyId) => {
   return axios.put(`/api/api/part-policy/status/${partPolicyId}`);
 };
 
-// { vehicle storage API}
-export const getVehicleDetailApi = (vehicleId) => {
-  return axios.get(`/api/api/model/detail/${vehicleId}`);
+// { vehicle modal storage API}
+export const getVehicleDetailApi = (modalId) => {
+  return axios.get(`/api/api/model/detail/${modalId}`);
 };
 
 // {Campaign API}
@@ -145,6 +145,10 @@ export const getAllCampaignsApi = () => {
 
 export const createCampaignApi = (campaignData) => {
   return axios.post("/api/api/campaigns", campaignData);
+};
+
+export const getAllVehicleModelsApi = () => {
+  return axios.get("/api/vehicle-models");
 };
 
 // {Campaign Notification API}
@@ -202,7 +206,7 @@ export const getAllRepairOrdersApi = () => {
   return axios.get("/api/api/repairOrders");
 };
 
-//get Vehicle Management
+//get Vehicle modal
 export const getAllModelsApi = () => {
   return axios.get("/api/api/models");
 };

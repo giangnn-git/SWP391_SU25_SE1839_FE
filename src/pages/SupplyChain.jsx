@@ -142,9 +142,7 @@ const SupplyChain = () => {
             <p>
               <strong>Your Role:</strong> {currentUser?.role || "Unknown"}
             </p>
-            <p>
-              <strong>Normalized:</strong> {userRole || "Unknown"}
-            </p>
+            {/* <p><strong>Normalized:</strong> {userRole || 'Unknown'}</p> */}
             <p>
               <strong>Required Roles:</strong> ADMIN, EVM_STAFF, SC_STAFF
             </p>
