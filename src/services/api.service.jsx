@@ -231,6 +231,10 @@ export const getAllVehiclesApi = () => {
   return axios.get("/api/api/vehicles");
 };
 
+export const getCustomersApi = () => {
+  return axios.get("/api/api/customers");
+};
+
 export const createCustomerApi = (customerData) => {
   const URL_BACKEND = "/api/api/customers";
   const data = {
@@ -258,6 +262,15 @@ export const updateCustomerApi = (customerId, customerData) => {
   };
 
   return axios.put(URL_BACKEND, data);
+};
+
+// {Customer Vehicles (View by customerId)}
+export const getVehiclesByCustomerIdApi = (customerId) => {
+  if (!customerId) {
+    return Promise.reject(new Error("customerId is required"));
+  }
+
+  return axios.get(`/api/api/${customerId}/vehicles`);
 };
 
 export const updateCampaignApi = (id, campaignData) => {

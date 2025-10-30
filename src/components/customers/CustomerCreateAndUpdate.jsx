@@ -11,10 +11,13 @@ import {
   Check,
   Save,
   Lock,
+  Search,
+  Car,
 } from "lucide-react";
 import {
   createCustomerApi,
   updateCustomerApi,
+  getAllVehiclesApi, // ✅ THÊM API NÀY
 } from "../../services/api.service";
 
 const CustomerCreate = ({
@@ -37,7 +40,37 @@ const CustomerCreate = ({
   const [selectedVin, setSelectedVin] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [availableVehicles, setAvailableVehicles] = useState([]); // ✅ STATE MỚI
+  const [loadingVehicles, setLoadingVehicles] = useState(false); // ✅ LOADING STATE
   const vinDropdownRef = useRef(null);
+
+  // ✅ HÀM FETCH AVAILABLE VEHICLES
+  const fetchAvailableVehicles = async () => {
+    try {
+      setLoadingVehicles(true);
+      const res = await getAllVehiclesApi();
+      const allVehicles = res.data?.data?.vehicles || [];
+
+      // Lọc chỉ những vehicles chưa đăng ký (customerName là "N/A")
+      const available = allVehicles.filter(vehicle =>
+        vehicle.customerName === "N/A" || !vehicle.customerName
+      );
+
+      setAvailableVehicles(available);
+    } catch (err) {
+      console.error("Error fetching available vehicles:", err);
+      // Không cần hiển thị lỗi cho user, chỉ log
+    } finally {
+      setLoadingVehicles(false);
+    }
+  };
+
+  // ✅ FETCH KHI COMPONENT MOUNT (CHỈ TRONG CREATE MODE)
+  useEffect(() => {
+    if (!editCustomer) {
+      fetchAvailableVehicles();
+    }
+  }, [editCustomer]);
 
   // NẠP DỮ LIỆU KHI EDIT
   useEffect(() => {
@@ -55,28 +88,30 @@ const CustomerCreate = ({
     }
   }, [editCustomer]);
 
-  const availableVehicles = vehicles.filter((v) => v.customerName === "N/A");
   const isEditMode = Boolean(editCustomer);
 
-  // CHỈ HIỂN THỊ AVAILABLE VEHICLES CHO CREATE MODE
-  const filteredVins = isEditMode
-    ? []
-    : availableVehicles.filter(
-        (vehicle) =>
-          vehicle.vin?.toLowerCase().includes(vinSearch.toLowerCase()) ||
-          vehicle.modelName?.toLowerCase().includes(vinSearch.toLowerCase())
-      );
+  // ✅ FILTER VEHICLES DỰA TRÊN SEARCH TERM
+  const filteredVins = availableVehicles.filter(
+    (vehicle) =>
+      vehicle.vin?.toLowerCase().includes(vinSearch.toLowerCase()) ||
+      vehicle.modelName?.toLowerCase().includes(vinSearch.toLowerCase()) ||
+      (vehicle.licensePlate && vehicle.licensePlate.toLowerCase().includes(vinSearch.toLowerCase()))
+  );
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleVinSelect = (vin) => {
-    setSelectedVin(vin);
-    setVinSearch(vin);
+  const handleVinSelect = (vehicle) => {
+    setSelectedVin(vehicle.vin);
+    setVinSearch(vehicle.vin);
     setShowVinDropdown(false);
-    setFormData((prev) => ({ ...prev, vin }));
+    setFormData((prev) => ({
+      ...prev,
+      vin: vehicle.vin,
+      licensePlate: vehicle.licensePlate || prev.licensePlate // ✅ TỰ ĐỘNG ĐIỀN LICENSE PLATE
+    }));
   };
 
   const handleVinInputChange = (value) => {
@@ -189,9 +224,8 @@ const CustomerCreate = ({
     } catch (err) {
       console.error("Customer operation error:", err);
 
-      let errorMsg = `Failed to ${
-        isEditMode ? "update" : "register"
-      } customer: `;
+      let errorMsg = `Failed to ${isEditMode ? "update" : "register"
+        } customer: `;
 
       // ƯU TIÊN HIỂN THỊ errorCode TRƯỚC, SAU ĐÓ MỚI ĐẾN message HOẶC FALLBACK
       if (err.response?.data) {
@@ -384,7 +418,7 @@ const CustomerCreate = ({
             </div>
           </div>
 
-          {/* VIN Field - CẢI THIỆN CHO EDIT MODE */}
+          {/* ✅ VIN Field - ĐÃ ĐƯỢC CẢI THIỆN VỚI DROPDOWN ĐẦY ĐỦ */}
           <div className="space-y-2" ref={vinDropdownRef}>
             <label className="block text-sm font-medium text-gray-700">
               Vehicle VIN *
@@ -404,52 +438,74 @@ const CustomerCreate = ({
               ) : (
                 // EDIT MODE CHO CREATE
                 <>
-                  <input
-                    type="text"
-                    value={vinSearch}
-                    onChange={(e) => handleVinInputChange(e.target.value)}
-                    onFocus={() => setShowVinDropdown(true)}
-                    className="w-full pl-4 pr-10 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                    placeholder="Type VIN or select from available vehicles..."
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowVinDropdown(!showVinDropdown)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <ChevronDown size={20} />
-                  </button>
+                  <div className="relative">
+                    <Search
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                      size={16}
+                    />
+                    <input
+                      type="text"
+                      value={vinSearch}
+                      onChange={(e) => handleVinInputChange(e.target.value)}
+                      onFocus={() => setShowVinDropdown(true)}
+                      className="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      placeholder="Type VIN or select from available vehicles..."
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowVinDropdown(!showVinDropdown)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <ChevronDown size={20} />
+                    </button>
+                  </div>
                 </>
               )}
 
-              {/* Dropdown chỉ hiển thị trong create mode */}
+              {/* ✅ Dropdown chỉ hiển thị trong create mode - ĐÃ ĐƯỢC CẢI THIỆN */}
               {showVinDropdown && !isEditMode && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  {filteredVins.length === 0 ? (
-                    <div className="px-4 py-3 text-sm text-gray-500">
+                  {loadingVehicles ? (
+                    <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                      Loading vehicles...
+                    </div>
+                  ) : filteredVins.length === 0 ? (
+                    <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                      <Car size={20} className="mx-auto mb-1 text-gray-300" />
                       No available vehicles found
                     </div>
                   ) : (
                     filteredVins.map((vehicle, index) => (
                       <div
-                        key={index}
-                        onClick={() => handleVinSelect(vehicle.vin)}
-                        className={`px-4 py-3 cursor-pointer transition-colors hover:bg-blue-50 flex items-center justify-between ${
-                          selectedVin === vehicle.vin ? "bg-blue-50" : ""
-                        }`}
+                        key={vehicle.vin}
+                        onClick={() => handleVinSelect(vehicle)}
+                        className={`px-4 py-3 cursor-pointer transition-colors hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${selectedVin === vehicle.vin ? "bg-blue-50" : ""
+                          }`}
                       >
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            {vehicle.vin}
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900 font-mono">
+                              {vehicle.vin}
+                            </div>
+                            <div className="text-sm text-gray-600 flex items-center gap-2 mt-1">
+                              <span>{vehicle.modelName}</span>
+                              <span>•</span>
+                              <span>{vehicle.productYear}</span>
+                              {vehicle.licensePlate && (
+                                <>
+                                  <span>•</span>
+                                  <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">
+                                    {vehicle.licensePlate}
+                                  </span>
+                                </>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-600">
-                            {vehicle.modelName} • {vehicle.productYear}
-                          </div>
+                          {selectedVin === vehicle.vin && (
+                            <Check size={16} className="text-blue-600 flex-shrink-0" />
+                          )}
                         </div>
-                        {selectedVin === vehicle.vin && (
-                          <Check size={16} className="text-blue-600" />
-                        )}
                       </div>
                     ))
                   )}
@@ -482,8 +538,8 @@ const CustomerCreate = ({
                   ? "Updating..."
                   : "Registering..."
                 : isEditMode
-                ? "Update Customer"
-                : "Register Customer"}
+                  ? "Update Customer"
+                  : "Register Customer"}
             </button>
           </div>
         </form>
