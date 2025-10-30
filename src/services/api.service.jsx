@@ -216,10 +216,6 @@ export const getAllPartInventoriesApi = () => {
   return axios.get("/api/api/part-inventories");
 };
 
-export const getPartInventoryByServiceCenterIdApi = (serviceCenterId) => {
-  return axios.get(`/api/api/part-inventory/service-center/${serviceCenterId}`);
-};
-
 // {Warranty Claims API}
 
 export const updateWarrantyClaimApi = async (id, updatedData) => {

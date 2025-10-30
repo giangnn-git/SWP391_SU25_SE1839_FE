@@ -6,13 +6,10 @@ import {
   ShieldCheck,
   Car,
   Wrench,
-  CheckCircle2,
   PackageSearch,
   BarChart3,
   FileText,
   Users,
-  ChevronLeft,
-  ChevronRight,
   PanelLeft,
   PanelRight,
   AlertTriangle,
@@ -125,7 +122,7 @@ const Sidebar = () => {
       : []),
 
     // Supply Chain — Hidden from SC_STAFF
-    ...(isAdmin || isEvmStaff
+    ...(isAdmin || isEvmStaff || isScStaff
       ? [
           {
             name: "Supply Chain",
