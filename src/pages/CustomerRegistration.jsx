@@ -183,18 +183,22 @@ const CustomerRegistration = () => {
   };
 
   // HÀM XỬ LÝ KHI EDIT THÀNH CÔNG TỪ CustomerView
-  const handleEditSuccessFromView = async () => {
+  const handleEditSuccessFromView = async (updated) => {
     setSuccessMessage("Customer updated successfully!");
-    // Refresh data sau khi edit thành công
+    if (updated?.vin && viewVehicle?.vin === updated.vin) {
+      setViewVehicle((prev) => (prev ? { ...prev, licensePlate: updated.licensePlate } : prev));
+    }
+    if (updated) {
+      setCustomerDetail((prev) => (prev ? { ...prev, ...updated } : prev));
+    }
     await Promise.allSettled([fetchVehicles(), fetchCustomersSummary()]);
-
-    // Nếu đang xem vehicle detail, refresh customer detail
     if (viewVehicle?.vin) {
       await fetchCustomerDetail(viewVehicle.vin);
     }
 
     setTimeout(() => setSuccessMessage(""), 5000);
   };
+
 
   // HÀM XỬ LÝ KHI THÊM VEHICLE THÀNH CÔNG
   const handleAddVehicleSuccess = async () => {
@@ -537,7 +541,7 @@ const CustomerRegistration = () => {
                                 </td>
                                 <td className="px-8 py-4">
                                   {Array.isArray(v?.campaignNames) &&
-                                  v.campaignNames.length > 0 ? (
+                                    v.campaignNames.length > 0 ? (
                                     <div className="flex flex-wrap gap-2">
                                       {v.campaignNames.map((name, i) => (
                                         <span

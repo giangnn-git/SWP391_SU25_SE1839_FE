@@ -44,7 +44,7 @@ const CustomerCreate = ({
   const [loadingVehicles, setLoadingVehicles] = useState(false); // ✅ LOADING STATE
   const vinDropdownRef = useRef(null);
 
-  // ✅ HÀM FETCH AVAILABLE VEHICLES
+  // ✅ HÀM FETCH AVAILABLE VEHICLES (giữ nguyên, nhưng sẽ không dùng khi nhập tay)
   const fetchAvailableVehicles = async () => {
     try {
       setLoadingVehicles(true);
@@ -59,13 +59,12 @@ const CustomerCreate = ({
       setAvailableVehicles(available);
     } catch (err) {
       console.error("Error fetching available vehicles:", err);
-      // Không cần hiển thị lỗi cho user, chỉ log
     } finally {
       setLoadingVehicles(false);
     }
   };
 
-  // ✅ FETCH KHI COMPONENT MOUNT (CHỈ TRONG CREATE MODE)
+  // ✅ FETCH KHI COMPONENT MOUNT (CHỈ TRONG CREATE MODE) – vẫn giữ
   useEffect(() => {
     if (!editCustomer) {
       fetchAvailableVehicles();
@@ -90,7 +89,7 @@ const CustomerCreate = ({
 
   const isEditMode = Boolean(editCustomer);
 
-  // ✅ FILTER VEHICLES DỰA TRÊN SEARCH TERM
+  // ✅ FILTER VIN (giữ nguyên, nhưng sẽ không dùng khi nhập tay)
   const filteredVins = availableVehicles.filter(
     (vehicle) =>
       vehicle.vin?.toLowerCase().includes(vinSearch.toLowerCase()) ||
@@ -110,25 +109,25 @@ const CustomerCreate = ({
     setFormData((prev) => ({
       ...prev,
       vin: vehicle.vin,
-      licensePlate: vehicle.licensePlate || prev.licensePlate // ✅ TỰ ĐỘNG ĐIỀN LICENSE PLATE
+      licensePlate: vehicle.licensePlate || prev.licensePlate
     }));
   };
 
+  // 🔧 CHANGED: khi nhập tay VIN, chỉ ghi thẳng vào formData.vin, không bật dropdown
   const handleVinInputChange = (value) => {
-    setVinSearch(value);
-    setSelectedVin(value);
-    setFormData((prev) => ({ ...prev, vin: value }));
-    if (!isEditMode) {
-      setShowVinDropdown(true);
-    }
+    setVinSearch(value);           // giữ lại để không phá logic cũ
+    setSelectedVin(value);         // giữ lại để không phá validate cũ (nhưng validate đã đổi bên dưới)
+    setFormData((prev) => ({ ...prev, vin: value })); // ghi trực tiếp VIN
+    // Không mở dropdown nữa
+    setShowVinDropdown(false);     // 🔧 CHANGED
   };
 
   const validateForm = () => {
-    // Kiểm tra required fields
+    // 🔧 CHANGED: yêu cầu VIN dựa trên formData.vin (không dùng selectedVin)
     const requiredFields = {
       "Customer Name": formData.name,
       "Phone Number": formData.phoneNumber,
-      "Vehicle VIN": selectedVin || formData.vin,
+      "Vehicle VIN": formData.vin, // 🔧 CHANGED
     };
 
     const missingFields = Object.entries(requiredFields)
@@ -186,19 +185,19 @@ const CustomerCreate = ({
       setLoading(true);
       setError("");
 
-      // Chuẩn bị data theo đúng format BE expect
+      // 🔧 CHANGED: dùng formData.vin trực tiếp khi create
       const submitData = {
         name: formData.name.trim(),
-        phoneNumber: formData.phoneNumber.trim().replace(/\D/g, ""), // Chỉ giữ số
+        phoneNumber: formData.phoneNumber.trim().replace(/\D/g, ""),
         licensePlate: formData.licensePlate.trim(),
-        email: formData.email.trim() || null, // Gửi null nếu empty
-        address: formData.address.trim() || null, // Gửi null nếu empty
+        email: formData.email.trim() || null,
+        address: formData.address.trim() || null,
         vin: isEditMode
           ? editCustomer.vin
-          : (selectedVin || formData.vin).trim(),
+          : formData.vin.trim(), // 🔧 CHANGED
       };
 
-      console.log("Submitting data:", submitData); // Debug log
+      console.log("Submitting data:", submitData);
 
       if (isEditMode) {
         await updateCustomerApi(editCustomer.id, submitData);
@@ -206,9 +205,17 @@ const CustomerCreate = ({
         await createCustomerApi(submitData);
       }
 
-      onSuccess();
+      const updatedPayload = {
+        id: editCustomer?.id ?? null,
+        vin: isEditMode ? editCustomer.vin : submitData.vin,
+        licensePlate: submitData.licensePlate,
+        name: submitData.name,
+        phoneNumber: submitData.phoneNumber,
+        email: submitData.email || "",
+        address: submitData.address || "",
+      };
+      onSuccess && onSuccess(updatedPayload);
 
-      // Reset form chỉ khi không phải edit mode
       if (!isEditMode) {
         setFormData({
           name: "",
@@ -224,27 +231,17 @@ const CustomerCreate = ({
     } catch (err) {
       console.error("Customer operation error:", err);
 
-      let errorMsg = `Failed to ${isEditMode ? "update" : "register"
-        } customer: `;
+      let errorMsg = `Failed to ${isEditMode ? "update" : "register"} customer: `;
 
-      // ƯU TIÊN HIỂN THỊ errorCode TRƯỚC, SAU ĐÓ MỚI ĐẾN message HOẶC FALLBACK
       if (err.response?.data) {
         const responseData = err.response.data;
-
-        // ƯU TIÊN 1: Hiển thị errorCode nếu có
         if (responseData.errorCode) {
           errorMsg += responseData.errorCode;
-        }
-        // ƯU TIÊN 2: Hiển thị message nếu không có errorCode
-        else if (responseData.message) {
+        } else if (responseData.message) {
           errorMsg += responseData.message;
-        }
-        // FALLBACK: Thông báo mặc định
-        else {
+        } else {
           errorMsg += "Please check your data and try again.";
         }
-
-        // Hiển thị chi tiết lỗi từ BE nếu có
         if (responseData.details) {
           errorMsg += ` Details: ${responseData.details}`;
         }
@@ -255,15 +252,13 @@ const CustomerCreate = ({
       }
 
       setError(errorMsg);
-      if (onError) {
-        onError(errorMsg);
-      }
+      if (onError) onError(errorMsg);
     } finally {
       setLoading(false);
     }
   };
 
-  // Đóng dropdown khi click outside
+  // Đóng dropdown khi click ngoài – vẫn giữ, nhưng dropdown không còn hiển thị
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -418,14 +413,13 @@ const CustomerCreate = ({
             </div>
           </div>
 
-          {/* ✅ VIN Field - ĐÃ ĐƯỢC CẢI THIỆN VỚI DROPDOWN ĐẦY ĐỦ */}
+          {/* ✅ VIN Field – đổi sang NHẬP TAY THUẦN */}
           <div className="space-y-2" ref={vinDropdownRef}>
             <label className="block text-sm font-medium text-gray-700">
               Vehicle VIN *
             </label>
             <div className="relative">
               {isEditMode ? (
-                // DISPLAY MODE CHO EDIT
                 <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
                   <Lock size={16} className="text-gray-400" />
                   <span className="font-mono text-gray-700">
@@ -436,35 +430,36 @@ const CustomerCreate = ({
                   </span>
                 </div>
               ) : (
-                // EDIT MODE CHO CREATE
                 <>
                   <div className="relative">
                     <Search
                       className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                       size={16}
                     />
+                    {/* 🔧 CHANGED: input VIN nhập tay, không mở dropdown */}
                     <input
                       type="text"
-                      value={vinSearch}
-                      onChange={(e) => handleVinInputChange(e.target.value)}
-                      onFocus={() => setShowVinDropdown(true)}
-                      className="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                      placeholder="Type VIN or select from available vehicles..."
+                      name="vin"                              // 🔧 CHANGED
+                      value={formData.vin}                    // 🔧 CHANGED
+                      onChange={(e) => handleVinInputChange(e.target.value)} // 🔧 CHANGED
+                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      placeholder="Enter VIN (e.g. VF8A1234567890001)"
                       required
                     />
-                    <button
+                    {/* 🔧 CHANGED: bỏ nút Chevron mở dropdown */}
+                    {/* <button
                       type="button"
                       onClick={() => setShowVinDropdown(!showVinDropdown)}
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                     >
                       <ChevronDown size={20} />
-                    </button>
+                    </button> */}
                   </div>
                 </>
               )}
 
-              {/* ✅ Dropdown chỉ hiển thị trong create mode - ĐÃ ĐƯỢC CẢI THIỆN */}
-              {showVinDropdown && !isEditMode && (
+              {/* 🔧 CHANGED: không render dropdown nữa */}
+              {false && showVinDropdown && !isEditMode && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                   {loadingVehicles ? (
                     <div className="px-4 py-3 text-sm text-gray-500 text-center">
@@ -515,7 +510,7 @@ const CustomerCreate = ({
             <p className="text-xs text-gray-500">
               {isEditMode
                 ? "VIN cannot be changed after registration"
-                : `${availableVehicles.length} available vehicles. Type to search or select from dropdown.`}
+                : "Enter VIN manually. Example: VF8A1234567890001"}
             </p>
           </div>
 
