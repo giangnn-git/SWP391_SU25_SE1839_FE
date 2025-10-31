@@ -2,15 +2,13 @@ import React, { useState, useEffect } from "react";
 import {
   X,
   Calendar,
-  Car,
   FileText,
   Hash,
   AlertCircle,
   Plus,
   CheckCircle,
-  Trash2,
 } from "lucide-react";
-import { createCampaignApi, getAllModelsApi } from "../../services/api.service";
+import { createCampaignApi } from "../../services/api.service";
 
 const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
   const [formData, setFormData] = useState({
@@ -21,40 +19,11 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
     endDate: "",
     produceDateFrom: "",
     produceDateTo: "",
-    affectedModelIds: [],
   });
 
-  const [vehicleModels, setVehicleModels] = useState([]);
-  const [selectedModelId, setSelectedModelId] = useState("");
   const [loading, setLoading] = useState(false);
-  const [modelsLoading, setModelsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState("");
-
-  // Fetch vehicle models khi modal mở
-  useEffect(() => {
-    if (isOpen) {
-      fetchVehicleModels();
-    }
-  }, [isOpen]);
-
-  // Hàm fetch vehicle models - SỬA THEO API MỚI
-  const fetchVehicleModels = async () => {
-    try {
-      setModelsLoading(true);
-      const response = await getAllModelsApi();
-      const models = response.data?.data || [];
-      setVehicleModels(models);
-    } catch (error) {
-      console.error("Error fetching vehicle models:", error);
-      setErrors((prev) => ({
-        ...prev,
-        vehicleModels: "Failed to load vehicle models",
-      }));
-    } finally {
-      setModelsLoading(false);
-    }
-  };
 
   // Format date từ yyyy-mm-dd sang [year, month, day] cho BE
   const formatDateForBE = (dateString) => {
@@ -63,7 +32,7 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
     return [date.getFullYear(), date.getMonth() + 1, date.getDate()];
   };
 
-  // Validate form
+  // Validate form - ĐÃ BỎ VALIDATION VEHICLE MODELS
   const validateForm = () => {
     const newErrors = {};
 
@@ -75,11 +44,6 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
       newErrors.produceDateFrom = "Production start date is required";
     if (!formData.produceDateTo)
       newErrors.produceDateTo = "Production end date is required";
-
-    // Validate ít nhất 1 vehicle model được chọn
-    if (formData.affectedModelIds.length === 0) {
-      newErrors.vehicleModels = "At least one vehicle model is required";
-    }
 
     // Date validation
     if (
@@ -125,40 +89,6 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
     }
   };
 
-  // Thêm vehicle model vào danh sách
-  const handleAddVehicleModel = () => {
-    if (!selectedModelId) return;
-
-    const modelId = parseInt(selectedModelId);
-    const model = vehicleModels.find((m) => m.id === modelId);
-
-    if (model && !formData.affectedModelIds.includes(modelId)) {
-      setFormData((prev) => ({
-        ...prev,
-        affectedModelIds: [...prev.affectedModelIds, modelId],
-      }));
-      setSelectedModelId(""); // Reset select
-
-      // Clear error
-      if (errors.vehicleModels) {
-        setErrors((prev) => ({
-          ...prev,
-          vehicleModels: "",
-        }));
-      }
-    }
-  };
-
-  // Xóa vehicle model khỏi danh sách
-  const handleRemoveVehicleModel = (modelIdToRemove) => {
-    setFormData((prev) => ({
-      ...prev,
-      affectedModelIds: prev.affectedModelIds.filter(
-        (id) => id !== modelIdToRemove
-      ),
-    }));
-  };
-
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -169,7 +99,7 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
     setSuccessMessage("");
 
     try {
-      // Format data for API
+      // Format data for API - ĐÃ BỎ affectedModelIds
       const campaignData = {
         name: formData.name.trim(),
         description: formData.description.trim(),
@@ -178,7 +108,6 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
         endDate: formatDateForBE(formData.endDate),
         produceDateFrom: formatDateForBE(formData.produceDateFrom),
         produceDateTo: formatDateForBE(formData.produceDateTo),
-        affectedModelIds: formData.affectedModelIds, // GỬI ID CHO BE
       };
 
       console.log("Sending campaign data:", campaignData);
@@ -196,9 +125,7 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
         endDate: "",
         produceDateFrom: "",
         produceDateTo: "",
-        affectedModelIds: [],
       });
-      setSelectedModelId("");
 
       setTimeout(() => {
         if (onCampaignCreated) {
@@ -272,9 +199,7 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
       endDate: "",
       produceDateFrom: "",
       produceDateTo: "",
-      affectedModelIds: [],
     });
-    setSelectedModelId("");
     setErrors({});
     setSuccessMessage("");
     onClose();
@@ -411,90 +336,6 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
               </div>
             </div>
 
-            {/* Vehicle Models */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Car size={20} className="text-orange-600" />
-                Affected Vehicle Models *
-              </h3>
-
-              <div className="space-y-3">
-                {/* Select Vehicle Model */}
-                <div className="flex gap-2">
-                  <select
-                    value={selectedModelId}
-                    onChange={(e) => setSelectedModelId(e.target.value)}
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
-                    disabled={loading || !!successMessage || modelsLoading}
-                  >
-                    <option value="">Select Vehicle Model</option>
-                    {vehicleModels.map((model) => (
-                      <option key={model.id} value={model.id}>
-                        {model.name} {/* CHỈ HIỂN THỊ NAME */}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={handleAddVehicleModel}
-                    className="px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium flex items-center gap-2 whitespace-nowrap"
-                    disabled={!selectedModelId || loading || !!successMessage}
-                  >
-                    <Plus size={16} />
-                    Add Model
-                  </button>
-                </div>
-
-                {/* Selected Models List */}
-                {formData.affectedModelIds.length > 0 && (
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Selected Models:
-                    </label>
-                    <div className="space-y-2">
-                      {formData.affectedModelIds.map((modelId) => {
-                        const model = vehicleModels.find(
-                          (m) => m.id === modelId
-                        );
-                        return (
-                          <div
-                            key={modelId}
-                            className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg"
-                          >
-                            <span className="text-sm text-gray-700">
-                              {model?.name}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveVehicleModel(modelId)}
-                              className="text-red-500 hover:text-red-700 transition-colors"
-                              disabled={loading || !!successMessage}
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {errors.vehicleModels && (
-                  <p className="text-sm text-red-600 flex items-center gap-1">
-                    <AlertCircle size={14} />
-                    {errors.vehicleModels}
-                  </p>
-                )}
-
-                {/* Loading state */}
-                {modelsLoading && (
-                  <p className="text-sm text-gray-500">
-                    Loading vehicle models...
-                  </p>
-                )}
-              </div>
-            </div>
-
             {/* Campaign Period */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -558,7 +399,7 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
             {/* Production Range */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Car size={20} className="text-orange-600" />
+                <Calendar size={20} className="text-orange-600" />
                 Affected Production Range *
               </h3>
 

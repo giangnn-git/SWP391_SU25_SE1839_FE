@@ -277,6 +277,11 @@ export const getVehiclesByCustomerIdApi = (customerId) => {
   return axios.get(`/api/api/${customerId}/vehicles`);
 };
 
+// add vehicle to customer
+export const addVehicleToCustomerApi = (customerId, vehicleData) => {
+  return axios.post(`/api/api/customers/${customerId}/vehicles`, vehicleData);
+};
+
 export const updateCampaignApi = (id, campaignData) => {
   return axios.put(`/api/api/campaigns/${id}`, {
     code: campaignData.code,
