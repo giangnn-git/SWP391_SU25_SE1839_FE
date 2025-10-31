@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { UserPlus, Plus, Search } from "lucide-react"; // ✅ Đã xóa Filter
+import { UserPlus, Plus, Search } from "lucide-react";
 import CustomerTable from "./CustomerTable";
 
 const CustomerManagement = ({
@@ -7,11 +7,12 @@ const CustomerManagement = ({
   customersSummary = [],
   loadingCustomersSummary = false,
   onViewCustomer,
-  onEditCustomer,
-  searchTerm, // ✅ Nhận searchTerm từ props
-  onSearchChange, // ✅ Nhận onSearchChange từ props
+  searchTerm,              // ✅ nhận searchTerm từ props
+  onSearchChange,          // ✅ nhận onSearchChange từ props
+  showHeader = false,      // ✅ mới: điều khiển hiển thị header bên trong component
+  showRegisterBtn = false, // ✅ mới: điều khiển hiển thị nút Register bên trong component
 }) => {
-  // ✅ ĐÃ XÓA state searchTerm nội bộ, sử dụng từ props
+  // ✅ đã bỏ state searchTerm nội bộ, dùng từ props
 
   const filtered = useMemo(() => {
     if (!searchTerm.trim()) return customersSummary;
@@ -25,30 +26,34 @@ const CustomerManagement = ({
 
   return (
     <>
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div className="mb-4 sm:mb-0">
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-xl">
-                <UserPlus className="text-blue-600" size={28} />
-              </div>
-              Customer Management
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Manage customers and their registered vehicles
-            </p>
-          </div>
+      {/* Header (ẩn/hiện theo props) */}
+      {showHeader && (
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div className="mb-4 sm:mb-0">
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-xl">
+                  <UserPlus className="text-blue-600" size={28} />
+                </div>
+                Customer Management
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Manage customers and their registered vehicles
+              </p>
+            </div>
 
-          <button
-            onClick={onShowForm}
-            className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors font-medium"
-          >
-            <Plus size={20} />
-            Register Customer
-          </button>
+            {showRegisterBtn && (
+              <button
+                onClick={onShowForm}
+                className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors font-medium"
+              >
+                <Plus size={20} />
+                Register Customer
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Search Bar */}
       <div className="bg-white rounded-xl p-6 shadow-sm border mb-6">
@@ -62,11 +67,11 @@ const CustomerManagement = ({
               type="text"
               placeholder="Search by name, phone, email, address, or ID…"
               value={searchTerm}
-              onChange={(e) => onSearchChange(e.target.value)} // ✅ Sử dụng onSearchChange từ props
+              onChange={(e) => onSearchChange(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
             />
           </div>
-          {/* ✅ ĐÃ XÓA NÚT RESET */}
+          {/* ✅ đã xoá nút reset */}
         </div>
       </div>
 
@@ -75,7 +80,7 @@ const CustomerManagement = ({
         customers={filtered}
         loading={loadingCustomersSummary}
         onViewCustomer={onViewCustomer}
-        onEditCustomer={onEditCustomer}
+      // ✅ đã xoá onEditCustomer prop
       />
     </>
   );

@@ -177,12 +177,18 @@ const CustomerRegistration = () => {
     setCampaignData(null);
   };
 
-  const handleEditCustomer = (customerData) => {
-    if (customerData && customerData.id) {
-      setEditCustomer(customerData);
-    } else {
-      console.warn("Invalid customer data for editing:", customerData);
+  // ✅ HÀM XỬ LÝ KHI EDIT THÀNH CÔNG TỪ CustomerView
+  const handleEditSuccessFromView = async () => {
+    setSuccessMessage("Customer updated successfully!");
+    // Refresh data sau khi edit thành công
+    await Promise.allSettled([fetchVehicles(), fetchCustomersSummary()]);
+
+    // Nếu đang xem vehicle detail, refresh customer detail
+    if (viewVehicle?.vin) {
+      await fetchCustomerDetail(viewVehicle.vin);
     }
+
+    setTimeout(() => setSuccessMessage(""), 5000);
   };
 
   const handleViewCustomerRow = async (row) => {
@@ -204,49 +210,10 @@ const CustomerRegistration = () => {
     }
   };
 
-  //  UPDATED: Lấy VIN trước khi mở modal edit
-  const handleEditCustomerRow = async (row) => {
-    // 1) Mở modal ngay với VIN từ cache (nếu có) hoặc rỗng
-    setEditCustomer({
-      id: row.id,
-      name: row.name,
-      phoneNumber: row.phoneNumber,
-      email: row.email,
-      address: row.address,
-      vin: vinCache[row.id] || "",           // có thể rỗng lúc đầu
-    });
-
-    // 2) Nếu chưa có trong cache thì fetch nền
-    if (!vinCache[row.id]) {
-      try {
-        const res = await getVehiclesByCustomerIdApi(row.id);
-        const list = res?.data?.data ?? res?.data ?? [];
-        const vin = Array.isArray(list) && list.length > 0 ? (list[0]?.vin || "") : "";
-
-        // cập nhật cache
-        setVinCache((prev) => ({ ...prev, [row.id]: vin }));
-
-        // nhét VIN vào modal đang mở (không đóng/mở lại)
-        setEditCustomer((prev) => (prev ? { ...prev, vin } : prev));
-      } catch (e) {
-        console.warn("Could not fetch VIN for edit:", e);
-      }
-    }
-  };
-
   const handleRegistrationSuccess = async () => {
     setShowForm(false);
     setSuccessMessage("Customer registered successfully!");
-    //  TỰ ĐỘNG RESET SEARCH KHI ĐĂNG KÝ THÀNH CÔNG
-    setSearchTerm("");
-    await Promise.allSettled([fetchVehicles(), fetchCustomersSummary()]);
-    setTimeout(() => setSuccessMessage(""), 5000);
-  };
-
-  const handleEditSuccess = async () => {
-    setEditCustomer(null);
-    setSuccessMessage("Customer updated successfully!");
-    //  TỰ ĐỘNG RESET SEARCH KHI CHỈNH SỬA THÀNH CÔNG
+    // ✅ TỰ ĐỘNG RESET SEARCH KHI ĐĂNG KÝ THÀNH CÔNG
     setSearchTerm("");
     await Promise.allSettled([fetchVehicles(), fetchCustomersSummary()]);
     setTimeout(() => setSuccessMessage(""), 5000);
@@ -257,20 +224,9 @@ const CustomerRegistration = () => {
     setTimeout(() => setErrorMessage(""), 5000);
   };
 
-  const handleCloseEdit = () => {
-    setEditCustomer(null);
-    setErrorMessage("");
-  };
-
   const handleCloseCreate = () => {
     setShowForm(false);
     setErrorMessage("");
-  };
-
-  //  GIỮ NGUYÊN HÀM handleResetSearch (có thể dùng cho các mục đích khác)
-  const handleResetSearch = () => {
-    setSearchTerm("");
-    setFilteredCustomers(customersSummary);
   };
 
   useEffect(() => {
@@ -366,16 +322,18 @@ const CustomerRegistration = () => {
           </div>
         </div>
 
-        {/*  SỬ DỤNG COMPONENT CustomerManagement - ĐÃ XÓA onResetSearch */}
+        {/* ✅ SỬ DỤNG COMPONENT CustomerManagement - ĐÃ XÓA onEditCustomer */}
         <CustomerManagement
           onShowForm={() => setShowForm(true)}
           customersSummary={filteredCustomers}
           loadingCustomersSummary={loadingCustomersSummary}
           onViewCustomer={handleViewCustomerRow}
-          onEditCustomer={handleEditCustomerRow}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
+          showHeader={false}
+          showRegisterBtn={false}
         />
+
 
         {/* Customer Create Modal */}
         {showForm && (
@@ -391,22 +349,7 @@ const CustomerRegistration = () => {
           </div>
         )}
 
-        {/* Customer Edit Modal */}
-        {editCustomer && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="relative w-full max-w-4xl max-h-[90vh] overflow-auto">
-              <CustomerCreate
-                vehicles={vehicles}
-                onClose={handleCloseEdit}
-                onSuccess={handleEditSuccess}
-                onError={setErrorMessage}
-                editCustomer={editCustomer}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Customer View Modal (vehicle-based) */}
+        {/* ✅ Customer View Modal - ĐÃ THÊM onEditSuccess VÀ vehicles */}
         {viewVehicle && (
           <CustomerView
             vehicle={viewVehicle}
@@ -417,8 +360,11 @@ const CustomerRegistration = () => {
             activeDetailTab={activeDetailTab}
             onTabChange={setActiveDetailTab}
             onClose={handleCloseDetail}
+            onEditSuccess={handleEditSuccessFromView} // refresh sau edit
+            vehicles={vehicles}
           />
         )}
+
 
         {/* Customer Vehicles Modal */}
         {openCustomerVehicles && (
@@ -471,6 +417,8 @@ const CustomerRegistration = () => {
                           <th className="px-8 py-4 font-semibold border-b border-gray-200">License Plate</th>
                           <th className="px-8 py-4 font-semibold border-b border-gray-200">Purchase Date</th>
                           <th className="px-8 py-4 font-semibold border-b border-gray-200">Campaigns</th>
+                          {/* 🔧 ADDED */}
+                          <th className="px-8 py-4 font-semibold border-b border-gray-200 text-right">Action</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
@@ -515,6 +463,21 @@ const CustomerRegistration = () => {
                                 <span className="text-gray-400 text-sm">—</span>
                               )}
                             </td>
+                            {/* 🔧 ADDED: nút View để mở CustomerView (có Edit) */}
+                            <td className="px-8 py-4 text-right">
+                              <button
+                                onClick={() => {
+                                  setOpenCustomerVehicles(false);
+                                  setViewingCustomer(null);
+                                  setCustomerVehicles([]);
+                                  handleViewVehicle(v); // 👉 mở CustomerView cho vehicle này
+                                }}
+                                className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                title="View vehicle details"
+                              >
+                                View
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -532,6 +495,7 @@ const CustomerRegistration = () => {
                     setCustomerVehicles([]);
                   }}
                   className="px-6 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-white hover:shadow-sm transition-all duration-200"
+
                 >
                   Close
                 </button>

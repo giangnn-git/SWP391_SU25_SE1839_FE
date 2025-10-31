@@ -1,12 +1,11 @@
 import React, { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Eye, Edit } from "lucide-react";
-
+import { ChevronLeft, ChevronRight, Eye } from "lucide-react"; // ✅ ĐÃ XÓA Edit
 
 const CustomerTable = ({
   customers = [],
   loading = false,
   onViewCustomer,
-  onEditCustomer,
+  // ❌ ĐÃ XÓA onEditCustomer
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
@@ -89,13 +88,7 @@ const CustomerTable = ({
                         <Eye size={16} />
                         View
                       </button>
-                      <button
-                        onClick={() => onEditCustomer?.(c)}
-                        className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-100 hover:border-emerald-300"
-                      >
-                        <Edit size={16} />
-                        Edit
-                      </button>
+                      {/* ❌ ĐÃ XÓA NÚT EDIT Ở ĐÂY */}
                     </div>
                   </td>
                 </tr>
