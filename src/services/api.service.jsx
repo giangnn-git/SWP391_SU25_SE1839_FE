@@ -231,6 +231,14 @@ export const getAllVehiclesApi = () => {
   return axios.get("/api/api/vehicles");
 };
 
+// {Customer API}
+
+// Get all customers
+export const getCustomersApi = () => {
+  return axios.get("/api/api/customers");
+};
+
+// {Customer Registration API}
 export const createCustomerApi = (customerData) => {
   const URL_BACKEND = "/api/api/customers";
   const data = {
