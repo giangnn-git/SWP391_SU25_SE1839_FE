@@ -4,6 +4,7 @@ import { CheckCircle, AlertCircle, X, Car, Users, Plus } from "lucide-react";
 import CustomerCreate from "../components/customers/CustomerCreateAndUpdate";
 import CustomerManagement from "../components/customers/CustomerManagement";
 import CustomerView from "../components/customers/CustomerView";
+import AddVehicleModal from "../components/customers/CustomerAddVehicle";
 import {
   getCustomerByVinApi,
   getCampaignByVinApi,
@@ -35,6 +36,10 @@ const CustomerRegistration = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [vinCache, setVinCache] = useState({});
+
+  const [showAddVehicleForCustomer, setShowAddVehicleForCustomer] =
+    useState(null);
+
   // Search state
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredCustomers, setFilteredCustomers] = useState([]);
@@ -44,8 +49,8 @@ const CustomerRegistration = () => {
     if (!searchTerm.trim()) {
       setFilteredCustomers(customersSummary);
     } else {
-      const filtered = customersSummary.filter(customer =>
-        Object.values(customer).some(value =>
+      const filtered = customersSummary.filter((customer) =>
+        Object.values(customer).some((value) =>
           String(value).toLowerCase().includes(searchTerm.toLowerCase())
         )
       );
@@ -177,7 +182,7 @@ const CustomerRegistration = () => {
     setCampaignData(null);
   };
 
-  // ✅ HÀM XỬ LÝ KHI EDIT THÀNH CÔNG TỪ CustomerView
+  // HÀM XỬ LÝ KHI EDIT THÀNH CÔNG TỪ CustomerView
   const handleEditSuccessFromView = async () => {
     setSuccessMessage("Customer updated successfully!");
     // Refresh data sau khi edit thành công
@@ -186,6 +191,20 @@ const CustomerRegistration = () => {
     // Nếu đang xem vehicle detail, refresh customer detail
     if (viewVehicle?.vin) {
       await fetchCustomerDetail(viewVehicle.vin);
+    }
+
+    setTimeout(() => setSuccessMessage(""), 5000);
+  };
+
+  // HÀM XỬ LÝ KHI THÊM VEHICLE THÀNH CÔNG
+  const handleAddVehicleSuccess = async () => {
+    setSuccessMessage("Vehicle added successfully!");
+    // Refresh data sau khi thêm vehicle thành công
+    await Promise.allSettled([fetchVehicles(), fetchCustomersSummary()]);
+
+    // Nếu đang xem customer vehicles, refresh danh sách
+    if (viewingCustomer) {
+      await handleViewCustomerRow(viewingCustomer);
     }
 
     setTimeout(() => setSuccessMessage(""), 5000);
@@ -213,7 +232,7 @@ const CustomerRegistration = () => {
   const handleRegistrationSuccess = async () => {
     setShowForm(false);
     setSuccessMessage("Customer registered successfully!");
-    // ✅ TỰ ĐỘNG RESET SEARCH KHI ĐĂNG KÝ THÀNH CÔNG
+    // TỰ ĐỘNG RESET SEARCH KHI ĐĂNG KÝ THÀNH CÔNG
     setSearchTerm("");
     await Promise.allSettled([fetchVehicles(), fetchCustomersSummary()]);
     setTimeout(() => setSuccessMessage(""), 5000);
@@ -234,7 +253,9 @@ const CustomerRegistration = () => {
   }, []);
 
   const formatDateTuple = (arr) =>
-    Array.isArray(arr) && arr.length >= 3 ? `${arr[2]}/${arr[1]}/${arr[0]}` : "-";
+    Array.isArray(arr) && arr.length >= 3
+      ? `${arr[2]}/${arr[1]}/${arr[0]}`
+      : "-";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 p-4 sm:p-6">
@@ -243,8 +264,12 @@ const CustomerRegistration = () => {
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Customer Management</h1>
-              <p className="text-gray-600">Manage customer registrations and vehicle information</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Customer Management
+              </h1>
+              <p className="text-gray-600">
+                Manage customer registrations and vehicle information
+              </p>
             </div>
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex items-center gap-2 text-sm text-gray-500 bg-white/80 rounded-lg px-4 py-2 border border-gray-200">
@@ -289,8 +314,12 @@ const CustomerRegistration = () => {
                 <Users className="text-blue-600" size={24} />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Customers</p>
-                <p className="text-2xl font-bold text-gray-900">{customersSummary.length}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Customers
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {customersSummary.length}
+                </p>
               </div>
             </div>
           </div>
@@ -301,8 +330,12 @@ const CustomerRegistration = () => {
                 <Car className="text-green-600" size={24} />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Registered Vehicles</p>
-                <p className="text-2xl font-bold text-gray-900">{vehicles.length}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Registered Vehicles
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {vehicles.length}
+                </p>
               </div>
             </div>
           </div>
@@ -313,16 +346,22 @@ const CustomerRegistration = () => {
                 <CheckCircle className="text-purple-600" size={24} />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Campaigns</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Active Campaigns
+                </p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {vehicles.filter(v => v.campaignNames && v.campaignNames.length > 0).length}
+                  {
+                    vehicles.filter(
+                      (v) => v.campaignNames && v.campaignNames.length > 0
+                    ).length
+                  }
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* ✅ SỬ DỤNG COMPONENT CustomerManagement - ĐÃ XÓA onEditCustomer */}
+        {/* SỬ DỤNG COMPONENT CustomerManagement  */}
         <CustomerManagement
           onShowForm={() => setShowForm(true)}
           customersSummary={filteredCustomers}
@@ -333,7 +372,6 @@ const CustomerRegistration = () => {
           showHeader={false}
           showRegisterBtn={false}
         />
-
 
         {/* Customer Create Modal */}
         {showForm && (
@@ -349,7 +387,7 @@ const CustomerRegistration = () => {
           </div>
         )}
 
-        {/* ✅ Customer View Modal - ĐÃ THÊM onEditSuccess VÀ vehicles */}
+        {/* Customer View Modal */}
         {viewVehicle && (
           <CustomerView
             vehicle={viewVehicle}
@@ -360,13 +398,25 @@ const CustomerRegistration = () => {
             activeDetailTab={activeDetailTab}
             onTabChange={setActiveDetailTab}
             onClose={handleCloseDetail}
-            onEditSuccess={handleEditSuccessFromView} // refresh sau edit
+            onEditSuccess={handleEditSuccessFromView}
             vehicles={vehicles}
           />
         )}
 
+        {/*  Add Vehicle Modal */}
+        {showAddVehicleForCustomer && (
+          <AddVehicleModal
+            customer={showAddVehicleForCustomer}
+            onClose={() => setShowAddVehicleForCustomer(null)}
+            onSuccess={handleAddVehicleSuccess}
+            onError={(error) => {
+              setErrorMessage(error);
+              setShowAddVehicleForCustomer(null);
+            }}
+          />
+        )}
 
-        {/* Customer Vehicles Modal */}
+        {/* Customer Vehicles Modal  */}
         {openCustomerVehicles && (
           <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4">
             <div className="bg-white w-full max-w-6xl rounded-2xl shadow-2xl overflow-hidden">
@@ -378,7 +428,8 @@ const CustomerRegistration = () => {
                       {viewingCustomer?.name || "Customer Vehicles"}
                     </h3>
                     <p className="text-gray-600">
-                      Customer ID: {viewingCustomer?.id} • {customerVehicles.length} vehicles
+                      Customer ID: {viewingCustomer?.id} •{" "}
+                      {customerVehicles.length} vehicles
                     </p>
                   </div>
                   <button
@@ -401,85 +452,143 @@ const CustomerRegistration = () => {
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                     <p className="text-gray-600">Loading vehicles...</p>
                   </div>
-                ) : customerVehicles.length === 0 ? (
-                  <div className="p-12 text-center">
-                    <Car size={48} className="text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500 text-lg mb-2">No vehicles found</p>
-                    <p className="text-gray-400">This customer doesn't have any registered vehicles yet.</p>
-                  </div>
                 ) : (
                   <div className="overflow-auto max-h-[60vh]">
                     <table className="min-w-full">
                       <thead className="bg-gray-50 sticky top-0">
                         <tr className="text-left text-gray-700">
-                          <th className="px-8 py-4 font-semibold border-b border-gray-200">VIN</th>
-                          <th className="px-8 py-4 font-semibold border-b border-gray-200">Model</th>
-                          <th className="px-8 py-4 font-semibold border-b border-gray-200">License Plate</th>
-                          <th className="px-8 py-4 font-semibold border-b border-gray-200">Purchase Date</th>
-                          <th className="px-8 py-4 font-semibold border-b border-gray-200">Campaigns</th>
-                          {/* 🔧 ADDED */}
-                          <th className="px-8 py-4 font-semibold border-b border-gray-200 text-right">Action</th>
+                          <th className="px-8 py-4 font-semibold border-b border-gray-200">
+                            VIN
+                          </th>
+                          <th className="px-8 py-4 font-semibold border-b border-gray-200">
+                            Model
+                          </th>
+                          <th className="px-8 py-4 font-semibold border-b border-gray-200">
+                            License Plate
+                          </th>
+                          <th className="px-8 py-4 font-semibold border-b border-gray-200">
+                            Purchase Date
+                          </th>
+                          <th className="px-8 py-4 font-semibold border-b border-gray-200">
+                            Campaigns
+                          </th>
+                          <th className="px-8 py-4 font-semibold border-b border-gray-200 text-right">
+                            Action
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
-                        {customerVehicles.map((v, idx) => (
-                          <tr
-                            key={v?.id ?? v?.vin ?? idx}
-                            className="hover:bg-gray-50/80 transition-colors"
-                          >
-                            <td className="px-8 py-4 font-medium text-gray-900">
-                              <code className="bg-gray-100 px-2 py-1 rounded-lg text-sm">
-                                {v?.vin ?? "-"}
-                              </code>
-                            </td>
-                            <td className="px-8 py-4">
-                              <span className="font-medium text-gray-700">{v?.modelName ?? "-"}</span>
-                            </td>
-                            <td className="px-8 py-4">
-                              {v?.licensePlate ? (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-medium text-sm">
-                                  {v.licensePlate}
-                                </span>
-                              ) : (
-                                "-"
-                              )}
-                            </td>
-                            <td className="px-8 py-4 text-gray-600">
-                              {formatDateTuple(v?.purchaseDate)}
-                            </td>
-                            <td className="px-8 py-4">
-                              {Array.isArray(v?.campaignNames) && v.campaignNames.length > 0 ? (
-                                <div className="flex flex-wrap gap-2">
-                                  {v.campaignNames.map((name, i) => (
-                                    <span
-                                      key={`${name}-${i}`}
-                                      className="inline-flex items-center px-3 py-1 rounded-full bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 text-green-700 text-xs font-medium"
-                                    >
-                                      {name}
-                                    </span>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-gray-400 text-sm">—</span>
-                              )}
-                            </td>
-                            {/* 🔧 ADDED: nút View để mở CustomerView (có Edit) */}
-                            <td className="px-8 py-4 text-right">
+                        {customerVehicles.length === 0 ? (
+                          //  KHI KHÔNG CÓ VEHICLE
+                          <tr>
+                            <td colSpan="6" className="px-8 py-12 text-center">
+                              <Car
+                                size={48}
+                                className="text-gray-300 mx-auto mb-4"
+                              />
+                              <p className="text-gray-500 text-lg mb-2">
+                                No vehicles found
+                              </p>
+                              <p className="text-gray-400 mb-6">
+                                This customer doesn't have any registered
+                                vehicles yet.
+                              </p>
+                              {/* BUTTON ADD VEHICLE KHI KHÔNG CÓ DATA */}
                               <button
                                 onClick={() => {
                                   setOpenCustomerVehicles(false);
-                                  setViewingCustomer(null);
-                                  setCustomerVehicles([]);
-                                  handleViewVehicle(v); // 👉 mở CustomerView cho vehicle này
+                                  setShowAddVehicleForCustomer(viewingCustomer);
                                 }}
-                                className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                                title="View vehicle details"
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
                               >
-                                View
+                                <Plus size={18} />
+                                Add First Vehicle
                               </button>
                             </td>
                           </tr>
-                        ))}
+                        ) : (
+                          <>
+                            {customerVehicles.map((v, idx) => (
+                              <tr
+                                key={v?.id ?? v?.vin ?? idx}
+                                className="hover:bg-gray-50/80 transition-colors"
+                              >
+                                <td className="px-8 py-4 font-medium text-gray-900">
+                                  <code className="bg-gray-100 px-2 py-1 rounded-lg text-sm">
+                                    {v?.vin ?? "-"}
+                                  </code>
+                                </td>
+                                <td className="px-8 py-4">
+                                  <span className="font-medium text-gray-700">
+                                    {v?.modelName ?? "-"}
+                                  </span>
+                                </td>
+                                <td className="px-8 py-4">
+                                  {v?.licensePlate ? (
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-medium text-sm">
+                                      {v.licensePlate}
+                                    </span>
+                                  ) : (
+                                    "-"
+                                  )}
+                                </td>
+                                <td className="px-8 py-4 text-gray-600">
+                                  {formatDateTuple(v?.purchaseDate)}
+                                </td>
+                                <td className="px-8 py-4">
+                                  {Array.isArray(v?.campaignNames) &&
+                                  v.campaignNames.length > 0 ? (
+                                    <div className="flex flex-wrap gap-2">
+                                      {v.campaignNames.map((name, i) => (
+                                        <span
+                                          key={`${name}-${i}`}
+                                          className="inline-flex items-center px-3 py-1 rounded-full bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 text-green-700 text-xs font-medium"
+                                        >
+                                          {name}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <span className="text-gray-400 text-sm">
+                                      —
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-8 py-4 text-right">
+                                  <button
+                                    onClick={() => {
+                                      setOpenCustomerVehicles(false);
+                                      setViewingCustomer(null);
+                                      setCustomerVehicles([]);
+                                      handleViewVehicle(v);
+                                    }}
+                                    className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                    title="View vehicle details"
+                                  >
+                                    View
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                            {/*  ADD VEHICLE Ở CUỐI TABLE KHI CÓ DATA */}
+                            <tr className="bg-gray-50/50 hover:bg-gray-100/80 transition-colors">
+                              <td colSpan="6" className="px-8 py-6 text-center">
+                                <button
+                                  onClick={() => {
+                                    setOpenCustomerVehicles(false);
+                                    setShowAddVehicleForCustomer(
+                                      viewingCustomer
+                                    );
+                                  }}
+                                  className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                                >
+                                  <Plus size={18} />
+                                  Add Another Vehicle
+                                </button>
+                              </td>
+                            </tr>
+                          </>
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -495,7 +604,6 @@ const CustomerRegistration = () => {
                     setCustomerVehicles([]);
                   }}
                   className="px-6 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-white hover:shadow-sm transition-all duration-200"
-
                 >
                   Close
                 </button>

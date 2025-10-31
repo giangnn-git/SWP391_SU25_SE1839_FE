@@ -12,9 +12,9 @@ import {
   Calendar,
   CheckCircle,
   AlertCircle,
-  Edit, // ✅ THÊM IMPORT NÀY
+  Edit,
 } from "lucide-react";
-import CustomerCreate from "./CustomerCreateAndUpdate"; // ✅ IMPORT COMPONENT EDIT
+import CustomerCreate from "./CustomerCreateAndUpdate";
 
 const CustomerView = ({
   vehicle,
@@ -25,13 +25,13 @@ const CustomerView = ({
   activeDetailTab,
   onTabChange,
   onClose,
-  onEditSuccess, // ✅ THÊM PROP NÀY
-  vehicles, // ✅ THÊM PROP NÀY
+  onEditSuccess,
+  vehicles,
 }) => {
-  const [activeTab, setActiveTab] = useState("view"); // ✅ STATE ĐỂ CHUYỂN ĐỔI GIỮA VIEW VÀ EDIT
-  const [editingCustomer, setEditingCustomer] = useState(null); // ✅ STATE CHO CUSTOMER ĐANG EDIT
+  const [activeTab, setActiveTab] = useState("view");
+  const [editingCustomer, setEditingCustomer] = useState(null);
 
-  // ✅ HÀM CHUYỂN SANG CHẾ ĐỘ EDIT
+  //  HÀM CHUYỂN SANG CHẾ ĐỘ EDIT
   const handleEdit = () => {
     if (customerDetail) {
       setEditingCustomer({
@@ -47,13 +47,13 @@ const CustomerView = ({
     }
   };
 
-  // ✅ HÀM QUAY LẠI CHẾ ĐỘ VIEW
+  //  HÀM QUAY LẠI CHẾ ĐỘ VIEW
   const handleBackToView = () => {
     setActiveTab("view");
     setEditingCustomer(null);
   };
 
-  // ✅ HÀM XỬ LÝ KHI EDIT THÀNH CÔNG
+  // HÀM XỬ LÝ KHI EDIT THÀNH CÔNG
   const handleEditSuccess = () => {
     setActiveTab("view");
     setEditingCustomer(null);
@@ -70,7 +70,7 @@ const CustomerView = ({
       .padStart(2, "0")}/${year}`;
   };
 
-  // ✅ NẾU ĐANG Ở CHẾ ĐỘ EDIT, HIỂN THỊ FORM EDIT
+  // NẾU ĐANG Ở CHẾ ĐỘ EDIT, HIỂN THỊ FORM EDIT
   if (activeTab === "edit" && editingCustomer) {
     return (
       <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4">
@@ -113,21 +113,22 @@ const CustomerView = ({
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header - ĐÃ THÊM NÚT EDIT */}
+        {/* Header  */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
             <Eye className="text-blue-600" size={20} />
             Vehicle & Customer Details
           </h2>
           <div className="flex items-center gap-2">
-            {/* ✅ NÚT EDIT - THÊM VÀO ĐÂY */}
+            {/*  NÚT EDIT */}
             <button
               onClick={handleEdit}
-              disabled={loadingCustomer || !customerDetail} // 🔧 ADDED: chặn edit khi chưa có data
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${loadingCustomer || !customerDetail
-                ? "bg-gray-200 text-gray-500 cursor-not-allowed" // 🔧 ADDED: trạng thái disabled
-                : "bg-blue-600 text-white hover:bg-blue-700"
-                }`}
+              disabled={loadingCustomer || !customerDetail} //  chặn edit khi chưa có data
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                loadingCustomer || !customerDetail
+                  ? "bg-gray-200 text-gray-500 cursor-not-allowed" //  trạng thái disabled
+                  : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
             >
               <Edit size={16} />
               Edit
@@ -175,19 +176,21 @@ const CustomerView = ({
           <div className="flex px-6">
             <button
               onClick={() => onTabChange("customer")}
-              className={`py-3 px-4 font-medium text-sm border-b-2 transition-colors ${activeDetailTab === "customer"
-                ? "border-blue-500 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
+              className={`py-3 px-4 font-medium text-sm border-b-2 transition-colors ${
+                activeDetailTab === "customer"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
             >
               👤 Customer Information
             </button>
             <button
               onClick={() => onTabChange("warranty")}
-              className={`py-3 px-4 font-medium text-sm border-b-2 transition-colors ${activeDetailTab === "warranty"
-                ? "border-blue-500 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
+              className={`py-3 px-4 font-medium text-sm border-b-2 transition-colors ${
+                activeDetailTab === "warranty"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
             >
               🛡️ Warranty & Campaigns
             </button>

@@ -231,10 +231,14 @@ export const getAllVehiclesApi = () => {
   return axios.get("/api/api/vehicles");
 };
 
+// {Customer API}
+
+// Get all customers
 export const getCustomersApi = () => {
   return axios.get("/api/api/customers");
 };
 
+// {Customer Registration API}
 export const createCustomerApi = (customerData) => {
   const URL_BACKEND = "/api/api/customers";
   const data = {
@@ -271,6 +275,11 @@ export const getVehiclesByCustomerIdApi = (customerId) => {
   }
 
   return axios.get(`/api/api/${customerId}/vehicles`);
+};
+
+// add vehicle to customer
+export const addVehicleToCustomerApi = (customerId, vehicleData) => {
+  return axios.post(`/api/api/customers/${customerId}/vehicles`, vehicleData);
 };
 
 export const updateCampaignApi = (id, campaignData) => {

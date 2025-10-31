@@ -52,7 +52,7 @@ const Sidebar = () => {
       : []),
 
     // Warranty Claims — chỉ dành cho SC Staff
-    ...(isScStaff || isTech
+    ...(isScStaff || isTech || isEvmStaff
       ? [
           {
             name: "Warranty Claims",
