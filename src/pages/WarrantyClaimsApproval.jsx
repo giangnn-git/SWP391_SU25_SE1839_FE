@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { PlusCircle, Search } from "lucide-react";
 import axios from "../services/axios.customize";
 import CreateClaimModal from "../components/warranty/CreateClaimModal";
-import ClaimTable from "../components/warranty/ClaimTable";
+import ClaimApprovalTable from "../components/warranty/ClaimApprovedTable";
 import ClaimApprovalSummary from "../components/warranty/ClaimApprovedSummary";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
@@ -167,7 +167,7 @@ const WarrantyClaimsManagement = () => {
             </div>
 
             {/* Table */}
-            <ClaimTable
+            <ClaimApprovalTable
                 claims={filteredClaims}
                 loading={loading}
                 error={error}

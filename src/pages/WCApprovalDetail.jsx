@@ -52,17 +52,17 @@ const ClaimDetail = () => {
     }, [id]);
 
     // Fetch categories
-    useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                const res = await axios.get("/api/api/categories");
-                setCategories(res.data.data.category || []);
-            } catch (err) {
-                console.error("Failed to fetch categories:", err);
-            }
-        };
-        fetchCategories();
-    }, []);
+    // useEffect(() => {
+    //     const fetchCategories = async () => {
+    //         try {
+    //             const res = await axios.get("/api/api/categories");
+    //             setCategories(res.data.data.category || []);
+    //         } catch (err) {
+    //             console.error("Failed to fetch categories:", err);
+    //         }
+    //     };
+    //     fetchCategories();
+    // }, []);
 
     // Fetch parts by category
     const fetchParts = async (category) => {
@@ -220,7 +220,7 @@ const ClaimDetail = () => {
                     >
                         <ArrowLeft size={18} /> Back to Claims
                     </button>
-                    <h1 className="text-3xl font-bold text-gray-900">Warranty Claim Details</h1>
+                    <h1 className="text-3xl font-bold text-gray-900">Warranty Claim Detail</h1>
                     <p className="text-gray-600 mt-1">
                         Claim ID:{" "}
                         <span className="font-semibold text-gray-900">
@@ -260,22 +260,6 @@ const ClaimDetail = () => {
                         </div>
                     )}
                 </div>
-
-
-
-                {/* <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Car size={22} className="text-blue-600" />
-                        <h2 className="text-xl font-bold text-gray-900">Vehicle Information</h2>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <InfoItem label="Model Name" value={fcr?.modelName} />
-                        <InfoItem label="VIN" value={fcr?.vin} />
-                        <InfoItem label="License Plate" value={fcr?.licensePlate} />
-                        <InfoItem label="Mileage" value={`${fcr?.milege || 0} km`} />
-                        <InfoItem label="Production Year" value={fcr?.productYear} />
-                    </div>
-                </div> */}
 
                 {/* View Policy */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
@@ -322,7 +306,6 @@ const ClaimDetail = () => {
                         onClose={() => setShowPolicyModal(false)}
                     />
                 )}
-
                 {/* Images */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
                     <div className="flex items-center gap-2 mb-4">
@@ -485,65 +468,48 @@ const ClaimDetail = () => {
                         </div>
                     )}
 
-                    {/* Parts Table */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
-                            <thead>
-                                <tr className="border-b border-gray-200">
-                                    <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">
-                                        Part Name
-                                    </th>
-                                    <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">
-                                        Category
-                                    </th>
-                                    <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">
-                                        Description
-                                    </th>
-                                    <th className="text-right py-3 px-4 text-xs font-bold text-gray-900 uppercase">
-                                        Quantity
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {editedParts.length > 0 ? (
-                                    editedParts.map((part, i) => (
-                                        <tr key={i} className="hover:bg-gray-50">
-                                            <td className="py-3 px-4 text-sm text-gray-900 font-medium">{part.name}</td>
-                                            <td className="py-3 px-4 text-sm text-gray-700">{part.category}</td>
-                                            <td className="py-3 px-4 text-sm text-gray-700">{part.description}</td>
-                                            <td className="py-3 px-4 text-sm text-gray-700 text-right">
-                                                {isEditingParts ? (
-                                                    <input
-                                                        type="number"
-                                                        min="1"
-                                                        value={part.quantity}
-                                                        className="border border-gray-300 rounded-md px-2 py-1 w-20 text-right"
-                                                        onChange={(e) => {
-                                                            const newParts = [...editedParts];
-                                                            newParts[i].quantity = Number(e.target.value);
-                                                            setEditedParts(newParts);
-                                                        }}
-                                                    />
-                                                ) : (
-                                                    <span className="font-semibold">{part.quantity}</span>
-                                                )}
-                                            </td>
+                    {/* Part Claims Table (từ API partClaimsAndCampaigns) */}
+                    {claimDetail.partClaimsAndCampaigns && claimDetail.partClaimsAndCampaigns.length > 0 && (
+                        <div className="mt-8">
+                            <h3 className="text-lg font-bold text-gray-900 mb-4">Part Claims</h3>
+                            <div className="overflow-x-auto">
+                                <table className="w-full border-collapse">
+                                    <thead>
+                                        <tr className="border-b border-gray-200 bg-gray-50">
+                                            <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Part Name</th>
+                                            <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Description</th>
+                                            <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Policy</th>
+                                            <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Status</th>
+                                            <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Coverage</th>
+                                            <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Conditional</th>
                                         </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td
-                                            colSpan="4"
-                                            className="py-6 text-center text-gray-500 italic"
-                                        >
-                                            No parts have been added yet.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {claimDetail.partClaimsAndCampaigns.map((part) => (
+                                            <tr key={part.partClaimId} className="hover:bg-gray-50">
+                                                <td className="py-3 px-4 text-sm font-medium text-gray-900">{part.partClaimName}</td>
+                                                <td className="py-3 px-4 text-sm text-gray-700">{part.description}</td>
+                                                <td className="py-3 px-4 text-sm text-gray-700">{part.policyName || "N/A"}</td>
+                                                <td className="py-3 px-4 text-sm font-semibold">
+                                                    {part.status === "APPROVED" ? (
+                                                        <span className="text-green-600">APPROVED</span>
+                                                    ) : part.status === "REJECTED" ? (
+                                                        <span className="text-red-600">REJECTED</span>
+                                                    ) : (
+                                                        <span className="text-yellow-600">PENDING</span>
+                                                    )}
+                                                </td>
+                                                <td className="py-3 px-4 text-sm text-gray-700">{part.coverage}</td>
+                                                <td className="py-3 px-4 text-sm text-gray-700">{part.conditional}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
 
-                        </table>
-                    </div>
+
                 </div>
 
 

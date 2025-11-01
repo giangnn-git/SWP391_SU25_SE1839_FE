@@ -1,10 +1,10 @@
-import { TrendingUp, Clock, CheckCircle, DollarSign, AlertCircle } from "lucide-react";
+import { TrendingUp, Clock, CheckCircle, DollarSign, AlertCircle, Percent } from "lucide-react";
 
 const ClaimSummary = ({ scr, loading, error }) => {
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {[...Array(4)].map((_, i) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        {[...Array(5)].map((_, i) => (
           <div key={i} className="h-32 bg-white rounded-lg border border-gray-200 animate-pulse" />
         ))}
       </div>
@@ -21,7 +21,6 @@ const ClaimSummary = ({ scr, loading, error }) => {
   }
 
   const cards = [
-
     {
       title: scr?.pending?.message || "Pending claims",
       value: scr?.pending?.percentage ?? "–",
@@ -31,12 +30,12 @@ const ClaimSummary = ({ scr, loading, error }) => {
       labelColor: "text-amber-900",
     },
     {
-      title: scr?.message || "High Priority",
-      value: scr?.total?.percentage ?? "–",
+      title: scr?.priorityHighCount?.message || "High Priority",
+      value: scr?.priorityHighCount?.percentage ?? "–",
       icon: TrendingUp,
-      color: "bg-blue-50",
-      iconColor: "text-blue-600",
-      labelColor: "text-blue-900",
+      color: "bg-red-50",
+      iconColor: "text-red-600",
+      labelColor: "text-red-900",
     },
     {
       title: scr?.approved?.message || "Approved claims",
@@ -45,6 +44,14 @@ const ClaimSummary = ({ scr, loading, error }) => {
       color: "bg-green-50",
       iconColor: "text-green-600",
       labelColor: "text-green-900",
+    },
+    {
+      title: scr?.perCentAccaptedClaims?.message || "Percent of Accepted Claims",
+      value: scr?.perCentAccaptedClaims?.percentage ?? "–",
+      icon: Percent,
+      color: "bg-teal-50",
+      iconColor: "text-teal-600",
+      labelColor: "text-teal-900",
     },
     {
       title: scr?.cost?.message || "Estimated cost",
@@ -57,7 +64,7 @@ const ClaimSummary = ({ scr, loading, error }) => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
       {cards.map((card, idx) => {
         const Icon = card.icon;
         return (
