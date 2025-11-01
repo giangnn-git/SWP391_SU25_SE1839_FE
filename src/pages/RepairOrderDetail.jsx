@@ -75,6 +75,9 @@ const RepairOrderDetail = () => {
         fetchSteps(),
         fetchOrderAndTechs(),
       ]);
+      const channel = new BroadcastChannel("repair_order_updates");
+      channel.postMessage({ type: "ORDER_UPDATED", id });
+      channel.close();
     } catch (err) {
       console.error(err);
       toast.error("Update status failed");
@@ -93,6 +96,11 @@ const RepairOrderDetail = () => {
       toast.success("Technician updated successfully!");
       await fetchOrderAndTechs();
       setSelectedTech("");
+
+      const channel = new BroadcastChannel("repair_order_updates");
+      channel.postMessage({ type: "ORDER_UPDATED", id });
+      channel.close();
+
     } catch (err) {
       console.error(err);
       toast.error("Failed to update technician.");

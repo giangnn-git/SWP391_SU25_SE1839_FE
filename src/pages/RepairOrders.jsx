@@ -44,6 +44,17 @@ const RepairOrdersManagement = () => {
       o.vin?.toLowerCase().includes(searchTerm.toLowerCase())
       : true
   );
+  useEffect(() => {
+    const channel = new BroadcastChannel("repair_order_updates");
+    channel.onmessage = (event) => {
+      console.log("📡 Received:", event.data);
+      if (event.data?.type === "ORDER_UPDATED") {
+        fetchRepairOrders(); // reload table
+      }
+    };
+
+    return () => channel.close();
+  }, []);
 
   return (
     <div className="p-6">
