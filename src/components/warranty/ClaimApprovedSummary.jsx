@@ -1,11 +1,20 @@
-import { TrendingUp, Clock, CheckCircle, DollarSign, AlertCircle } from "lucide-react";
+import {
+  TrendingUp,
+  Clock,
+  CheckCircle,
+  DollarSign,
+  AlertCircle,
+} from "lucide-react";
 
 const ClaimSummary = ({ scr, loading, error }) => {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-32 bg-white rounded-lg border border-gray-200 animate-pulse" />
+          <div
+            key={i}
+            className="h-32 bg-white rounded-lg border border-gray-200 animate-pulse"
+          />
         ))}
       </div>
     );
@@ -21,7 +30,6 @@ const ClaimSummary = ({ scr, loading, error }) => {
   }
 
   const cards = [
-
     {
       title: scr?.pending?.message || "Pending claims",
       value: scr?.pending?.percentage ?? "–",
@@ -71,10 +79,14 @@ const ClaimSummary = ({ scr, loading, error }) => {
               </div>
             </div>
             <div>
-              <p className={`text-xs font-medium ${card.labelColor} mb-1 opacity-75`}>
+              <p
+                className={`text-xs font-medium ${card.labelColor} mb-1 opacity-75`}
+              >
                 {card.title}
               </p>
-              <p className={`text-2xl font-bold ${card.labelColor}`}>{card.value}</p>
+              <p className={`text-2xl font-bold ${card.labelColor}`}>
+                {card.value}
+              </p>
             </div>
           </div>
         );

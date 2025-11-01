@@ -137,13 +137,7 @@ const Sidebar = () => {
           {
             name: "Supply Chain",
             href: "/supply-chain",
-            icon: (
-              <PackageSearch
-                size={18}
-                className={iconStyle}
-                strokeWidth={1.8}
-              />
-            ),
+            icon: <Truck size={18} className={iconStyle} strokeWidth={1.8} />,
           },
         ]
       : []),
