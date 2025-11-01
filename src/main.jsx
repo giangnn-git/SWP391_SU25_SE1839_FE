@@ -44,7 +44,9 @@ const router = createBrowserRouter([
       {
         path: "warranty-claims",
         element: (
-          <PrivateRoute allowedRoles={["SC_STAFF", "TECHNICIAN", "EVM_STAFF", "ADMIN"]}>
+          <PrivateRoute
+            allowedRoles={["SC_STAFF", "TECHNICIAN", "EVM_STAFF", "ADMIN"]}
+          >
             <WarrantyClaims />
           </PrivateRoute>
         ),
@@ -80,7 +82,7 @@ const router = createBrowserRouter([
         ),
       },
 
-      //  Warranty Claims Approval — chỉ EVM_STAFF 
+      //  Warranty Claims Approval — chỉ EVM_STAFF
       {
         path: "warranty-claim-approvals",
         element: (

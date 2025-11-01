@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
-import { PlusCircle, Search, Trash2, Eye } from "lucide-react";
-import axios from "../services/axios.customize";
+import {
+  PlusCircle,
+  Search,
+  Trash2,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   getAllPartRequestsApi,
@@ -13,26 +19,35 @@ import {
 const REMARK_IN = "In stock";
 const REMARK_OUT = "Out of stock";
 
+const formatDate = (arr) => {
+  if (!Array.isArray(arr)) return "-";
+  const [y, m, d, hh, mm] = arr;
+
+  return (
+    <div className="flex flex-col">
+      <span>
+        {d.toString().padStart(2, "0")}/{m.toString().padStart(2, "0")}/{y}
+      </span>
+      <span className="text-xs text-gray-500">
+        {hh.toString().padStart(2, "0")}:{mm.toString().padStart(2, "0")}
+      </span>
+    </div>
+  );
+};
+
 const toInt = (v, fallback = 0) => {
   if (v === null || v === undefined) return fallback;
   const n = Number(v);
   return Number.isFinite(n) ? n : fallback;
 };
 
-const normalizeRemark = (r) => {
-  if (!r) return "";
-  const s = String(r).trim().toLowerCase().replace(/_/g, " ");
-  if (s.includes("out") || s.includes("reject")) return REMARK_OUT;
-  if (s.includes("in")) return REMARK_IN;
-  return "";
-};
-
 const normalizePartDetail = (detail, requestStatus) => {
   const requestedQty = toInt(detail.requestedQuantity);
-  const approvedQty = toInt(detail.approvedQuantity);
 
-  //LUÔN DÙNG DATA TỪ BE VÀ ĐẢM BẢO CONSISTENCY
-  const remark = approvedQty > 0 ? REMARK_IN : REMARK_OUT;
+  const hasEVMData = detail.approvedQuantity !== null || detail.remark !== null;
+
+  const approvedQty = hasEVMData ? toInt(detail.approvedQuantity) : null;
+  const remark = hasEVMData ? (approvedQty > 0 ? REMARK_IN : REMARK_OUT) : null;
 
   return {
     ...detail,
@@ -41,6 +56,7 @@ const normalizePartDetail = (detail, requestStatus) => {
     requestedQuantity: requestedQty,
     approvedQuantity: approvedQty,
     remark: remark,
+    hasEVMData: hasEVMData,
   };
 };
 /* ================== SUMMARY ================== */
@@ -89,15 +105,17 @@ const PartRequestSummary = ({ summary, loading, error }) => {
 };
 
 /* ================== TABLE ================== */
-const PartRequestTable = ({ requests, loading, error, onView }) => {
-  const formatDate = (arr) => {
-    if (!Array.isArray(arr)) return "-";
-    const [y, m, d, hh, mm] = arr;
-    return `${d.toString().padStart(2, "0")}/${m
-      .toString()
-      .padStart(2, "0")}/${y} ${hh}:${mm}`;
-  };
-
+const PartRequestTable = ({
+  requests,
+  loading,
+  error,
+  onView,
+  currentPage,
+  totalPages,
+  totalItems,
+  onPageChange,
+  itemsPerPage,
+}) => {
   if (loading)
     return (
       <div className="text-center py-6 text-gray-500">Loading requests...</div>
@@ -117,12 +135,14 @@ const PartRequestTable = ({ requests, loading, error, onView }) => {
       </div>
     );
 
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+
   return (
-    <div className="overflow-x-auto bg-white border border-gray-200 rounded-xl shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-white">
       <table className="min-w-full text-sm text-gray-700">
         <thead className="bg-blue-50 border-b border-gray-200">
           <tr>
-            <th className="py-3 px-4 text-left font-semibold">ID</th>
             <th className="py-3 px-4 text-left font-semibold">
               Service Center
             </th>
@@ -139,7 +159,6 @@ const PartRequestTable = ({ requests, loading, error, onView }) => {
               key={r.id}
               className="border-b border-gray-100 hover:bg-blue-50/40 transition"
             >
-              <td className="py-3 px-4 font-medium">{r.id}</td>
               <td className="py-3 px-4">{r.serviceCenterName}</td>
               <td className="py-3 px-4">{r.createdBy}</td>
               <td className="py-3 px-4">{formatDate(r.createdDate)}</td>
@@ -171,6 +190,63 @@ const PartRequestTable = ({ requests, loading, error, onView }) => {
           ))}
         </tbody>
       </table>
+
+      {/* PAGINATION COMPONENT */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
+          <div className="text-sm text-gray-600">
+            Showing <span className="font-semibold">{startIndex + 1}</span>-
+            <span className="font-semibold">{endIndex}</span> of{" "}
+            <span className="font-semibold">{totalItems}</span> requests
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            >
+              <ChevronLeft size={16} />
+              Previous
+            </button>
+
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(
+                  (page) =>
+                    page === 1 ||
+                    page === totalPages ||
+                    Math.abs(page - currentPage) <= 1
+                )
+                .map((page, index, array) => (
+                  <div key={page}>
+                    {index > 0 && array[index - 1] !== page - 1 && (
+                      <span className="px-2 text-gray-400">...</span>
+                    )}
+                    <button
+                      onClick={() => onPageChange(page)}
+                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                        currentPage === page
+                          ? "bg-blue-600 text-white"
+                          : "text-gray-600 hover:bg-gray-100"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  </div>
+                ))}
+            </div>
+
+            <button
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            >
+              Next
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -178,14 +254,6 @@ const PartRequestTable = ({ requests, loading, error, onView }) => {
 /* ================== VIEW MODAL ================== */
 const ViewPartRequestModal = ({ request, onClose }) => {
   if (!request) return null;
-
-  const formatDate = (arr) => {
-    if (!Array.isArray(arr)) return "-";
-    const [y, m, d, hh, mm] = arr;
-    return `${d.toString().padStart(2, "0")}/${m
-      .toString()
-      .padStart(2, "0")}/${y} ${hh}:${mm}`;
-  };
 
   const normalizedDetails = Array.isArray(request.details)
     ? request.details.map((detail) =>
@@ -250,21 +318,28 @@ const ViewPartRequestModal = ({ request, onClose }) => {
                         Requested: {part.requestedQuantity}
                       </span>
                     </div>
-                    <div className="flex justify-between text-gray-600 mt-1">
-                      <span>Approved: {part.approvedQuantity}</span>
-                      <span>
-                        Remark:{" "}
-                        <span
-                          className={
-                            part.remark === REMARK_OUT
-                              ? "text-red-600 font-medium"
-                              : "text-green-600 font-medium"
-                          }
-                        >
-                          {part.remark}
+
+                    {part.hasEVMData ? (
+                      <div className="flex justify-between text-gray-600 mt-1">
+                        <span>Approved: {part.approvedQuantity}</span>
+                        <span>
+                          Remark:{" "}
+                          <span
+                            className={
+                              part.remark === REMARK_OUT
+                                ? "text-red-600 font-medium"
+                                : "text-green-600 font-medium"
+                            }
+                          >
+                            {part.remark}
+                          </span>
                         </span>
-                      </span>
-                    </div>
+                      </div>
+                    ) : (
+                      <div className="text-gray-500 text-xs mt-1 italic">
+                        Waiting for EVM staff review...
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -348,33 +423,47 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
       const part = parts.find((p) => p.id === parseInt(r.partId));
       return {
         partCode: part?.code || "",
+        partName: part?.name || "",
         requestedQuantity: parseInt(r.quantity),
+        partId: parseInt(r.partId),
       };
     });
 
-    const payload = { note, details };
+    const payload = {
+      note: note.trim(),
+      details: details,
+    };
+
     try {
       setLoading(true);
       const res = await createPartRequestApi(payload);
+
       if (res?.status === 200 || res?.status === 201) {
         setSuccess(" Request created successfully!");
+        onCreated();
+        setTimeout(() => onClose(), 1500);
       } else {
-        setSuccess(
-          "⚠️ Backend returned non-200, but request may have succeeded."
-        );
+        setError(" Backend returned unexpected status.");
       }
-      onCreated && onCreated();
-      setTimeout(() => onClose(), 800);
     } catch (err) {
-      console.error("❌ Error creating part request:", err);
-      if (err.response?.status === 500) {
-        setSuccess(
-          "⚠️ Backend returned 500, but request was likely created successfully."
-        );
-        onCreated && onCreated();
-        setTimeout(() => onClose(), 1000);
+      if (err.response) {
+        const { status, data } = err.response;
+
+        if (status === 500) {
+          if (data?.errorCode?.includes("Failed to convert value")) {
+            setError(
+              " Server error: Invalid data format. Please check part selection."
+            );
+          } else {
+            setError(" Server error. Please try again.");
+          }
+        } else if (status === 400) {
+          setError(" Bad request. Please check your input data.");
+        } else {
+          setError(` Error ${status}: ${data?.message || "Unknown error"}`);
+        }
       } else {
-        setError("Failed to create request. Please try again.");
+        setError(" Network error. Please check your connection.");
       }
     } finally {
       setLoading(false);
@@ -382,137 +471,262 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center animate-fadeIn">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 border border-gray-100 animate-slideUp scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          New Part Request
-        </h2>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-2">
-              Requested Parts
-            </label>
-
-            {rows.map((row, idx) => {
-              const filtered = parts.filter(
-                (p) => p.partCategory === row.category
-              );
-              return (
-                <div
-                  key={idx}
-                  className="flex items-center gap-3 mb-3 flex-wrap"
-                >
-                  <select
-                    value={row.category}
-                    onChange={(e) =>
-                      handleChange(idx, "category", e.target.value)
-                    }
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm flex-1"
-                  >
-                    <option value="">Select Category</option>
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-
-                  <select
-                    value={row.partId}
-                    onChange={(e) =>
-                      handleChange(idx, "partId", e.target.value)
-                    }
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm flex-1"
-                    disabled={!row.category}
-                  >
-                    <option value="">Select Part</option>
-                    {filtered.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} ({p.code})
-                      </option>
-                    ))}
-                  </select>
-
-                  <input
-                    type="number"
-                    placeholder="Quantity"
-                    value={row.quantity}
-                    onChange={(e) =>
-                      handleChange(idx, "quantity", e.target.value)
-                    }
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-28"
-                  />
-
-                  {rows.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemove(idx)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-
-            <button
-              type="button"
-              onClick={() =>
-                setRows([...rows, { category: "", partId: "", quantity: "" }])
-              }
-              className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
-            >
-              <PlusCircle size={16} /> Add Part
-            </button>
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-1">
-              Note <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              placeholder="Enter reason or issue..."
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              rows="3"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {error && (
-            <div className="text-sm text-red-600 bg-red-50 border border-red-200 p-2 rounded-lg">
-              {error}
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center animate-fadeIn p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-gray-100 animate-slideUp">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 rounded-t-2xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-lg">
+                <PlusCircle size={24} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">
+                  New Part Request
+                </h2>
+                <p className="text-blue-100 text-sm mt-1">
+                  Add parts needed for warranty service
+                </p>
+              </div>
             </div>
-          )}
-          {success && (
-            <div className="text-sm text-green-600 bg-green-50 border border-green-200 p-2 rounded-lg">
-              {success}
-            </div>
-          )}
-
-          <div className="flex justify-end gap-3 pt-1">
             <button
-              type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-100 transition"
+              className="text-white/80 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg"
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className={`px-5 py-2 rounded-lg text-sm font-medium text-white transition ${
-                loading
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700"
-              }`}
-            >
-              {loading ? "Submitting..." : "Create Request"}
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
             </button>
           </div>
-        </form>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Parts Section */}
+            <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <label className="block text-lg font-semibold text-gray-800">
+                  Requested Parts
+                </label>
+                <span className="text-sm text-gray-500 bg-white px-2 py-1 rounded-md border">
+                  {rows.length} part(s)
+                </span>
+              </div>
+
+              <div className="space-y-4">
+                {rows.map((row, idx) => {
+                  const filtered = parts.filter(
+                    (p) => p.partCategory === row.category
+                  );
+                  return (
+                    <div
+                      key={idx}
+                      className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
+                          {/* Category Select */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Category
+                            </label>
+                            <select
+                              value={row.category}
+                              onChange={(e) =>
+                                handleChange(idx, "category", e.target.value)
+                              }
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            >
+                              <option value="">Select Category</option>
+                              {categories.map((cat) => (
+                                <option key={cat} value={cat}>
+                                  {cat}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Part Select */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Part
+                            </label>
+                            <select
+                              value={row.partId}
+                              onChange={(e) =>
+                                handleChange(idx, "partId", e.target.value)
+                              }
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition disabled:bg-gray-100 disabled:cursor-not-allowed"
+                              disabled={!row.category}
+                            >
+                              <option value="">Select Part</option>
+                              {filtered.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  {p.name} ({p.code})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Quantity Input */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Quantity
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                placeholder="Qty"
+                                value={row.quantity}
+                                onChange={(e) =>
+                                  handleChange(idx, "quantity", e.target.value)
+                                }
+                                min="1"
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                              />
+                              {rows.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemove(idx)}
+                                  className="p-2.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                                  title="Remove part"
+                                >
+                                  <Trash2 size={18} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAdd}
+                className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium mt-4 p-3 hover:bg-blue-50 rounded-lg transition-colors w-full justify-center border-2 border-dashed border-blue-200"
+              >
+                <PlusCircle size={20} />
+                Add Another Part
+              </button>
+            </div>
+
+            {/* Note Section */}
+            <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+              <label className="block text-lg font-semibold text-gray-800 mb-3">
+                Request Note <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                placeholder="Enter reason for part request, vehicle details, or any special instructions..."
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows="4"
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none"
+                required
+              />
+              <div className="flex justify-between items-center mt-2">
+                <span className="text-xs text-gray-500">
+                  Provide details about why these parts are needed
+                </span>
+                <span
+                  className={`text-xs ${
+                    note.length > 200 ? "text-red-500" : "text-gray-500"
+                  }`}
+                >
+                  {note.length}/500
+                </span>
+              </div>
+            </div>
+
+            {/* Status Messages */}
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+                <div className="p-1 bg-red-100 rounded-full mt-0.5">
+                  <svg
+                    className="w-4 h-4 text-red-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-red-800">Error</p>
+                  <p className="text-sm text-red-700 mt-1">{error}</p>
+                </div>
+              </div>
+            )}
+
+            {success && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3">
+                <div className="p-1 bg-green-100 rounded-full mt-0.5">
+                  <svg
+                    className="w-4 h-4 text-green-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-green-800">Success</p>
+                  <p className="text-sm text-green-700 mt-1">{success}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={loading}
+                className="px-6 py-3 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition disabled:opacity-50 min-w-[100px]"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className={`px-8 py-3 rounded-xl text-sm font-medium text-white transition min-w-[120px] ${
+                  loading
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700 shadow-sm"
+                }`}
+              >
+                {loading ? (
+                  <div className="flex items-center gap-2 justify-center">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Creating...
+                  </div>
+                ) : (
+                  "Create Request"
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
@@ -528,17 +742,16 @@ const PartRequestManagement = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
   const fetchRequests = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      if (token)
-        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       const res = await getAllPartRequestsApi();
       let data = res.data?.data?.partSupplies || [];
       setRequests(data);
     } catch (err) {
-      console.error("❌ Error fetching requests:", err);
       setError("Failed to fetch part requests!");
     } finally {
       setLoading(false);
@@ -549,13 +762,16 @@ const PartRequestManagement = () => {
     fetchRequests();
   }, []);
 
-  //  Chuẩn hoá detail theo status tổng
+  const handleNewRequestCreated = () => {
+    fetchRequests();
+    setCurrentPage(1);
+  };
+
   const handleViewRequest = async (req) => {
     try {
       const res = await getPartRequestDetailApi(req.id);
       const rawData = res.data?.data || req;
 
-      // Chuẩn hoá toàn bộ data
       const normalizedData = {
         ...rawData,
         details: Array.isArray(rawData.details)
@@ -567,8 +783,6 @@ const PartRequestManagement = () => {
 
       setSelectedRequest(normalizedData);
     } catch (err) {
-      console.error("❌ Error fetching request details:", err);
-
       const normalizedData = {
         ...req,
         details: [],
@@ -590,6 +804,21 @@ const PartRequestManagement = () => {
 
     return matchSearch && matchStatus;
   });
+
+  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentRequests = filteredRequests.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchTerm]);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
 
   const summaryStats = {
     pending: requests.filter((r) => r.status === "PENDING").length,
@@ -659,10 +888,15 @@ const PartRequestManagement = () => {
       </div>
 
       <PartRequestTable
-        requests={filteredRequests}
+        requests={currentRequests}
         loading={loading}
         error={error}
         onView={handleViewRequest}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={filteredRequests.length}
+        onPageChange={handlePageChange}
+        itemsPerPage={itemsPerPage}
       />
 
       {selectedRequest && (
@@ -675,7 +909,7 @@ const PartRequestManagement = () => {
       {showCreateModal && (
         <CreatePartRequestModal
           onClose={() => setShowCreateModal(false)}
-          onCreated={fetchRequests}
+          onCreated={handleNewRequestCreated}
         />
       )}
     </div>

@@ -9,50 +9,57 @@ import {
   Download,
   PackageSearch,
   BarChart3,
+  Building,
+  Home,
 } from "lucide-react";
+import { storage } from "../utils/storage";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import ViewPartModal from "../components/supply/ViewPartModal";
-import {
-  getAllPartInventoriesApi,
-  getPartInventoryByServiceCenterIdApi,
-} from "../services/api.service";
+import { getAllPartInventoriesApi } from "../services/api.service";
 import { AlertTriangle } from "lucide-react";
 
 const SupplyChain = () => {
-  const { currentUser, loading } = useCurrentUser();
+  const { currentUser, loading: userLoading } = useCurrentUser();
+
+  // Lấy thông tin user từ hook và storage
+  const userRole = currentUser?.role?.toUpperCase();
+  const userServiceCenterId = parseInt(storage.get("serviceCenterId")) || null;
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterWarehouse, setFilterWarehouse] = useState("");
-  const [parts, setParts] = useState([]);
+  const [allParts, setAllParts] = useState([]);
+  const [displayParts, setDisplayParts] = useState([]);
   const [selectedPart, setSelectedPart] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [showSuccess, setShowSuccess] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState("table");
+  const [activeTab, setActiveTab] = useState("main");
   const itemsPerPage = 6;
-  const [selectedServiceCenter, setSelectedServiceCenter] = useState("");
-  const [serviceCenters, setServiceCenters] = useState([]);
 
   // =========================
-  //  FETCH DATA
+  //  ROLE & PERMISSION CHECK
   // =========================
-  const fetchPartInventories = async (serviceCenterId = null) => {
+  const isEVMStaff = userRole === "EVM_STAFF";
+  const isSCStaff = userRole === "SC_STAFF";
+  const isAdmin = userRole === "ADMIN";
+  const isAuthorized = isAdmin || isEVMStaff || isSCStaff;
+
+  // =========================
+  //  FETCH ALL DATA
+  // =========================
+  const fetchAllPartInventories = async () => {
     try {
       setLoadingData(true);
       setError("");
-      setSuccess("");
-      setShowSuccess(false);
 
-      const response = serviceCenterId
-        ? await getPartInventoryByServiceCenterIdApi(serviceCenterId)
-        : await getAllPartInventoriesApi();
-
+      const response = await getAllPartInventoriesApi();
       const data = response.data?.data || response.data;
-      if (!Array.isArray(data))
+
+      if (!Array.isArray(data)) {
         throw new Error("Invalid response format from API");
+      }
 
       const formatted = data.map((item) => ({
         id: item.id,
@@ -67,10 +74,7 @@ const SupplyChain = () => {
         serviceCenterId: item.serviceCenterId,
       }));
 
-      setParts(formatted);
-      setSuccess("Inventory data loaded successfully!");
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
+      setAllParts(formatted);
     } catch (err) {
       setError("Failed to load part inventories. Please try again.");
     } finally {
@@ -78,56 +82,73 @@ const SupplyChain = () => {
     }
   };
 
-  const fetchServiceCenters = async () => {
-    try {
-      const res = await getAllPartInventoriesApi();
-      const data = res.data?.data || [];
-      const uniqueCenters = [
-        ...new Map(
-          data
-            .filter((item) => item.serviceCenterId && item.serviceCenterName)
-            .map((item) => [
-              item.serviceCenterId,
-              {
-                id: item.serviceCenterId,
-                name: item.serviceCenterName,
-                address: item.serviceCenterAddress,
-              },
-            ])
-        ).values(),
-      ];
-      setServiceCenters(uniqueCenters);
-    } catch (err) {
-      console.error(" Error loading service centers:", err);
+  useEffect(() => {
+    if (isAuthorized && !userLoading) {
+      fetchAllPartInventories();
     }
-  };
-
-  useEffect(() => {
-    fetchServiceCenters();
-  }, []);
-
-  useEffect(() => {
-    if (selectedServiceCenter) fetchPartInventories(selectedServiceCenter);
-    else fetchPartInventories();
-  }, [selectedServiceCenter]);
+  }, [userLoading]);
 
   // =========================
-  //  ROLE CHECK
+  //  FILTER LOGIC BASED ON ROLE & TAB
   // =========================
-  if (loading)
+  useEffect(() => {
+    if (allParts.length === 0 || userLoading) return;
+
+    let filteredData = [...allParts];
+
+    // FILTER THEO ROLE & TAB
+    if (isSCStaff && userServiceCenterId) {
+      filteredData = filteredData.filter(
+        (item) => item.serviceCenterId === userServiceCenterId
+      );
+    } else if (isEVMStaff) {
+      if (activeTab === "main") {
+        filteredData = filteredData.filter(
+          (item) => item.serviceCenterId === 1
+        );
+      } else if (activeTab === "branches") {
+        filteredData = filteredData.filter(
+          (item) => item.serviceCenterId !== 1
+        );
+      }
+    }
+
+    // FILTER THEO SEARCH & WAREHOUSE
+    filteredData = filteredData.filter((p) => {
+      const matchesSearch =
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.code.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesWarehouse = filterWarehouse
+        ? p.warehouse === filterWarehouse
+        : true;
+      return matchesSearch && matchesWarehouse;
+    });
+
+    setDisplayParts(filteredData);
+    setCurrentPage(1);
+  }, [
+    allParts,
+    activeTab,
+    searchTerm,
+    filterWarehouse,
+    userServiceCenterId,
+    isEVMStaff,
+    isSCStaff,
+    userLoading,
+  ]);
+
+  // =========================
+  //  ACCESS DENIED & LOADING
+  // =========================
+  if (userLoading) {
     return (
       <div className="p-6 text-center text-gray-600">
         Loading user information...
       </div>
     );
-
-  const isAuthorized =
-    currentUser?.role?.toUpperCase() === "ADMIN" ||
-    currentUser?.role?.toUpperCase() === "EVM_STAFF" ||
-    currentUser?.role?.toUpperCase() === "SC_STAFF";
+  }
 
   if (!isAuthorized) {
-    // DEBUG info in access denied page
     return (
       <div className="flex flex-col items-center justify-center h-screen text-center bg-gray-50 text-gray-700">
         <div className="bg-white shadow-md rounded-lg p-8 max-w-md border border-gray-200">
@@ -137,13 +158,13 @@ const SupplyChain = () => {
           <p className="text-sm text-gray-600 mb-4">
             You do not have permission to access this page.
           </p>
-          {/* DEBUG INFO */}
           <div className="text-xs bg-gray-100 p-3 rounded-lg text-left mt-4">
             <p>
-              <strong>Your Role:</strong> {currentUser?.role || "Unknown"}
+              <strong>Your Role:</strong> {userRole || "Unknown"}
             </p>
             <p>
-              <strong>Normalized:</strong> {userRole || "Unknown"}
+              <strong>Your Service Center ID:</strong>{" "}
+              {userServiceCenterId || "Unknown"}
             </p>
             <p>
               <strong>Required Roles:</strong> ADMIN, EVM_STAFF, SC_STAFF
@@ -155,25 +176,15 @@ const SupplyChain = () => {
   }
 
   // =========================
-  //  FILTER + PAGINATION
+  //  PAGINATION
   // =========================
-  const filteredParts = parts.filter((p) => {
-    const matchesSearch =
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesWarehouse = filterWarehouse
-      ? p.warehouse === filterWarehouse
-      : true;
-    return matchesSearch && matchesWarehouse;
-  });
-
-  const totalPages = Math.ceil(filteredParts.length / itemsPerPage);
+  const totalPages = Math.ceil(displayParts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentParts = filteredParts.slice(
+  const currentParts = displayParts.slice(
     startIndex,
     startIndex + itemsPerPage
   );
-  const uniqueWarehouses = [...new Set(parts.map((p) => p.warehouse))];
+  const uniqueWarehouses = [...new Set(displayParts.map((p) => p.warehouse))];
 
   const getQuantityColor = (qty) => {
     if (qty > 50) return "text-green-600";
@@ -189,7 +200,7 @@ const SupplyChain = () => {
       "data:text/csv;charset=utf-8," +
       ["Part Code,Name,Category,Warehouse,Address,Quantity,Unit"]
         .concat(
-          parts.map(
+          displayParts.map(
             (p) =>
               `${p.code},${p.name},${p.category},${p.warehouse},${p.address},${p.quantity},${p.unit}`
           )
@@ -201,10 +212,171 @@ const SupplyChain = () => {
     link.click();
   };
 
-  const totalQuantity = parts.reduce((sum, p) => sum + (p.quantity || 0), 0);
+  // =========================
+  //  RENDER TABS (CHỈ CHO EVM_STAFF)
+  // =========================
+  const renderTabs = () => {
+    if (!isEVMStaff) return null;
+
+    return (
+      <div className="flex border-b border-gray-200 mb-6">
+        <button
+          className={`flex items-center gap-2 px-4 py-3 font-medium border-b-2 transition-all ${
+            activeTab === "main"
+              ? "border-blue-600 text-blue-700 bg-blue-50"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+          onClick={() => setActiveTab("main")}
+        >
+          <Building size={18} />
+          Central warehouse
+        </button>
+        <button
+          className={`flex items-center gap-2 px-4 py-3 font-medium border-b-2 transition-all ${
+            activeTab === "branches"
+              ? "border-green-600 text-green-700 bg-green-50"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+          onClick={() => setActiveTab("branches")}
+        >
+          <Home size={18} />
+          Service Center
+        </button>
+      </div>
+    );
+  };
 
   // =========================
-  //  UI
+  //  UI COMPONENTS
+  // =========================
+  const DashboardSummary = () => (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6 animate-fadeInScale">
+      <div className="group relative overflow-hidden bg-white rounded-2xl border border-blue-100 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+        <div className="relative flex items-center gap-4 p-5">
+          <div className="p-3 rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-100 transition-all duration-300">
+            <Warehouse size={28} strokeWidth={1.8} />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-500">
+              Total Warehouses
+            </p>
+            <h2 className="text-3xl font-bold text-gray-800 tracking-tight">
+              {uniqueWarehouses.length}
+            </h2>
+          </div>
+        </div>
+        <div className="h-1 bg-blue-400/70 w-0 group-hover:w-full transition-all duration-700"></div>
+      </div>
+
+      <div className="group relative overflow-hidden bg-white rounded-2xl border border-green-100 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        <div className="absolute inset-0 bg-gradient-to-br from-green-50/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+        <div className="relative flex items-center gap-4 p-5">
+          <div className="p-3 rounded-xl bg-green-50 text-green-600 group-hover:bg-green-100 transition-all duration-300">
+            <BarChart3 size={28} strokeWidth={1.8} />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-500">Total Parts</p>
+            <h2 className="text-3xl font-bold text-gray-800 tracking-tight">
+              {displayParts.length}
+            </h2>
+          </div>
+        </div>
+        <div className="h-1 bg-green-400/70 w-0 group-hover:w-full transition-all duration-700"></div>
+      </div>
+
+      <div
+        className={`group relative overflow-hidden bg-white rounded-2xl border ${
+          displayParts.filter((p) => p.quantity < 10).length > 0
+            ? "border-orange-200 shadow-lg animate-pulse"
+            : "border-gray-100"
+        } shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1`}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-orange-50/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+        <div className="relative flex items-center gap-4 p-5">
+          <div className="p-3 rounded-xl bg-orange-50 text-orange-600 group-hover:bg-orange-100 transition-all duration-300">
+            <AlertTriangle size={28} strokeWidth={1.8} />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-500">Low Stock Items</p>
+            <h2 className="text-3xl font-bold text-gray-800 tracking-tight">
+              {displayParts.filter((p) => p.quantity < 10).length}
+            </h2>
+          </div>
+        </div>
+        <div className="h-1 bg-orange-400/70 w-0 group-hover:w-full transition-all duration-700"></div>
+      </div>
+    </div>
+  );
+
+  const FilterBar = () => (
+    <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-md border border-gray-200 rounded-xl p-4 mb-5 shadow-md animate-fadeInScale">
+      <div className="flex flex-wrap items-center gap-3 text-gray-700 font-medium">
+        {!((isEVMStaff && activeTab === "main") || isSCStaff) && (
+          <>
+            <Filter size={18} className="text-blue-500" />
+            <select
+              value={filterWarehouse}
+              onChange={(e) => setFilterWarehouse(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm"
+            >
+              <option value="">All Warehouses</option>
+              {uniqueWarehouses.map((warehouse, index) => (
+                <option key={index} value={warehouse}>
+                  {warehouse}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
+
+        {/* Search bar  */}
+        <div
+          className={`relative ${
+            (isEVMStaff && activeTab === "main") || isSCStaff ? "mr-auto" : ""
+          }`}
+        >
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search size={18} className="text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search by code or name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-64 shadow-sm"
+          />
+        </div>
+
+        {/* View mode buttons  */}
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            className={`p-2 rounded-lg transition ${
+              viewMode === "table"
+                ? "bg-blue-100 text-blue-700"
+                : "hover:bg-gray-100 text-gray-600"
+            }`}
+            onClick={() => setViewMode("table")}
+          >
+            <Table size={18} />
+          </button>
+          <button
+            className={`p-2 rounded-lg transition ${
+              viewMode === "card"
+                ? "bg-blue-100 text-blue-700"
+                : "hover:bg-gray-100 text-gray-600"
+            }`}
+            onClick={() => setViewMode("card")}
+          >
+            <LayoutGrid size={18} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // =========================
+  //  MAIN RENDER
   // =========================
   return (
     <div className="p-6 bg-gradient-to-br from-gray-50 to-white min-h-screen animate-fadeInScale">
@@ -218,7 +390,17 @@ const SupplyChain = () => {
             </h1>
           </div>
           <p className="text-sm text-gray-500 mt-1">
-            Monitor EV part distribution and stock levels across service centers
+            {isEVMStaff &&
+              activeTab === "main" &&
+              "Manage central warehouse inventory"}
+            {isEVMStaff &&
+              activeTab === "branches" &&
+              "Manage service center inventories"}
+            {isSCStaff &&
+              `Manage inventory of ${
+                displayParts[0]?.warehouse || "your Service Center"
+              }`}
+            {isAdmin && "Manage all inventories across warehouses"}
           </p>
         </div>
 
@@ -233,139 +415,14 @@ const SupplyChain = () => {
         </div>
       </div>
 
+      {/* Tabs (chỉ cho EVM_STAFF) */}
+      {renderTabs()}
+
       {/* Dashboard Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6 animate-fadeInScale">
-        {/* Total Warehouses */}
-        <div className="group relative overflow-hidden bg-white rounded-2xl border border-blue-100 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-50/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-          <div className="relative flex items-center gap-4 p-5">
-            <div className="p-3 rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-100 transition-all duration-300">
-              <Warehouse size={28} strokeWidth={1.8} />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">
-                Total Warehouses
-              </p>
-              <h2 className="text-3xl font-bold text-gray-800 tracking-tight">
-                {uniqueWarehouses.length}
-              </h2>
-            </div>
-          </div>
-          <div className="h-1 bg-blue-400/70 w-0 group-hover:w-full transition-all duration-700"></div>
-        </div>
-
-        {/* Total Parts */}
-        <div className="group relative overflow-hidden bg-white rounded-2xl border border-green-100 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-          <div className="absolute inset-0 bg-gradient-to-br from-green-50/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-          <div className="relative flex items-center gap-4 p-5">
-            <div className="p-3 rounded-xl bg-green-50 text-green-600 group-hover:bg-green-100 transition-all duration-300">
-              <BarChart3 size={28} strokeWidth={1.8} />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Total Parts</p>
-              <h2 className="text-3xl font-bold text-gray-800 tracking-tight">
-                {parts.length}
-              </h2>
-            </div>
-          </div>
-          <div className="h-1 bg-green-400/70 w-0 group-hover:w-full transition-all duration-700"></div>
-        </div>
-
-        {/* Low Stock Items */}
-        <div
-          className={`group relative overflow-hidden bg-white rounded-2xl border ${
-            parts.filter((p) => p.quantity < 100).length > 0
-              ? "border-orange-200 shadow-lg animate-pulse"
-              : "border-gray-100"
-          } shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1`}
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-orange-50/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-          <div className="relative flex items-center gap-4 p-5">
-            <div className="p-3 rounded-xl bg-orange-50 text-orange-600 group-hover:bg-orange-100 transition-all duration-300">
-              <AlertTriangle size={28} strokeWidth={1.8} />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">
-                Low Stock Items
-              </p>
-              <h2 className="text-3xl font-bold text-gray-800 tracking-tight">
-                {parts.filter((p) => p.quantity < 100).length}
-              </h2>
-            </div>
-          </div>
-          <div className="h-1 bg-orange-400/70 w-0 group-hover:w-full transition-all duration-700"></div>
-        </div>
-      </div>
+      <DashboardSummary />
 
       {/* Filter Bar */}
-      <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-md border border-gray-200 rounded-xl p-4 mb-5 shadow-md animate-fadeInScale">
-        <div className="flex flex-wrap items-center gap-3 text-gray-700 font-medium">
-          <Filter size={18} className="text-blue-500" />
-
-          <select
-            value={selectedServiceCenter}
-            onChange={(e) => setSelectedServiceCenter(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm"
-          >
-            <option value="">All Service Centers</option>
-            {serviceCenters.map((sc) => (
-              <option key={sc.id} value={sc.id}>
-                {sc.name} – {sc.address}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={filterWarehouse}
-            onChange={(e) => setFilterWarehouse(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm"
-          >
-            <option value="">All Warehouses</option>
-            {uniqueWarehouses.map((warehouse, index) => (
-              <option key={index} value={warehouse}>
-                {warehouse}
-              </option>
-            ))}
-          </select>
-
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={18} className="text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search by code or name..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-64 shadow-sm"
-            />
-          </div>
-
-          {/* View Switch */}
-          <div className="ml-auto flex items-center gap-2">
-            <button
-              className={`p-2 rounded-lg transition ${
-                viewMode === "table"
-                  ? "bg-blue-100 text-blue-700"
-                  : "hover:bg-gray-100 text-gray-600"
-              }`}
-              onClick={() => setViewMode("table")}
-            >
-              <Table size={18} />
-            </button>
-            <button
-              className={`p-2 rounded-lg transition ${
-                viewMode === "card"
-                  ? "bg-blue-100 text-blue-700"
-                  : "hover:bg-gray-100 text-gray-600"
-              }`}
-              onClick={() => setViewMode("card")}
-            >
-              <LayoutGrid size={18} />
-            </button>
-          </div>
-        </div>
-      </div>
+      <FilterBar />
 
       {/* TABLE VIEW */}
       {!loadingData && viewMode === "table" && (
@@ -459,6 +516,7 @@ const SupplyChain = () => {
           </table>
         </div>
       )}
+
       {/* CARD VIEW */}
       {!loadingData && viewMode === "card" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fadeInScale">
@@ -508,12 +566,12 @@ const SupplyChain = () => {
       )}
 
       {/* Pagination */}
-      {filteredParts.length > 0 && (
+      {displayParts.length > 0 && (
         <div className="flex justify-between items-center mt-6 text-sm text-gray-600 animate-fadeIn">
           <span>
             Showing {startIndex + 1}–
-            {Math.min(startIndex + itemsPerPage, filteredParts.length)} of{" "}
-            {filteredParts.length} parts
+            {Math.min(startIndex + itemsPerPage, displayParts.length)} of{" "}
+            {displayParts.length} parts
           </span>
           <div className="flex gap-2">
             <button

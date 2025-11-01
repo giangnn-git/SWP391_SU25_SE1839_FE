@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   Calendar,
-  Car,
   FileText,
   Hash,
   AlertCircle,
@@ -24,7 +23,7 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const [successMessage, setSuccessMessage] = useState(""); // Thêm state cho success message
+  const [successMessage, setSuccessMessage] = useState("");
 
   // Format date từ yyyy-mm-dd sang [year, month, day] cho BE
   const formatDateForBE = (dateString) => {
@@ -33,7 +32,7 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
     return [date.getFullYear(), date.getMonth() + 1, date.getDate()];
   };
 
-  // Validate form - FIXED: Sửa lỗi so sánh date
+  // Validate form - ĐÃ BỎ VALIDATION VEHICLE MODELS
   const validateForm = () => {
     const newErrors = {};
 
@@ -46,7 +45,7 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
     if (!formData.produceDateTo)
       newErrors.produceDateTo = "Production end date is required";
 
-    // Date validation - FIXED: Convert to Date object for comparison
+    // Date validation
     if (
       formData.startDate &&
       formData.endDate &&
@@ -91,17 +90,16 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
   };
 
   // Handle form submission
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validateForm()) return;
 
     setLoading(true);
-    setSuccessMessage(""); // Clear previous success message
+    setSuccessMessage("");
 
     try {
-      // Format data for API - convert dates to [year, month, day] arrays
+      // Format data for API - ĐÃ BỎ affectedModelIds
       const campaignData = {
         name: formData.name.trim(),
         description: formData.description.trim(),
@@ -116,7 +114,6 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
 
       const response = await createCampaignApi(campaignData);
 
-      // Hiển thị success message
       setSuccessMessage("Campaign created successfully!");
 
       // Reset form
@@ -130,7 +127,6 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
         produceDateTo: "",
       });
 
-      // Call success callback sau 2 giây để user thấy success message
       setTimeout(() => {
         if (onCampaignCreated) {
           onCampaignCreated(response.data);
@@ -139,8 +135,6 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
       }, 2000);
     } catch (error) {
       console.error("Error creating campaign:", error);
-
-      //  chỉ hiển thị errorCode từ BE
       const errorCode = error.response?.data?.errorCode;
 
       if (errorCode) {
@@ -148,7 +142,6 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
           submit: errorCode,
         });
       } else {
-        // Fallback nếu không có errorCode
         setErrors({
           submit:
             error.response?.data?.message ||
@@ -177,7 +170,6 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
       name: name,
     }));
 
-    // Auto-generate code if empty
     if (!formData.code && name.trim()) {
       const baseCode = name
         .replace(/[^a-zA-Z0-9]/g, "")
@@ -407,7 +399,7 @@ const CreateCampaignModal = ({ isOpen, onClose, onCampaignCreated }) => {
             {/* Production Range */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Car size={20} className="text-orange-600" />
+                <Calendar size={20} className="text-orange-600" />
                 Affected Production Range *
               </h3>
 

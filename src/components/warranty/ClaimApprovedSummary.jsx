@@ -78,10 +78,14 @@ const ClaimSummary = ({ scr, loading, error }) => {
               </div>
             </div>
             <div>
-              <p className={`text-xs font-medium ${card.labelColor} mb-1 opacity-75`}>
+              <p
+                className={`text-xs font-medium ${card.labelColor} mb-1 opacity-75`}
+              >
                 {card.title}
               </p>
-              <p className={`text-2xl font-bold ${card.labelColor}`}>{card.value}</p>
+              <p className={`text-2xl font-bold ${card.labelColor}`}>
+                {card.value}
+              </p>
             </div>
           </div>
         );

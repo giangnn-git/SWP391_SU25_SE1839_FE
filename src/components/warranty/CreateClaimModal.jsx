@@ -64,18 +64,18 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
 
       const list = Array.isArray(data)
         ? data.map((item) => ({
-          vehicle: item.vehicle,
-          recall: item.code
-            ? {
-              code: item.code,
-              name: item.name,
-              description: item.description,
-              startDate: item.startDate,
-              endDate: item.endDate,
-              status: item.status,
-            }
-            : null,
-        }))
+            vehicle: item.vehicle,
+            recall: item.code
+              ? {
+                  code: item.code,
+                  name: item.name,
+                  description: item.description,
+                  startDate: item.startDate,
+                  endDate: item.endDate,
+                  status: item.status,
+                }
+              : null,
+          }))
         : [];
 
       if (list.length === 0) {
@@ -94,8 +94,6 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
       setVehicles([]);
     }
   };
-
-
 
   // Validate form fields
   const validateForm = () => {
@@ -190,8 +188,12 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
         {/* Header */}
         <div className="sticky top-0 flex items-center justify-between p-6 border-b border-gray-200 bg-white">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Create New Claim</h2>
-            <p className="text-sm text-gray-600 mt-1">Fill in the details below</p>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Create New Claim
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Fill in the details below
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -210,13 +212,14 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
             </label>
             <textarea
               placeholder="Enter claim description..."
-              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${errors.description ? "border-red-300 bg-red-50" : "border-gray-300"
-                }`}
+              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${
+                errors.description
+                  ? "border-red-300 bg-red-50"
+                  : "border-gray-300"
+              }`}
               rows="3"
               value={formData.description}
-              onChange={(e) =>
-                handleInputChange("description", e.target.value)
-              }
+              onChange={(e) => handleInputChange("description", e.target.value)}
             />
             {errors.description && (
               <p className="text-red-600 text-xs mt-1">{errors.description}</p>
@@ -232,12 +235,13 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
               <input
                 type="number"
                 placeholder="Enter mileage..."
-                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${errors.mileage ? "border-red-300 bg-red-50" : "border-gray-300"
-                  }`}
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${
+                  errors.mileage
+                    ? "border-red-300 bg-red-50"
+                    : "border-gray-300"
+                }`}
                 value={formData.mileage}
-                onChange={(e) =>
-                  handleInputChange("mileage", e.target.value)
-                }
+                onChange={(e) => handleInputChange("mileage", e.target.value)}
               />
               {errors.mileage && (
                 <p className="text-red-600 text-xs mt-1">{errors.mileage}</p>
@@ -254,9 +258,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
                   placeholder="Enter phone..."
                   className="flex-1 px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 transition border-gray-300"
                   value={formData.phone}
-                  onChange={(e) =>
-                    handleInputChange("phone", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("phone", e.target.value)}
                 />
                 <button
                   type="button"
@@ -272,14 +274,17 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
           {/* Vehicle Select */}
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Select Vehicle (VIN - License Plate) <span className="text-red-500">*</span>
+              Select Vehicle (VIN - License Plate){" "}
+              <span className="text-red-500">*</span>
             </label>
             <select
-              className={`w-full px-4 py-2.5 border rounded-lg transition ${errors.vin ? "border-red-300 bg-red-50" : "border-gray-300"
-                } ${!formData.phone?.trim()
+              className={`w-full px-4 py-2.5 border rounded-lg transition ${
+                errors.vin ? "border-red-300 bg-red-50" : "border-gray-300"
+              } ${
+                !formData.phone?.trim()
                   ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                   : "focus:ring-2 focus:ring-blue-500"
-                }`}
+              }`}
               value={formData.vin}
               disabled={!formData.phone?.trim() || vehicles.length === 0}
               onChange={(e) => {
@@ -318,14 +323,16 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
             )}
           </div>
 
-
           {/* Recall */}
           {recallInfo && (
             <div className="p-3 border rounded-md bg-yellow-50 mb-3">
               <h4 className="font-semibold text-yellow-700">
-                This vehicle is under a Recall campaign.: {recallInfo.name} ({recallInfo.code})
+                This vehicle is under a Recall campaign.: {recallInfo.name} (
+                {recallInfo.code})
               </h4>
-              <p className="text-sm text-gray-600 mb-2">{recallInfo.description}</p>
+              <p className="text-sm text-gray-600 mb-2">
+                {recallInfo.description}
+              </p>
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -360,10 +367,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
               Attachments
             </label>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 hover:bg-blue-50 transition">
-              <ImageIcon
-                size={32}
-                className="mx-auto text-gray-400 mb-2"
-              />
+              <ImageIcon size={32} className="mx-auto text-gray-400 mb-2" />
               <label
                 htmlFor="file-upload"
                 className="cursor-pointer text-blue-600 hover:text-blue-700 font-semibold"

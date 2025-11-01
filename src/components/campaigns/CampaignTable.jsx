@@ -148,10 +148,11 @@ const CampaignTable = ({
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <div
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${campaign.totalVehicles > 0
-                          ? "bg-blue-100 text-blue-800 border border-blue-200"
-                          : "bg-gray-100 text-gray-600 border border-gray-200"
-                          }`}
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          campaign.totalVehicles > 0
+                            ? "bg-blue-100 text-blue-800 border border-blue-200"
+                            : "bg-gray-100 text-gray-600 border border-gray-200"
+                        }`}
                       >
                         {campaign.totalVehicles} vehicles
                       </div>
@@ -177,8 +178,7 @@ const CampaignTable = ({
                         className="p-2 text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
                         title="Edit Campaign"
                         onClick={() => {
-                          console.log("🟠 Edit clicked:", campaign);
-                          onEdit && onEdit(campaign); // ✅ gọi callback mở modal edit
+                          onEdit && onEdit(campaign); //   callback mở modal edit
                         }}
                       >
                         <Edit size={16} />
