@@ -143,7 +143,6 @@ const PartRequestTable = ({
       <table className="min-w-full text-sm text-gray-700">
         <thead className="bg-blue-50 border-b border-gray-200">
           <tr>
-            <th className="py-3 px-4 text-left font-semibold">ID</th>
             <th className="py-3 px-4 text-left font-semibold">
               Service Center
             </th>
@@ -160,7 +159,6 @@ const PartRequestTable = ({
               key={r.id}
               className="border-b border-gray-100 hover:bg-blue-50/40 transition"
             >
-              <td className="py-3 px-4 font-medium">{r.id}</td>
               <td className="py-3 px-4">{r.serviceCenterName}</td>
               <td className="py-3 px-4">{r.createdBy}</td>
               <td className="py-3 px-4">{formatDate(r.createdDate)}</td>
@@ -362,7 +360,6 @@ const ViewPartRequestModal = ({ request, onClose }) => {
   );
 };
 
-/* ================== CREATE MODAL ================== */
 /* ================== CREATE MODAL ================== */
 const CreatePartRequestModal = ({ onClose, onCreated }) => {
   const [parts, setParts] = useState([]);

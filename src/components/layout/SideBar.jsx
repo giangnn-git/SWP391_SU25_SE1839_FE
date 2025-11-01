@@ -14,6 +14,8 @@ import {
   PanelRight,
   AlertTriangle,
   UserPlus,
+  Truck,
+  Package,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -75,19 +77,13 @@ const Sidebar = () => {
         ]
       : []),
 
-    // Part Requests — chỉ dành cho SC Staff
+    // Part Requests — chỉ dành cho SC Staff (đã đổi icon thành Package)
     ...(isScStaff
       ? [
           {
             name: "Part Requests",
             href: "/part-requests",
-            icon: (
-              <PackageSearch
-                size={18}
-                className={iconStyle}
-                strokeWidth={1.8}
-              />
-            ),
+            icon: <Package size={18} className={iconStyle} strokeWidth={1.8} />,
           },
         ]
       : []),
@@ -121,19 +117,13 @@ const Sidebar = () => {
         ]
       : []),
 
-    // Supply Chain — Hidden from SC_STAFF
+    // Supply Chain — Hidden from SC_STAFF (đã đổi icon thành Truck)
     ...(isAdmin || isEvmStaff || isScStaff
       ? [
           {
             name: "Supply Chain",
             href: "/supply-chain",
-            icon: (
-              <PackageSearch
-                size={18}
-                className={iconStyle}
-                strokeWidth={1.8}
-              />
-            ),
+            icon: <Truck size={18} className={iconStyle} strokeWidth={1.8} />,
           },
         ]
       : []),
@@ -150,19 +140,6 @@ const Sidebar = () => {
           },
         ]
       : []),
-
-    // Claim Approve — only EVM Staff
-    // ...(isEvmStaff
-    //   ? [
-    //       {
-    //         name: "Claim Approve",
-    //         href: "/claim-approve",
-    //         icon: (
-    //           <CheckCircle2 size={18} className={iconStyle} strokeWidth={1.8} />
-    //         ),
-    //       },
-    //     ]
-    //   : []),
 
     // Part Request Review — only EVM Staff
     ...(isEvmStaff
