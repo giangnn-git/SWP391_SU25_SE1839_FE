@@ -4,6 +4,7 @@ import axios from "../services/axios.customize";
 import CreateClaimModal from "../components/warranty/CreateClaimModal";
 import ClaimTable from "../components/warranty/ClaimTable";
 import ClaimSummary from "../components/warranty/ClaimSummary";
+import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 
 const WarrantyClaimsManagement = () => {
@@ -61,6 +62,22 @@ const WarrantyClaimsManagement = () => {
             console.error("Error updating claim list:", err);
         }
     };
+
+    useEffect(() => {
+        const channel = new BroadcastChannel("claim_updates");
+
+        channel.onmessage = (event) => {
+            if (event.data?.type === "CLAIM_UPDATED") {
+                console.log("Detected claim update from another tab:", event.data.id);
+                fetchClaims();
+                toast.success("Claim data has been refreshed automatically");
+            }
+        };
+
+        return () => {
+            channel.close();
+        };
+    }, []);
 
 
 
@@ -145,7 +162,7 @@ const WarrantyClaimsManagement = () => {
                     onClick={() => setShowCreateModal(true)}
                 >
                     <PlusCircle size={18} />
-                    New Claim
+                    New Ticket
                 </button>
             </div>
 

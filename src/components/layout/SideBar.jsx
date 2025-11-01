@@ -16,6 +16,7 @@ import {
   UserPlus,
   Truck,
   Package,
+  CheckCircle,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -54,7 +55,7 @@ const Sidebar = () => {
       : []),
 
     // Warranty Claims — chỉ dành cho SC Staff
-    ...(isScStaff || isTech || isEvmStaff
+    ...(isScStaff || isTech || isAdmin
       ? [
           {
             name: "Warranty Claims",
@@ -73,6 +74,19 @@ const Sidebar = () => {
             name: "Repair Orders",
             href: "/repair-orders",
             icon: <Wrench size={18} className={iconStyle} strokeWidth={1.8} />,
+          },
+        ]
+      : []),
+
+    //Warranty Claims Approval - for EVM Staff
+    ...(isEvmStaff || isAdmin
+      ? [
+          {
+            name: "Claim Approvals",
+            href: "/warranty-claim-approvals",
+            icon: (
+              <CheckCircle size={18} className={iconStyle} strokeWidth={1.8} />
+            ),
           },
         ]
       : []),
@@ -117,13 +131,19 @@ const Sidebar = () => {
         ]
       : []),
 
-    // Supply Chain — Hidden from SC_STAFF (đã đổi icon thành Truck)
+    // Supply Chain — Hidden from SC_STAFF
     ...(isAdmin || isEvmStaff || isScStaff
       ? [
           {
             name: "Supply Chain",
             href: "/supply-chain",
-            icon: <Truck size={18} className={iconStyle} strokeWidth={1.8} />,
+            icon: (
+              <PackageSearch
+                size={18}
+                className={iconStyle}
+                strokeWidth={1.8}
+              />
+            ),
           },
         ]
       : []),

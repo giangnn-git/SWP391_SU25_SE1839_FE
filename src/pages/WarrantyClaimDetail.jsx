@@ -123,6 +123,10 @@ const ClaimDetail = () => {
 
             await axios.patch(`/api/api/claims/${id}`, payload);
             toast.success("Updated successfully!");
+            const channel = new BroadcastChannel("claim_updates");
+            channel.postMessage({ type: "CLAIM_UPDATED", id });
+            channel.close();
+
 
             // Fetch latest claim data after update
             const res = await axios.get(`/api/api/claims/${id}`);
@@ -314,7 +318,7 @@ const ClaimDetail = () => {
                 {/* View Vehicle Modal */}
                 {showPolicyModal && selectedVehicle && (
                     <ViewVehicleModal
-                        vehicle={selectedVehicle} // dùng object giả
+                        vehicle={selectedVehicle}
                         onClose={() => setShowPolicyModal(false)}
                     />
                 )}
@@ -327,7 +331,7 @@ const ClaimDetail = () => {
                             <RefreshCcw size={20} className="text-blue-600" />
                             <h2 className="text-lg font-bold text-gray-900">Claim Status & Parts</h2>
                         </div>
-                        {fcr?.currentStatus === "PENDING" &&
+                        {fcr?.currentStatus === "DRAFT" &&
                             (!editedParts?.length || editedParts.length === 0) && (
                                 <button
                                     onClick={() => setIsEditingParts(!isEditingParts)}
@@ -362,7 +366,7 @@ const ClaimDetail = () => {
                                 {updating ? "Updating..." : "Update Status"}
                             </button>
 
-                            {isEditingParts && fcr?.currentStatus === "PENDING" && (
+                            {isEditingParts && fcr?.currentStatus === "DRAFT" && (
                                 <button
                                     onClick={handleSaveParts}
                                     disabled={updating}
