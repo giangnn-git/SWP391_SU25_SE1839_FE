@@ -1,4 +1,16 @@
-import { Eye, X, Calendar, Gauge, FileText, Shield, Clock, Tag, Layers } from "lucide-react";
+import {
+  Eye,
+  X,
+  Calendar,
+  Gauge,
+  FileText,
+  Shield,
+  Clock,
+  Tag,
+  Layers,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
 
 const ViewWarrantyPolicyModal = ({ showModal, selectedPolicy, onClose }) => {
   if (!showModal || !selectedPolicy) return null;
@@ -36,7 +48,7 @@ const ViewWarrantyPolicyModal = ({ showModal, selectedPolicy, onClose }) => {
 
         {/* Content */}
         <div className="p-4 space-y-4">
-          {/*  Policy Code */}
+          {/* Policy Code */}
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Tag size={16} className="text-gray-500" />
@@ -47,7 +59,7 @@ const ViewWarrantyPolicyModal = ({ showModal, selectedPolicy, onClose }) => {
             </div>
           </div>
 
-          {/*  Policy Type */}
+          {/* Policy Type */}
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Layers size={16} className="text-gray-500" />
@@ -55,12 +67,13 @@ const ViewWarrantyPolicyModal = ({ showModal, selectedPolicy, onClose }) => {
             </div>
             <div className="p-2 bg-gray-50 border border-gray-200 rounded">
               <span
-                className={`px-3 py-1 rounded-full text-xs font-semibold ${selectedPolicy.type === "PROMOTION"
+                className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  selectedPolicy.policyType === "PROMOTION"
                     ? "bg-yellow-100 text-yellow-700"
                     : "bg-green-100 text-green-700"
-                  }`}
+                }`}
               >
-                {selectedPolicy.type || "NORMAL"}
+                {selectedPolicy.policyType || "NORMAL"}
               </span>
             </div>
           </div>
@@ -73,6 +86,29 @@ const ViewWarrantyPolicyModal = ({ showModal, selectedPolicy, onClose }) => {
             </div>
             <div className="p-2 bg-gray-50 border border-gray-200 rounded text-gray-900 font-medium">
               {selectedPolicy.name}
+            </div>
+          </div>
+
+          {/* Status */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              {selectedPolicy.status === "ACTIVE" ? (
+                <CheckCircle size={16} className="text-green-500" />
+              ) : (
+                <XCircle size={16} className="text-gray-500" />
+              )}
+              <h3 className="font-medium text-gray-900 text-sm">Status</h3>
+            </div>
+            <div className="p-2 bg-gray-50 border border-gray-200 rounded">
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  selectedPolicy.status === "ACTIVE"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                {selectedPolicy.status || "INACTIVE"}
+              </span>
             </div>
           </div>
 

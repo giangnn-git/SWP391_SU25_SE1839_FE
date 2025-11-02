@@ -86,25 +86,25 @@ const UpdateWarrantyPolicyModal = ({
     try {
       const apiData = {
         code: formData.code.trim(),
-        policyType: formData.policyType.trim(), // ĐÃ SỬA
+        policyType: formData.policyType.trim(),
         name: formData.name.trim(),
         durationPeriod: parseInt(formData.durationPeriod),
         mileageLimit: parseInt(formData.mileageLimit),
         description: formData.description.trim(),
       };
 
-      console.log("📤 Sending update data:", apiData); // Debug
-
       await updatePolicyApi(policy.id, apiData);
 
       if (onUpdated) onUpdated();
       onClose();
     } catch (error) {
-      console.error(
-        "Update failed:",
+      console.error("Update failed:", error);
+      const errorMessage =
+        error.response?.data?.errorCode ||
         error.response?.data?.message ||
-          "Failed to update policy. Please try again."
-      );
+        "Failed to update policy. Please try again.";
+
+      console.error(errorMessage);
     }
   };
 

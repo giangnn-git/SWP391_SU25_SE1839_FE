@@ -102,6 +102,11 @@ export const updateWarrantyPolicyApi = (id, policyData) => {
   return axios.put(`/api/api/policy/${id}`, policyData);
 };
 
+//toggle policy status
+export const updateWarrantyPolicyStatusApi = (policyId) => {
+  return axios.patch(`/api/api/policy/status/${policyId}`);
+};
+
 //  Delete policy
 export const deleteWarrantyPolicyApi = (id) => {
   return axios.delete(`/api/api/policy/${id}`);
