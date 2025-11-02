@@ -3,7 +3,7 @@ import { PlusCircle, Search } from "lucide-react";
 import axios from "../services/axios.customize";
 import CreateClaimModal from "../components/warranty/CreateClaimModal";
 import ClaimTable from "../components/warranty/ClaimTable";
-import ClaimSummary from "../components/warranty/ClaimSummary";
+import ClaimApprovalSummary from "../components/warranty/ClaimApprovedSummary";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 
@@ -105,23 +105,26 @@ const WarrantyClaimsManagement = () => {
           Dashboard
         </Link>
         <span className="mx-1">/</span>
-        <Link to="/warranty-claims" className="text-gray-700 font-medium">
-          Warranty Claims
+        <Link
+          to="/warranty-claim-approvals"
+          className="text-gray-700 font-medium"
+        >
+          Warranty Claim Approvals
         </Link>
       </div>
 
       {/* Title */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">
-          Warranty Claims Management
+          Warranty Claim Approvals Management
         </h1>
         <p className="text-gray-600 text-sm mt-1">
-          Manage and track all warranty claims
+          Manage and track all warranty claim approvals
         </p>
       </div>
 
       {/* Summary Cards */}
-      <ClaimSummary scr={scr} loading={loading} error={error} />
+      <ClaimApprovalSummary scr={scr} loading={loading} error={error} />
 
       {/* Filters + Actions */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">

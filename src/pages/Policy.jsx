@@ -1,9 +1,23 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import PartPolicyManagement from "../components/policies/Part/PartPolicyManagement";
 import WarrantyPolicyManagement from "../components/policies/Warranty/WarrantyPolicyManagement";
 import { FileText } from "lucide-react";
+
 const Policy = () => {
   const [activeTab, setActiveTab] = useState("part");
+  const [partPolicyRefresh, setPartPolicyRefresh] = useState(0);
+  const [warrantyPolicyRefresh, setWarrantyPolicyRefresh] = useState(0);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+
+    // Trigger refresh khi chuyển tab
+    if (tab === "part") {
+      setPartPolicyRefresh((prev) => prev + 1);
+    } else if (tab === "warranty") {
+      setWarrantyPolicyRefresh((prev) => prev + 1);
+    }
+  };
 
   return (
     <div className="p-6">
@@ -21,20 +35,22 @@ const Policy = () => {
       <div className="flex justify-start mb-8">
         <div className="inline-flex bg-gray-100 rounded-full p-1">
           <button
-            onClick={() => setActiveTab("part")}
-            className={`px-5 py-2.5 text-sm font-medium rounded-full transition-all duration-200 ${activeTab === "part"
-              ? "bg-white shadow-sm text-gray-900"
-              : "text-gray-600 hover:text-gray-900"
-              }`}
+            onClick={() => handleTabChange("part")}
+            className={`px-5 py-2.5 text-sm font-medium rounded-full transition-all duration-200 ${
+              activeTab === "part"
+                ? "bg-white shadow-sm text-gray-900"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
           >
             Part Policy
           </button>
           <button
-            onClick={() => setActiveTab("warranty")}
-            className={`px-5 py-2.5 text-sm font-medium rounded-full transition-all duration-200 ${activeTab === "warranty"
-              ? "bg-white shadow-sm text-gray-900"
-              : "text-gray-600 hover:text-gray-900"
-              }`}
+            onClick={() => handleTabChange("warranty")}
+            className={`px-5 py-2.5 text-sm font-medium rounded-full transition-all duration-200 ${
+              activeTab === "warranty"
+                ? "bg-white shadow-sm text-gray-900"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
           >
             Warranty Policy
           </button>
@@ -43,17 +59,19 @@ const Policy = () => {
 
       {/* Tab Content */}
       <div
-        className={`transition-all duration-300 ${activeTab === "part" ? "opacity-100" : "hidden opacity-0"
-          }`}
+        className={`transition-all duration-300 ${
+          activeTab === "part" ? "opacity-100" : "hidden opacity-0"
+        }`}
       >
-        <PartPolicyManagement />
+        <PartPolicyManagement refreshTrigger={partPolicyRefresh} />
       </div>
 
       <div
-        className={`transition-all duration-300 ${activeTab === "warranty" ? "opacity-100" : "hidden opacity-0"
-          }`}
+        className={`transition-all duration-300 ${
+          activeTab === "warranty" ? "opacity-100" : "hidden opacity-0"
+        }`}
       >
-        <WarrantyPolicyManagement />
+        <WarrantyPolicyManagement refreshTrigger={warrantyPolicyRefresh} />
       </div>
     </div>
   );

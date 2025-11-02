@@ -58,8 +58,8 @@ const RepairOrderTable = ({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16 bg-white rounded-lg border border-gray-200">
-        <Loader className="animate-spin h-10 w-10 text-blue-600 mx-auto mb-3" />
+      <div className="flex flex-col items-center justify-center py-16 bg-white rounded-lg border border-gray-200">
+        <Loader className="animate-spin h-10 w-10 text-blue-600 mb-3" />
         <p className="text-gray-600 font-medium">Loading repair orders...</p>
       </div>
     );
@@ -96,9 +96,9 @@ const RepairOrderTable = ({
               <th className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">
                 ID
               </th>
-              {/* <th className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">
                 Claim ID
-              </th> */}
+              </th>
               <th className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">
                 Model
               </th>
@@ -130,9 +130,9 @@ const RepairOrderTable = ({
                   <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                     RO-{String(order.repairOrderId).padStart(3, "0")}
                   </td>
-                  {/* <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                    RO-{String(order.).padStart(3, "0")}
-                  </td> */}
+                  <td className="px-6 py-4 text-sm font-semibold text-gray-900">
+                    WC-{String(order.claimId).padStart(3, "0")}
+                  </td>
                   <td className="px-6 py-4 text-sm text-gray-700 font-medium">
                     {order.modelName}
                   </td>

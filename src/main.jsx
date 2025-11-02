@@ -12,6 +12,7 @@ import WarrantyClaims from "./pages/WarrantyClaims.jsx";
 import RepairOrders from "./pages/RepairOrders.jsx";
 import ClaimDetail from "./pages/WarrantyClaimDetail.jsx";
 import RepairOrderDetail from "./pages/RepairOrderDetail.jsx";
+import WarrantyClaimApprovals from "./pages/WarrantyClaimsApproval.jsx";
 import ProfilePage from "./pages/Profiles.jsx";
 import ChangePasswordPage from "./pages/ChangePassword.jsx";
 import Profiles from "./pages/Profiles.jsx";
@@ -42,7 +43,9 @@ const router = createBrowserRouter([
       {
         path: "warranty-claims",
         element: (
-          <PrivateRoute allowedRoles={["ADMIN", "SC_STAFF", "TECHNICIAN", "EVM_STAFF"]}>
+          <PrivateRoute
+            allowedRoles={["SC_STAFF", "TECHNICIAN", "EVM_STAFF", "ADMIN"]}
+          >
             <WarrantyClaims />
           </PrivateRoute>
         ),
@@ -74,6 +77,16 @@ const router = createBrowserRouter([
         element: (
           <PrivateRoute allowedRoles={["ADMIN", "SC_STAFF", "TECHNICIAN"]}>
             <RepairOrderDetail />
+          </PrivateRoute>
+        ),
+      },
+
+      //  Warranty Claims Approval — chỉ EVM_STAFF
+      {
+        path: "warranty-claim-approvals",
+        element: (
+          <PrivateRoute allowedRoles={["EVM_STAFF", "ADMIN"]}>
+            <WarrantyClaimApprovals />
           </PrivateRoute>
         ),
       },

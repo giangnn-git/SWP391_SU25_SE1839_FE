@@ -93,7 +93,7 @@ const ClaimTable = ({ claims = [], loading, error }) => {
         <div className="flex items-center justify-center py-16">
           <div className="text-center">
             <Loader className="animate-spin h-10 w-10 text-blue-600 mx-auto mb-3" />
-            <p className="text-gray-600">Loading claims...</p>
+            <p className="text-gray-600 font-medium">Loading claims...</p>
           </div>
         </div>
       ) : currentClaims.length > 0 ? (

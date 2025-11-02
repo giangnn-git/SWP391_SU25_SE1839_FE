@@ -186,7 +186,9 @@ const CustomerRegistration = () => {
   const handleEditSuccessFromView = async (updated) => {
     setSuccessMessage("Customer updated successfully!");
     if (updated?.vin && viewVehicle?.vin === updated.vin) {
-      setViewVehicle((prev) => (prev ? { ...prev, licensePlate: updated.licensePlate } : prev));
+      setViewVehicle((prev) =>
+        prev ? { ...prev, licensePlate: updated.licensePlate } : prev
+      );
     }
     if (updated) {
       setCustomerDetail((prev) => (prev ? { ...prev, ...updated } : prev));
@@ -198,7 +200,6 @@ const CustomerRegistration = () => {
 
     setTimeout(() => setSuccessMessage(""), 5000);
   };
-
 
   // HÀM XỬ LÝ KHI THÊM VEHICLE THÀNH CÔNG
   const handleAddVehicleSuccess = async () => {
@@ -461,22 +462,22 @@ const CustomerRegistration = () => {
                     <table className="min-w-full">
                       <thead className="bg-gray-50 sticky top-0">
                         <tr className="text-left text-gray-700">
-                          <th className="px-8 py-4 font-semibold border-b border-gray-200">
+                          <th className="px-6 py-4 font-semibold border-b border-gray-200 w-[20%]">
                             VIN
                           </th>
-                          <th className="px-8 py-4 font-semibold border-b border-gray-200">
+                          <th className="px-6 py-4 font-semibold border-b border-gray-200 w-[20%]">
                             Model
                           </th>
-                          <th className="px-8 py-4 font-semibold border-b border-gray-200">
+                          <th className="px-6 py-4 font-semibold border-b border-gray-200 w-[15%] min-w-[120px]">
                             License Plate
                           </th>
-                          <th className="px-8 py-4 font-semibold border-b border-gray-200">
+                          <th className="px-6 py-4 font-semibold border-b border-gray-200 w-[15%]">
                             Purchase Date
                           </th>
-                          <th className="px-8 py-4 font-semibold border-b border-gray-200">
+                          <th className="px-6 py-4 font-semibold border-b border-gray-200 w-[20%]">
                             Campaigns
                           </th>
-                          <th className="px-8 py-4 font-semibold border-b border-gray-200 text-right">
+                          <th className="px-6 py-4 font-semibold border-b border-gray-200 w-[10%] text-right">
                             Action
                           </th>
                         </tr>
@@ -517,31 +518,31 @@ const CustomerRegistration = () => {
                                 key={v?.id ?? v?.vin ?? idx}
                                 className="hover:bg-gray-50/80 transition-colors"
                               >
-                                <td className="px-8 py-4 font-medium text-gray-900">
-                                  <code className="bg-gray-100 px-2 py-1 rounded-lg text-sm">
+                                <td className="px-6 py-4 font-medium text-gray-900">
+                                  <code className="bg-gray-100 px-2 py-1 rounded-lg text-sm break-all">
                                     {v?.vin ?? "-"}
                                   </code>
                                 </td>
-                                <td className="px-8 py-4">
+                                <td className="px-6 py-4">
                                   <span className="font-medium text-gray-700">
                                     {v?.modelName ?? "-"}
                                   </span>
                                 </td>
-                                <td className="px-8 py-4">
+                                <td className="px-6 py-4">
                                   {v?.licensePlate ? (
-                                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-medium text-sm">
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-medium text-sm whitespace-nowrap min-w-[80px] justify-center">
                                       {v.licensePlate}
                                     </span>
                                   ) : (
                                     "-"
                                   )}
                                 </td>
-                                <td className="px-8 py-4 text-gray-600">
+                                <td className="px-6 py-4 text-gray-600 whitespace-nowrap">
                                   {formatDateTuple(v?.purchaseDate)}
                                 </td>
-                                <td className="px-8 py-4">
+                                <td className="px-6 py-4">
                                   {Array.isArray(v?.campaignNames) &&
-                                    v.campaignNames.length > 0 ? (
+                                  v.campaignNames.length > 0 ? (
                                     <div className="flex flex-wrap gap-2">
                                       {v.campaignNames.map((name, i) => (
                                         <span
@@ -558,7 +559,7 @@ const CustomerRegistration = () => {
                                     </span>
                                   )}
                                 </td>
-                                <td className="px-8 py-4 text-right">
+                                <td className="px-6 py-4 text-right">
                                   <button
                                     onClick={() => {
                                       setOpenCustomerVehicles(false);
@@ -566,7 +567,7 @@ const CustomerRegistration = () => {
                                       setCustomerVehicles([]);
                                       handleViewVehicle(v);
                                     }}
-                                    className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                    className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 whitespace-nowrap"
                                     title="View vehicle details"
                                   >
                                     View

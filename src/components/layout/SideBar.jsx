@@ -14,6 +14,9 @@ import {
   PanelRight,
   AlertTriangle,
   UserPlus,
+  Truck,
+  Package,
+  CheckCircle,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -52,7 +55,7 @@ const Sidebar = () => {
       : []),
 
     // Warranty Claims — chỉ dành cho SC Staff
-    ...(isScStaff || isTech || isEvmStaff
+    ...(isScStaff || isTech || isAdmin
       ? [
           {
             name: "Warranty Claims",
@@ -75,19 +78,26 @@ const Sidebar = () => {
         ]
       : []),
 
-    // Part Requests — chỉ dành cho SC Staff
+    //Warranty Claims Approval - for EVM Staff
+    ...(isEvmStaff || isAdmin
+      ? [
+          {
+            name: "Claim Approvals",
+            href: "/warranty-claim-approvals",
+            icon: (
+              <CheckCircle size={18} className={iconStyle} strokeWidth={1.8} />
+            ),
+          },
+        ]
+      : []),
+
+    // Part Requests — chỉ dành cho SC Staff (đã đổi icon thành Package)
     ...(isScStaff
       ? [
           {
             name: "Part Requests",
             href: "/part-requests",
-            icon: (
-              <PackageSearch
-                size={18}
-                className={iconStyle}
-                strokeWidth={1.8}
-              />
-            ),
+            icon: <Package size={18} className={iconStyle} strokeWidth={1.8} />,
           },
         ]
       : []),
@@ -127,13 +137,7 @@ const Sidebar = () => {
           {
             name: "Supply Chain",
             href: "/supply-chain",
-            icon: (
-              <PackageSearch
-                size={18}
-                className={iconStyle}
-                strokeWidth={1.8}
-              />
-            ),
+            icon: <Truck size={18} className={iconStyle} strokeWidth={1.8} />,
           },
         ]
       : []),
@@ -150,19 +154,6 @@ const Sidebar = () => {
           },
         ]
       : []),
-
-    // Claim Approve — only EVM Staff
-    // ...(isEvmStaff
-    //   ? [
-    //       {
-    //         name: "Claim Approve",
-    //         href: "/claim-approve",
-    //         icon: (
-    //           <CheckCircle2 size={18} className={iconStyle} strokeWidth={1.8} />
-    //         ),
-    //       },
-    //     ]
-    //   : []),
 
     // Part Request Review — only EVM Staff
     ...(isEvmStaff

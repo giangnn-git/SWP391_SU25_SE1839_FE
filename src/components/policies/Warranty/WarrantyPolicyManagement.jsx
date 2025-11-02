@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   PlusCircle,
   Filter,
@@ -12,16 +12,15 @@ import {
   getAllWarrantyApi,
   createWarrantyPolicyApi,
   updateWarrantyPolicyApi,
-  deleteWarrantyPolicyApi,
+  updateWarrantyPolicyStatusApi,
 } from "../../../services/api.service";
 
 import WarrantyPolicyTable from "./WarrantyPolicyTable";
 import CreateEditWarrantyPolicyModal from "./CreateEditWarrantyPolicyModal";
 import ViewWarrantyPolicyModal from "./ViewWarrantyPolicy";
 import UpdateWarrantyPolicyModal from "./UpdateWarrantyPolicyModal";
-import DeleteWarrantyPolicyModal from "./DeleteWarrantyPolicyModal";
 
-const WarrantyPolicyManagement = () => {
+const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -30,27 +29,18 @@ const WarrantyPolicyManagement = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedPolicy, setSelectedPolicy] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
-
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    durationPeriod: "",
-    mileageLimit: "",
-    code: "",
-    type: "NORMAL",
-  });
 
   // Filter, Search & Pagination
   const [filterDuration, setFilterDuration] = useState("");
   const [filterMileage, setFilterMileage] = useState("");
+  const [filterStatus, setFilterStatus] = useState("ACTIVE");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Fetch policies from API
+  // Fetch policies từ API
   const fetchPolicies = async () => {
     try {
       setLoading(true);
@@ -60,12 +50,13 @@ const WarrantyPolicyManagement = () => {
       const transformedPolicies = response.data.data.policyList.map(
         (policy) => ({
           id: policy.id,
-          code: policy.code || "N/A",
+          code: policy.code,
           policyType: policy.policyType || "NORMAL",
           name: policy.name || "Unnamed Policy",
           description: policy.description || "No description available",
           durationPeriod: `${policy.durationPeriod} months`,
           mileageLimit: `${policy.mileageLimit?.toLocaleString()} km`,
+          status: policy.status || "INACTIVE",
           originalData: policy,
         })
       );
@@ -79,9 +70,10 @@ const WarrantyPolicyManagement = () => {
     }
   };
 
+  // Fetch data khi component mount HOẶC khi refreshTrigger thay đổi
   useEffect(() => {
     fetchPolicies();
-  }, []);
+  }, [refreshTrigger]); // Thêm refreshTrigger vào dependency
 
   // CREATE
   const handleCreatePolicy = async (policyData) => {
@@ -105,28 +97,22 @@ const WarrantyPolicyManagement = () => {
       setShowCreateModal(false);
     } catch (error) {
       console.error("Error creating policy:", error);
-      setError(
+      const errorMessage =
+        error.response?.data?.errorCode ||
         error.response?.data?.message ||
-          "Failed to create policy. Please try again."
-      );
+        "Failed to create policy. Please try again.";
+      setError(errorMessage);
     } finally {
       setActionLoading(false);
     }
   };
 
-  // UPDATE (open modal)
+  // UPDATE
   const handleEdit = (policy) => {
     const selected = policy.originalData || policy;
     setSelectedPolicy(selected);
     setActionLoading(false);
     setShowUpdateModal(true);
-  };
-
-  // DELETE (open modal)
-  const handleDelete = (policy) => {
-    const selected = policy.originalData || policy;
-    setSelectedPolicy(selected);
-    setShowDeleteModal(true);
   };
 
   // VIEW
@@ -135,11 +121,31 @@ const WarrantyPolicyManagement = () => {
     setShowViewModal(true);
   };
 
-  // Filter, Search, Pagination
+  // STATUS TOGGLE
+  const handleStatusToggle = async (policy) => {
+    setActionLoading(true);
+    try {
+      await updateWarrantyPolicyStatusApi(policy.id);
+      await fetchPolicies();
+      setSuccess(`Policy status updated successfully!`);
+    } catch (err) {
+      console.error("Error updating policy status:", err);
+      const errorMessage =
+        err.response?.data?.errorCode ||
+        err.response?.data?.message ||
+        "Failed to update policy status. Please try again.";
+      setError(errorMessage);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Filter and Search logic
   const filteredPolicies = policies.filter((policy) => {
     const matchesSearch = searchTerm
       ? policy.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        policy.description.toLowerCase().includes(searchTerm.toLowerCase())
+        policy.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        policy.code.toLowerCase().includes(searchTerm.toLowerCase())
       : true;
 
     const matchesDuration = filterDuration
@@ -150,7 +156,9 @@ const WarrantyPolicyManagement = () => {
       ? policy.mileageLimit === filterMileage
       : true;
 
-    return matchesSearch && matchesDuration && matchesMileage;
+    const matchesStatus = filterStatus ? policy.status === filterStatus : true;
+
+    return matchesSearch && matchesDuration && matchesMileage && matchesStatus;
   });
 
   const totalPages = Math.ceil(filteredPolicies.length / itemsPerPage);
@@ -167,7 +175,7 @@ const WarrantyPolicyManagement = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterDuration, filterMileage, searchTerm]);
+  }, [filterDuration, filterMileage, filterStatus, searchTerm]);
 
   const clearSearch = () => {
     setSearchTerm("");
@@ -176,6 +184,7 @@ const WarrantyPolicyManagement = () => {
   const clearFilters = () => {
     setFilterDuration("");
     setFilterMileage("");
+    setFilterStatus("");
     setSearchTerm("");
   };
 
@@ -224,7 +233,6 @@ const WarrantyPolicyManagement = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Add New Policy Button */}
           <button
             className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50"
             onClick={() => setShowCreateModal(true)}
@@ -278,7 +286,7 @@ const WarrantyPolicyManagement = () => {
               </div>
               <input
                 type="text"
-                placeholder="Search policies by name or description..."
+                placeholder="Search policies by name, code or description..."
                 className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -336,6 +344,33 @@ const WarrantyPolicyManagement = () => {
           </div>
         </div>
 
+        {/* Status Filter Buttons */}
+        <div className="flex items-center gap-4 mt-4 pt-4 border-t border-gray-100">
+          <span className="text-sm font-medium text-gray-700">Status:</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setFilterStatus("ACTIVE")}
+              className={`px-4 py-2 text-sm rounded-lg transition-all ${
+                filterStatus === "ACTIVE"
+                  ? "bg-green-600 text-white shadow-sm"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Active
+            </button>
+            <button
+              onClick={() => setFilterStatus("INACTIVE")}
+              className={`px-4 py-2 text-sm rounded-lg transition-all ${
+                filterStatus === "INACTIVE"
+                  ? "bg-red-600 text-white shadow-sm"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Inactive
+            </button>
+          </div>
+        </div>
+
         {searchTerm && (
           <div className="mt-3 text-sm text-green-600">
             Found {filteredPolicies.length} policies matching "{searchTerm}"
@@ -349,8 +384,8 @@ const WarrantyPolicyManagement = () => {
         loading={loading}
         onView={handleView}
         onEdit={handleEdit}
-        onDelete={handleDelete}
-        actionLoading={false}
+        onStatusToggle={handleStatusToggle}
+        actionLoading={actionLoading}
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}
         totalItems={filteredPolicies.length}
@@ -396,7 +431,14 @@ const WarrantyPolicyManagement = () => {
       <CreateEditWarrantyPolicyModal
         showModal={showCreateModal}
         editing={false}
-        formData={formData}
+        formData={{
+          name: "",
+          description: "",
+          durationPeriod: "",
+          mileageLimit: "",
+          code: "",
+          type: "NORMAL",
+        }}
         actionLoading={actionLoading}
         onClose={() => setShowCreateModal(false)}
         onSave={() => handleCreatePolicy(formData)}
@@ -421,17 +463,6 @@ const WarrantyPolicyManagement = () => {
           setSuccess("Policy updated successfully!");
         }}
         updatePolicyApi={updateWarrantyPolicyApi}
-      />
-
-      <DeleteWarrantyPolicyModal
-        showModal={showDeleteModal}
-        policy={selectedPolicy}
-        onClose={() => setShowDeleteModal(false)}
-        onDeleted={() => {
-          fetchPolicies();
-          setSuccess("Policy deleted successfully!");
-        }}
-        deletePolicyApi={deleteWarrantyPolicyApi}
       />
     </div>
   );

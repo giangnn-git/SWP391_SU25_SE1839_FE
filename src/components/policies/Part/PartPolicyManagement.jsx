@@ -6,7 +6,7 @@ import ViewPartPolicyModal from "./ViewPartPolicy";
 import CreatePartPolicy from "./CreatePartPolicy";
 import { updatePartPolicyStatusApi } from "../../../services/api.service";
 
-const PartPolicyManagement = () => {
+const PartPolicyManagement = ({ refreshTrigger = 0 }) => {
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -32,14 +32,14 @@ const PartPolicyManagement = () => {
       setError("");
       const response = await getAllPartPoliciesApi();
 
-      const partPolicies =
-        response.data?.data?.partPolicies || response.data?.data || [];
+      // Lấy data đúng từ response
+      const partPolicies = response.data?.data?.partPolicies || [];
 
-      //  Sắp xếp tăng dần theo startDate
+      // Sắp xếp tăng dần theo startDate
       const sortedPolicies = [...partPolicies].sort((a, b) => {
         const dateA = new Date(a.startDate);
         const dateB = new Date(b.startDate);
-        return dateA - dateB; // Tăng dần (cũ -> mới)
+        return dateA - dateB;
       });
 
       setPolicies(sortedPolicies);
@@ -53,7 +53,7 @@ const PartPolicyManagement = () => {
 
   useEffect(() => {
     fetchPolicies();
-  }, []);
+  }, [refreshTrigger]);
 
   // Filter and Search logic
   const filteredPolicies = policies.filter((policy) => {
@@ -142,14 +142,10 @@ const PartPolicyManagement = () => {
         setSuccess("Policy status updated successfully!");
       }
     } catch (err) {
-      let errorMessage = "Failed to update policy status. Please try again.";
-      if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.response?.status === 401) {
-        errorMessage = "Unauthorized. Please check your permissions.";
-      } else if (err.response?.status === 404) {
-        errorMessage = "Policy not found.";
-      }
+      let errorMessage =
+        err.response?.data?.errorCode ||
+        err.response?.data?.message ||
+        "Failed to update policy status. Please try again.";
       setError(errorMessage);
     } finally {
       setActionLoading(false);
@@ -207,7 +203,6 @@ const PartPolicyManagement = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Add New Policy Button */}
           <button
             className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50"
             onClick={() => setShowCreateModal(true)}
