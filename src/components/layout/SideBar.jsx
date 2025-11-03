@@ -78,6 +78,18 @@ const Sidebar = () => {
       ]
       : []),
 
+    // Campaign Recall – Vehicles (SC Staff only)
+    ...(isScStaff
+      ? [
+        {
+          name: "Campaign Recall – Vehicles",
+          href: "/sc/campaign-vehicles",
+          icon: <AlertTriangle size={18} className={iconStyle} strokeWidth={1.8} />,
+        },
+      ]
+      : []),
+
+
     //Warranty Claims Approval - for EVM Staff
     ...(isEvmStaff || isAdmin
       ? [
