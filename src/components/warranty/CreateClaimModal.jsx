@@ -12,7 +12,8 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
     vin: "",
     priority: "NORMAL",
     agreeRecall: false,
-    partClaims: [{ category: "", partId: "", quantity: "" }],
+    diagnosis: "",
+    defectiveParts: [{ category: "", partId: "" }],
     attachments: [],
   });
 
@@ -64,18 +65,18 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
 
       const list = Array.isArray(data)
         ? data.map((item) => ({
-            vehicle: item.vehicle,
-            recall: item.code
-              ? {
-                  code: item.code,
-                  name: item.name,
-                  description: item.description,
-                  startDate: item.startDate,
-                  endDate: item.endDate,
-                  status: item.status,
-                }
-              : null,
-          }))
+          vehicle: item.vehicle,
+          recall: item.code
+            ? {
+              code: item.code,
+              name: item.name,
+              description: item.description,
+              startDate: item.startDate,
+              endDate: item.endDate,
+              status: item.status,
+            }
+            : null,
+        }))
         : [];
 
       if (list.length === 0) {
@@ -102,6 +103,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
       newErrors.description = "Description is required";
     if (!formData.mileage) newErrors.mileage = "Mileage is required";
     if (!formData.vin.trim()) newErrors.vin = "VIN is required";
+    if (!formData.diagnosis.trim()) newErrors.diagnosis = "Diagnosis is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -115,16 +117,14 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
 
       const claimObj = {
         description: formData.description,
+        diagnosis: formData.diagnosis,
         mileage: parseInt(formData.mileage),
         vin: formData.vin,
         agreeRecall: formData.agreeRecall,
         priority: formData.priority,
-        partClaims: formData.partClaims
-          .filter((p) => p.partId && p.quantity)
-          .map((p) => ({
-            id: parseInt(p.partId),
-            quantity: parseInt(p.quantity),
-          })),
+        defectivePartIds: formData.defectiveParts
+          .filter((p) => p.partId)
+          .map((p) => parseInt(p.partId)), // chỉ gửi ID part
       };
 
       fd.append(
@@ -171,7 +171,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
 
   // Handle part info change
   const handlePartChange = (idx, field, value) => {
-    const newParts = [...formData.partClaims];
+    const newParts = [...formData.defectiveParts];
     newParts[idx][field] = value;
 
     if (field === "category") {
@@ -179,7 +179,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
       fetchParts(value);
     }
 
-    setFormData({ ...formData, partClaims: newParts });
+    setFormData({ ...formData, defectiveParts: newParts });
   };
 
   return (
@@ -205,26 +205,6 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
 
         {/* Body */}
         <div className="p-6 space-y-5">
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Description <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              placeholder="Enter claim description..."
-              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${
-                errors.description
-                  ? "border-red-300 bg-red-50"
-                  : "border-gray-300"
-              }`}
-              rows="3"
-              value={formData.description}
-              onChange={(e) => handleInputChange("description", e.target.value)}
-            />
-            {errors.description && (
-              <p className="text-red-600 text-xs mt-1">{errors.description}</p>
-            )}
-          </div>
 
           {/* Mileage and Phone */}
           <div className="grid grid-cols-2 gap-4">
@@ -235,11 +215,10 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
               <input
                 type="number"
                 placeholder="Enter mileage..."
-                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${
-                  errors.mileage
-                    ? "border-red-300 bg-red-50"
-                    : "border-gray-300"
-                }`}
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${errors.mileage
+                  ? "border-red-300 bg-red-50"
+                  : "border-gray-300"
+                  }`}
                 value={formData.mileage}
                 onChange={(e) => handleInputChange("mileage", e.target.value)}
               />
@@ -278,13 +257,11 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
               <span className="text-red-500">*</span>
             </label>
             <select
-              className={`w-full px-4 py-2.5 border rounded-lg transition ${
-                errors.vin ? "border-red-300 bg-red-50" : "border-gray-300"
-              } ${
-                !formData.phone?.trim()
+              className={`w-full px-4 py-2.5 border rounded-lg transition ${errors.vin ? "border-red-300 bg-red-50" : "border-gray-300"
+                } ${!formData.phone?.trim()
                   ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                   : "focus:ring-2 focus:ring-blue-500"
-              }`}
+                }`}
               value={formData.vin}
               disabled={!formData.phone?.trim() || vehicles.length === 0}
               onChange={(e) => {
@@ -360,6 +337,96 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
               <option value="HIGH">High</option>
             </select>
           </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Description <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              placeholder="Enter claim description..."
+              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${errors.description
+                ? "border-red-300 bg-red-50"
+                : "border-gray-300"
+                }`}
+              rows="3"
+              value={formData.description}
+              onChange={(e) => handleInputChange("description", e.target.value)}
+            />
+            {errors.description && (
+              <p className="text-red-600 text-xs mt-1">{errors.description}</p>
+            )}
+          </div>
+
+          {/* Diagnosis */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Diagnosis <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              placeholder="Enter diagnosis..."
+              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${errors.diagnosis ? "border-red-300 bg-red-50" : "border-gray-300"
+                }`}
+              rows="2"
+              value={formData.diagnosis}
+              onChange={(e) => handleInputChange("diagnosis", e.target.value)}
+            />
+            {errors.diagnosis && (
+              <p className="text-red-600 text-xs mt-1">{errors.diagnosis}</p>
+            )}
+          </div>
+
+          {/* Defective Parts */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Defective Parts
+            </label>
+
+            {formData.defectiveParts.map((p, idx) => (
+              <div key={idx} className="grid grid-cols-2 gap-4 mb-3">
+                <select
+                  className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  value={p.category}
+                  onChange={(e) => handlePartChange(idx, "category", e.target.value)}
+                >
+                  <option value="">Select Category</option>
+                  {categories.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  value={p.partId}
+                  onChange={(e) => handlePartChange(idx, "partId", e.target.value)}
+                  disabled={!p.category}
+                >
+                  <option value="">Select Part</option>
+                  {(partsByCategory[p.category] || []).map((part) => (
+                    <option key={part.id} value={part.id}>
+                      {part.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={() =>
+                setFormData({
+                  ...formData,
+                  defectiveParts: [...formData.defectiveParts, { category: "", partId: "" }],
+                })
+              }
+              className="flex items-center gap-2 px-3 py-1 text-sm bg-gray-100 rounded-md hover:bg-gray-200"
+            >
+              <Plus size={14} /> Add Part
+            </button>
+          </div>
+
 
           {/* Attachments */}
           <div>

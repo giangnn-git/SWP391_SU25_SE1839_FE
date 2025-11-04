@@ -21,6 +21,11 @@ const ClaimDetail = () => {
     // View Policy modal control
     const [showPolicyModal, setShowPolicyModal] = useState(false);
 
+    //View Update Part Modal
+    const [showUpdateAllModal, setShowUpdateAllModal] = useState(false);
+    const [tempParts, setTempParts] = useState([]);
+
+
     // Parts
     const [editedParts, setEditedParts] = useState([]);
     const [isEditingParts, setIsEditingParts] = useState(false);
@@ -177,6 +182,37 @@ const ClaimDetail = () => {
         const [year, month, day] = dateArray;
         return `${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}/${year}`;
     };
+
+    const handleUpdatePartQuantity = async (partId, quantity) => {
+        try {
+            if (quantity < 0) {
+                toast.error("Quantity must be >= 0");
+                return;
+            }
+
+            const payload = { partId, quantity: Number(quantity) };
+            console.log("Payload gửi:", payload);
+
+            const res = await axios.put(
+                `/api/api/${id}/parts/quantity`,
+                payload,
+                { headers: { "Content-Type": "application/json" } }
+            );
+
+            toast.success(res.data?.message || "Cập nhật số lượng thành công");
+
+            // Refresh dữ liệu
+            const refreshed = await axios.get(`/api/api/claims/${id}`);
+            setClaimDetail(refreshed.data.data);
+            setEditedParts(refreshed.data.data.partCLiam || []);
+        } catch (err) {
+            console.error("Lỗi khi update part quantity:", err);
+            toast.error("Không thể cập nhật số lượng");
+        }
+    };
+
+
+
 
     if (loading)
         return (
@@ -364,16 +400,17 @@ const ClaimDetail = () => {
                             <RefreshCcw size={20} className="text-blue-600" />
                             <h2 className="text-lg font-bold text-gray-900">Claim Status & Parts</h2>
                         </div>
-                        {fcr?.currentStatus === "DRAFT" &&
-                            (!editedParts?.length || editedParts.length === 0) && (
-                                <button
-                                    onClick={() => setIsEditingParts(!isEditingParts)}
-                                    className="px-3 py-1 text-sm bg-gray-100 rounded-md hover:bg-gray-200 transition"
-                                >
-                                    {isEditingParts ? "Cancel Edit" : "Edit Parts"}
-                                </button>
-                            )}
-
+                        {fcr?.currentStatus === "DRAFT" && (
+                            <button
+                                onClick={() => {
+                                    setTempParts(editedParts.map(p => ({ ...p }))); // clone để chỉnh tạm
+                                    setShowUpdateAllModal(true);
+                                }}
+                                className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                            >
+                                Update All Parts
+                            </button>
+                        )}
                     </div>
 
                     {/* Status + Reason + Update */}
@@ -390,14 +427,17 @@ const ClaimDetail = () => {
                                     </option>
                                 ))}
                             </select>
-                            <button
-                                onClick={handleUpdate}
-                                disabled={updating}
-                                className={`px-4 py-2 rounded-lg text-white font-medium ${updating ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700 transition"
-                                    }`}
-                            >
-                                {updating ? "Updating..." : "Update Status"}
-                            </button>
+                            {fcr?.currentStatus === "DRAFT" && (
+                                <button
+                                    onClick={handleUpdate}
+                                    disabled={updating}
+                                    className={`px-4 py-2 rounded-lg text-white font-medium ${updating ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700 transition"
+                                        }`}
+                                >
+                                    {updating ? "Updating..." : "Update Status"}
+                                </button>
+                            )}
+
 
                             {isEditingParts && fcr?.currentStatus === "DRAFT" && (
                                 <button
@@ -490,59 +530,37 @@ const ClaimDetail = () => {
                         <table className="w-full border-collapse">
                             <thead>
                                 <tr className="border-b border-gray-200">
-                                    <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">
-                                        Part Name
-                                    </th>
-                                    <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">
-                                        Category
-                                    </th>
-                                    <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">
-                                        Description
-                                    </th>
-                                    <th className="text-right py-3 px-4 text-xs font-bold text-gray-900 uppercase">
-                                        Quantity
-                                    </th>
+                                    <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Part Name</th>
+                                    <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Category</th>
+                                    <th className="text-right py-3 px-4 text-xs font-bold text-gray-900 uppercase">Quantity</th>
+                                    <th className="text-right py-3 px-4 text-xs font-bold text-gray-900 uppercase">Recommended</th>
+                                    <th className="text-right py-3 px-4 text-xs font-bold text-gray-900 uppercase">Stock</th>
                                 </tr>
                             </thead>
+
                             <tbody className="divide-y divide-gray-100">
                                 {editedParts.length > 0 ? (
                                     editedParts.map((part, i) => (
                                         <tr key={i} className="hover:bg-gray-50">
                                             <td className="py-3 px-4 text-sm text-gray-900 font-medium">{part.name}</td>
                                             <td className="py-3 px-4 text-sm text-gray-700">{part.category}</td>
-                                            <td className="py-3 px-4 text-sm text-gray-700">{part.description}</td>
                                             <td className="py-3 px-4 text-sm text-gray-700 text-right">
-                                                {isEditingParts ? (
-                                                    <input
-                                                        type="number"
-                                                        min="1"
-                                                        value={part.quantity}
-                                                        className="border border-gray-300 rounded-md px-2 py-1 w-20 text-right"
-                                                        onChange={(e) => {
-                                                            const newParts = [...editedParts];
-                                                            newParts[i].quantity = Number(e.target.value);
-                                                            setEditedParts(newParts);
-                                                        }}
-                                                    />
-                                                ) : (
-                                                    <span className="font-semibold">{part.quantity}</span>
-                                                )}
+                                                {part.quantity}
                                             </td>
+                                            <td className="py-3 px-4 text-sm text-gray-700 text-right">{part.recommendedQuantity ?? "–"}</td>
+                                            <td className="py-3 px-4 text-sm text-gray-700 text-right">{part.remainingStock ?? "–"}</td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td
-                                            colSpan="4"
-                                            className="py-6 text-center text-gray-500 italic"
-                                        >
+                                        <td colSpan="5" className="py-6 text-center text-gray-500 italic">
                                             No parts have been added yet.
                                         </td>
                                     </tr>
                                 )}
                             </tbody>
-
                         </table>
+
                     </div>
                 </div>
 
@@ -567,6 +585,95 @@ const ClaimDetail = () => {
                     </div>
                 </div>
             )}
+
+            {/* Update Part Modal */}
+            {showUpdateAllModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl p-6 relative">
+                        <button
+                            onClick={() => setShowUpdateAllModal(false)}
+                            className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <h2 className="text-xl font-semibold mb-4 text-gray-900">Update All Parts</h2>
+
+                        <div className="max-h-[400px] overflow-y-auto border rounded-md">
+                            <table className="w-full text-sm">
+                                <thead className="bg-gray-100 border-b">
+                                    <tr>
+                                        <th className="py-2 px-3 text-left font-semibold text-gray-700">Part Name</th>
+                                        <th className="py-2 px-3 text-center font-semibold text-gray-700">Category</th>
+                                        <th className="py-2 px-3 text-center font-semibold text-gray-700">Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {tempParts.map((part, i) => (
+                                        <tr key={i} className="border-b hover:bg-gray-50">
+                                            <td className="py-2 px-3">{part.name}</td>
+                                            <td className="py-2 px-3 text-center">{part.category}</td>
+                                            <td className="py-2 px-3 text-center">
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={part.quantity}
+                                                    onChange={(e) => {
+                                                        const newParts = [...tempParts];
+                                                        newParts[i].quantity = Number(e.target.value);
+                                                        setTempParts(newParts);
+                                                    }}
+                                                    className="border border-gray-300 rounded-md px-2 py-1 w-20 text-right"
+                                                />
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="flex justify-end gap-3 mt-5">
+                            <button
+                                onClick={() => setShowUpdateAllModal(false)}
+                                className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        const payload = tempParts.map(p => ({
+                                            id: p.partId,
+                                            quantity: p.quantity
+                                        }));
+
+                                        await axios.put(
+                                            `/api/api/${id}/parts/quantity`,
+                                            payload,
+                                            { headers: { "Content-Type": "application/json" } }
+                                        );
+
+                                        toast.success("All parts updated successfully!");
+                                        setShowUpdateAllModal(false);
+
+                                        // refresh lại data
+                                        const res = await axios.get(`/api/api/claims/${id}`);
+                                        setClaimDetail(res.data.data);
+                                        setEditedParts(res.data.data.partCLiam || []);
+                                    } catch (err) {
+                                        console.error(err);
+                                        toast.error("Failed to update all parts");
+                                    }
+                                }}
+                                className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                            >
+                                Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
 
         </div>
     );

@@ -157,13 +157,13 @@ const WarrantyClaimsManagement = () => {
                 </div>
 
                 {/* New Claim Button */}
-                <button
+                {/* <button
                     className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg transition duration-200 font-medium"
                     onClick={() => setShowCreateModal(true)}
                 >
                     <PlusCircle size={18} />
                     New Ticket
-                </button>
+                </button> */}
             </div>
 
             {/* Table */}

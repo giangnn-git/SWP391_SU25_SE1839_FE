@@ -373,14 +373,17 @@ const ClaimDetail = () => {
                                     </option>
                                 ))}
                             </select>
-                            <button
-                                onClick={handleUpdate}
-                                disabled={updating}
-                                className={`px-4 py-2 rounded-lg text-white font-medium ${updating ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700 transition"
-                                    }`}
-                            >
-                                {updating ? "Updating..." : "Update Status"}
-                            </button>
+                            {fcr?.currentStatus === "PENDING" && (
+                                <button
+                                    onClick={handleUpdate}
+                                    disabled={updating}
+                                    className={`px-4 py-2 rounded-lg text-white font-medium ${updating ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700 transition"
+                                        }`}
+                                >
+                                    {updating ? "Updating..." : "Update Status"}
+                                </button>
+                            )}
+
 
                             {isEditingParts && fcr?.currentStatus === "DRAFT" && (
                                 <button
@@ -479,7 +482,7 @@ const ClaimDetail = () => {
                                             <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Part Name</th>
                                             <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Description</th>
                                             <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Policy</th>
-                                            <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Status</th>
+                                            {/* <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Status</th> */}
                                             <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Coverage</th>
                                             <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Conditional</th>
                                         </tr>
@@ -490,7 +493,7 @@ const ClaimDetail = () => {
                                                 <td className="py-3 px-4 text-sm font-medium text-gray-900">{part.partClaimName}</td>
                                                 <td className="py-3 px-4 text-sm text-gray-700">{part.description}</td>
                                                 <td className="py-3 px-4 text-sm text-gray-700">{part.policyName || "N/A"}</td>
-                                                <td className="py-3 px-4 text-sm font-semibold">
+                                                {/* <td className="py-3 px-4 text-sm font-semibold">
                                                     {part.status === "APPROVED" ? (
                                                         <span className="text-green-600">APPROVED</span>
                                                     ) : part.status === "REJECTED" ? (
@@ -498,7 +501,7 @@ const ClaimDetail = () => {
                                                     ) : (
                                                         <span className="text-yellow-600">PENDING</span>
                                                     )}
-                                                </td>
+                                                </td> */}
                                                 <td className="py-3 px-4 text-sm text-gray-700">{part.coverage}</td>
                                                 <td className="py-3 px-4 text-sm text-gray-700">{part.conditional}</td>
                                             </tr>

@@ -50,7 +50,7 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
     fetchAvailableVehicles();
   }, []);
 
-  // Filter vehicles based on search
+  // Filter vehicles based on search (giữ nguyên để không phá code khác)
   const filteredVins = availableVehicles.filter(
     (vehicle) =>
       vehicle.vin?.toLowerCase().includes(vinSearch.toLowerCase()) ||
@@ -69,26 +69,39 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
     setShowVinDropdown(false);
   };
 
+  // NHẬP TAY VIN: chỉ cập nhật state, KHÔNG mở dropdown
   const handleVinInputChange = (value) => {
     setVinSearch(value);
     setFormData((prev) => ({ ...prev, vin: value }));
-    setShowVinDropdown(true);
+    setShowVinDropdown(false);
   };
 
-  // Validate license plate format (giống validation trong CustomerCreate)
+  // Validate license plate format (giống CustomerCreate)
   const validateLicensePlate = (licensePlate) => {
     if (!licensePlate || licensePlate.trim() === "") return true; // Optional field
-
     const licensePlateRegex = /^[0-9]{2}[A-Z]{1}-[0-9]{3}\.[0-9]{2}$/;
     return licensePlateRegex.test(licensePlate.trim());
   };
 
   const validateForm = () => {
-    // Required fields
+    // Required VIN
     if (!formData.vin.trim()) {
       setError("VIN is required");
       return false;
     }
+
+    // VIN nhập tay: kiểm tra tối thiểu độ dài/định dạng cơ bản
+    const vinTrim = formData.vin.trim();
+    if (vinTrim.length < 5) {
+      setError("VIN must be at least 5 characters long");
+      return false;
+    }
+    // (Tuỳ chọn) chặt chẽ hơn:
+    // const vinOk = /^[A-HJ-NPR-Z0-9]{5,17}$/i.test(vinTrim);
+    // if (!vinOk) {
+    //   setError("VIN format looks invalid");
+    //   return false;
+    // }
 
     // Validate license plate format
     if (formData.licensePlate && !validateLicensePlate(formData.licensePlate)) {
@@ -96,15 +109,7 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
       return false;
     }
 
-    // Check if VIN exists in available vehicles
-    const selectedVehicle = availableVehicles.find(
-      (v) => v.vin === formData.vin
-    );
-    if (!selectedVehicle) {
-      setError("Selected VIN is not available or already registered");
-      return false;
-    }
-
+    // BỎ ràng buộc: VIN phải thuộc availableVehicles (để cho phép nhập tay)
     return true;
   };
 
@@ -162,7 +167,7 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
     }
   };
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside (giữ — dropdown hiện đã bị ẩn)
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -217,7 +222,7 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
             </div>
           )}
 
-          {/* VIN Field với Dropdown */}
+          {/* VIN Field – NHẬP TAY */}
           <div className="space-y-2" ref={vinDropdownRef}>
             <label className="block text-sm font-medium text-gray-700">
               Vehicle VIN *
@@ -232,22 +237,22 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
                   type="text"
                   value={vinSearch}
                   onChange={(e) => handleVinInputChange(e.target.value)}
-                  onFocus={() => setShowVinDropdown(true)}
-                  className="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  placeholder="Search VIN, model, or license plate..."
+                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  placeholder="Enter VIN (e.g. VF8A1234567890001)"
                   required
                 />
-                <button
+                {/* Bỏ nút Chevron để không mở dropdown */}
+                {/* <button
                   type="button"
                   onClick={() => setShowVinDropdown(!showVinDropdown)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   <ChevronDown size={20} />
-                </button>
+                </button> */}
               </div>
 
-              {/* Dropdown */}
-              {showVinDropdown && (
+              {/* Ẩn hẳn dropdown (giữ code nhưng không render) */}
+              {false && showVinDropdown && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                   {loadingVehicles ? (
                     <div className="px-4 py-3 text-sm text-gray-500 text-center">
@@ -263,9 +268,8 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
                       <div
                         key={vehicle.vin}
                         onClick={() => handleVinSelect(vehicle)}
-                        className={`px-4 py-3 cursor-pointer transition-colors hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${
-                          formData.vin === vehicle.vin ? "bg-blue-50" : ""
-                        }`}
+                        className={`px-4 py-3 cursor-pointer transition-colors hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${formData.vin === vehicle.vin ? "bg-blue-50" : ""
+                          }`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
@@ -300,7 +304,7 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
               )}
             </div>
             <p className="text-xs text-gray-500">
-              {availableVehicles.length} available vehicles
+              Enter VIN manually
             </p>
           </div>
 
