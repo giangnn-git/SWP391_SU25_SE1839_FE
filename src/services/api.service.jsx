@@ -142,6 +142,11 @@ export const getVehicleDetailApi = (modalId) => {
   return axios.get(`/api/api/model/detail/${modalId}`);
 };
 
+// Lấy tất cả vehicles còn trong campaign recall theo Service Center (SC Staff)
+export const getVehiclesInCampaignsByScApi = () => {
+  return axios.get("/api/api/campaigns/vehicles/by-sc");
+};
+
 // {Campaign API}
 
 export const getAllCampaignsApi = () => {

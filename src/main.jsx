@@ -23,6 +23,7 @@ import AnalyticsPage from "./pages/AnalyticsPage.jsx";
 import ClaimApprove from "./pages/ClaimApprove.jsx";
 import PartRequestPage from "./pages/PartRequest.jsx";
 import PartRequestReview from "./pages/PartRequestReview.jsx";
+import ScCampaignVehicles from "./pages/ScCampaignVehicles.jsx";
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -208,6 +209,15 @@ const router = createBrowserRouter([
         element: (
           <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
             <AnalyticsPage />
+          </PrivateRoute>
+        ),
+      },
+
+      {
+        path: "sc/campaign-vehicles",
+        element: (
+          <PrivateRoute allowedRoles={["SC_STAFF"]}>
+            <ScCampaignVehicles />
           </PrivateRoute>
         ),
       },
