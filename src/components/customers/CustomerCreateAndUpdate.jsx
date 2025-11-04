@@ -17,7 +17,6 @@ import {
 import {
   createCustomerApi,
   updateCustomerApi,
-  getAllVehiclesApi, // ✅ THÊM API NÀY
 } from "../../services/api.service";
 
 const CustomerCreate = ({
@@ -40,36 +39,7 @@ const CustomerCreate = ({
   const [selectedVin, setSelectedVin] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [availableVehicles, setAvailableVehicles] = useState([]); // ✅ STATE MỚI
-  const [loadingVehicles, setLoadingVehicles] = useState(false); // ✅ LOADING STATE
   const vinDropdownRef = useRef(null);
-
-  // ✅ HÀM FETCH AVAILABLE VEHICLES (giữ nguyên, nhưng sẽ không dùng khi nhập tay)
-  const fetchAvailableVehicles = async () => {
-    try {
-      setLoadingVehicles(true);
-      const res = await getAllVehiclesApi();
-      const allVehicles = res.data?.data?.vehicles || [];
-
-      // Lọc chỉ những vehicles chưa đăng ký (customerName là "N/A")
-      const available = allVehicles.filter(vehicle =>
-        vehicle.customerName === "N/A" || !vehicle.customerName
-      );
-
-      setAvailableVehicles(available);
-    } catch (err) {
-      console.error("Error fetching available vehicles:", err);
-    } finally {
-      setLoadingVehicles(false);
-    }
-  };
-
-  // ✅ FETCH KHI COMPONENT MOUNT (CHỈ TRONG CREATE MODE) – vẫn giữ
-  useEffect(() => {
-    if (!editCustomer) {
-      fetchAvailableVehicles();
-    }
-  }, [editCustomer]);
 
   // NẠP DỮ LIỆU KHI EDIT
   useEffect(() => {
@@ -89,41 +59,22 @@ const CustomerCreate = ({
 
   const isEditMode = Boolean(editCustomer);
 
-  // ✅ FILTER VIN (giữ nguyên, nhưng sẽ không dùng khi nhập tay)
-  const filteredVins = availableVehicles.filter(
-    (vehicle) =>
-      vehicle.vin?.toLowerCase().includes(vinSearch.toLowerCase()) ||
-      vehicle.modelName?.toLowerCase().includes(vinSearch.toLowerCase()) ||
-      (vehicle.licensePlate && vehicle.licensePlate.toLowerCase().includes(vinSearch.toLowerCase()))
-  );
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleVinSelect = (vehicle) => {
-    setSelectedVin(vehicle.vin);
-    setVinSearch(vehicle.vin);
-    setShowVinDropdown(false);
-    setFormData((prev) => ({
-      ...prev,
-      vin: vehicle.vin,
-      licensePlate: vehicle.licensePlate || prev.licensePlate
-    }));
-  };
-
-  // 🔧 CHANGED: khi nhập tay VIN, chỉ ghi thẳng vào formData.vin, không bật dropdown
+  //  khi nhập tay VIN, chỉ ghi thẳng vào formData.vin, không bật dropdown
   const handleVinInputChange = (value) => {
-    setVinSearch(value);           // giữ lại để không phá logic cũ
-    setSelectedVin(value);         // giữ lại để không phá validate cũ (nhưng validate đã đổi bên dưới)
-    setFormData((prev) => ({ ...prev, vin: value })); // ghi trực tiếp VIN
+    setVinSearch(value);
+    setSelectedVin(value);
+    setFormData((prev) => ({ ...prev, vin: value }));
     // Không mở dropdown nữa
-    setShowVinDropdown(false);     // 🔧 CHANGED
+    setShowVinDropdown(false);
   };
 
   const validateForm = () => {
-    // 🔧 CHANGED: yêu cầu VIN dựa trên formData.vin (không dùng selectedVin)
+    //  yêu cầu VIN dựa trên formData.vin (không dùng selectedVin)
     const requiredFields = {
       "Customer Name": formData.name,
       "Phone Number": formData.phoneNumber,
@@ -143,7 +94,7 @@ const CustomerCreate = ({
     const phoneRegex = /^[0-9]{10,11}$/;
     const cleanPhone = formData.phoneNumber.replace(/\D/g, "");
     if (!phoneRegex.test(cleanPhone)) {
-      setError("Phone number must be 10-11 digits");
+      setError("Phone number must be 10 digits");
       return false;
     }
 
@@ -185,16 +136,14 @@ const CustomerCreate = ({
       setLoading(true);
       setError("");
 
-      // 🔧 CHANGED: dùng formData.vin trực tiếp khi create
+      //  dùng formData.vin trực tiếp khi create
       const submitData = {
         name: formData.name.trim(),
         phoneNumber: formData.phoneNumber.trim().replace(/\D/g, ""),
         licensePlate: formData.licensePlate.trim(),
         email: formData.email.trim() || null,
         address: formData.address.trim() || null,
-        vin: isEditMode
-          ? editCustomer.vin
-          : formData.vin.trim(), // 🔧 CHANGED
+        vin: isEditMode ? editCustomer.vin : formData.vin.trim(), // 🔧 CHANGED
       };
 
       console.log("Submitting data:", submitData);
@@ -231,7 +180,9 @@ const CustomerCreate = ({
     } catch (err) {
       console.error("Customer operation error:", err);
 
-      let errorMsg = `Failed to ${isEditMode ? "update" : "register"} customer: `;
+      let errorMsg = `Failed to ${
+        isEditMode ? "update" : "register"
+      } customer: `;
 
       if (err.response?.data) {
         const responseData = err.response.data;
@@ -413,7 +364,7 @@ const CustomerCreate = ({
             </div>
           </div>
 
-          {/* ✅ VIN Field – đổi sang NHẬP TAY THUẦN */}
+          {/*  VIN Field  */}
           <div className="space-y-2" ref={vinDropdownRef}>
             <label className="block text-sm font-medium text-gray-700">
               Vehicle VIN *
@@ -436,17 +387,17 @@ const CustomerCreate = ({
                       className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                       size={16}
                     />
-                    {/* 🔧 CHANGED: input VIN nhập tay, không mở dropdown */}
+                    {/*  input VIN nhập tay, không mở dropdown */}
                     <input
                       type="text"
-                      name="vin"                              // 🔧 CHANGED
-                      value={formData.vin}                    // 🔧 CHANGED
-                      onChange={(e) => handleVinInputChange(e.target.value)} // 🔧 CHANGED
+                      name="vin"
+                      value={formData.vin}
+                      onChange={(e) => handleVinInputChange(e.target.value)}
                       className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                       placeholder="Enter VIN (e.g. VF8A1234567890001)"
                       required
                     />
-                    {/* 🔧 CHANGED: bỏ nút Chevron mở dropdown */}
+                    {/*  bỏ nút Chevron mở dropdown */}
                     {/* <button
                       type="button"
                       onClick={() => setShowVinDropdown(!showVinDropdown)}
@@ -456,55 +407,6 @@ const CustomerCreate = ({
                     </button> */}
                   </div>
                 </>
-              )}
-
-              {/* 🔧 CHANGED: không render dropdown nữa */}
-              {false && showVinDropdown && !isEditMode && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  {loadingVehicles ? (
-                    <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                      Loading vehicles...
-                    </div>
-                  ) : filteredVins.length === 0 ? (
-                    <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                      <Car size={20} className="mx-auto mb-1 text-gray-300" />
-                      No available vehicles found
-                    </div>
-                  ) : (
-                    filteredVins.map((vehicle, index) => (
-                      <div
-                        key={vehicle.vin}
-                        onClick={() => handleVinSelect(vehicle)}
-                        className={`px-4 py-3 cursor-pointer transition-colors hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${selectedVin === vehicle.vin ? "bg-blue-50" : ""
-                          }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-900 font-mono">
-                              {vehicle.vin}
-                            </div>
-                            <div className="text-sm text-gray-600 flex items-center gap-2 mt-1">
-                              <span>{vehicle.modelName}</span>
-                              <span>•</span>
-                              <span>{vehicle.productYear}</span>
-                              {vehicle.licensePlate && (
-                                <>
-                                  <span>•</span>
-                                  <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">
-                                    {vehicle.licensePlate}
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          {selectedVin === vehicle.vin && (
-                            <Check size={16} className="text-blue-600 flex-shrink-0" />
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
               )}
             </div>
             <p className="text-xs text-gray-500">
@@ -533,8 +435,8 @@ const CustomerCreate = ({
                   ? "Updating..."
                   : "Registering..."
                 : isEditMode
-                  ? "Update Customer"
-                  : "Register Customer"}
+                ? "Update Customer"
+                : "Register Customer"}
             </button>
           </div>
         </form>

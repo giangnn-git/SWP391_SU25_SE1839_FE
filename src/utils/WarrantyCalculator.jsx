@@ -35,7 +35,6 @@ export const calculateWarrantyPeriod = (partPolicies) => {
 
   try {
     // Lấy tất cả các khoảng thời gian unique
-    const uniquePeriods = [];
     const periodMap = new Map();
 
     partPolicies.forEach((policy) => {
@@ -53,15 +52,10 @@ export const calculateWarrantyPeriod = (partPolicies) => {
 
     const periods = Array.from(periodMap.values());
 
-    // DEBUG: Log để xem data
-    console.log("🔍 WarrantyCalculator - periods:", periods);
-    console.log("🔍 WarrantyCalculator - partPolicies:", partPolicies);
-
     // Nếu chỉ có 1 period duy nhất → đó là warranty period
     if (periods.length === 1) {
       const period = periods[0];
       const years = calculateYearsBetween(period.startDate, period.endDate);
-      console.log("✅ Single period found:", { period, years });
       return {
         startDate: period.startDate,
         endDate: period.endDate,
@@ -80,14 +74,11 @@ export const calculateWarrantyPeriod = (partPolicies) => {
       }
     });
 
-    console.log("🎯 Most common period:", commonPeriod, "count:", maxPartCount);
-
     if (commonPeriod && commonPeriod.partCount > 0) {
       const years = calculateYearsBetween(
         commonPeriod.startDate,
         commonPeriod.endDate
       );
-      console.log("✅ Common period calculated:", { commonPeriod, years });
       return {
         startDate: commonPeriod.startDate,
         endDate: commonPeriod.endDate,
@@ -95,10 +86,9 @@ export const calculateWarrantyPeriod = (partPolicies) => {
       };
     }
 
-    console.log("❌ No valid warranty period found");
     return null;
   } catch (error) {
-    console.error(" Error calculating warranty period:", error);
+    console.error("Error calculating warranty period:", error);
     return null;
   }
 };

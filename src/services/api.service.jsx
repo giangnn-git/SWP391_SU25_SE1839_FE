@@ -232,9 +232,9 @@ export const getAllWarrantyClaimsApi = () => {
 };
 
 // Get all registered vehicles (Customer Registration page)
-export const getAllVehiclesApi = () => {
-  return axios.get("/api/api/vehicles");
-};
+// export const getAllVehiclesApi = () => {
+//   return axios.get("/api/api/vehicles");
+// };
 
 // {Customer API}
 

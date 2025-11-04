@@ -11,8 +11,10 @@ import {
   getCustomersApi,
   getVehiclesByCustomerIdApi,
 } from "../services/api.service";
+import { useCurrentUser } from "../hooks/useCurrentUser"; // ✅ Thêm import
 
 const CustomerRegistration = () => {
+  const { currentUser, loading: userLoading } = useCurrentUser(); // ✅ Thêm hook
   const [vehicles, setVehicles] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [viewVehicle, setViewVehicle] = useState(null);
@@ -26,6 +28,7 @@ const CustomerRegistration = () => {
   const [loading, setLoading] = useState(true);
 
   const [customersSummary, setCustomersSummary] = useState([]);
+  const [filteredCustomersSummary, setFilteredCustomersSummary] = useState([]); // ✅ Thêm state mới
   const [loadingCustomersSummary, setLoadingCustomersSummary] = useState(false);
 
   const [openCustomerVehicles, setOpenCustomerVehicles] = useState(false);
@@ -44,19 +47,44 @@ const CustomerRegistration = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredCustomers, setFilteredCustomers] = useState([]);
 
+  // ✅ Filter customers based on user role and serviceCenterId
+  const filterCustomersByRole = (customers) => {
+    if (!currentUser) return customers;
+
+    const userRole = currentUser.role?.toUpperCase();
+    const userServiceCenterId = currentUser.serviceCenterId;
+
+    console.log("🔍 User Role:", userRole);
+    console.log("🔍 User ServiceCenterId:", userServiceCenterId);
+    console.log("🔍 All customers before filter:", customers);
+
+    // Nếu là SC_STAFF, chỉ hiển thị customers có scId trùng với serviceCenterId của user
+    if (userRole === "SC_STAFF" && userServiceCenterId) {
+      const filtered = customers.filter(
+        (customer) => customer.scId === userServiceCenterId
+      );
+      console.log("🔍 Filtered customers for SC_STAFF:", filtered);
+      return filtered;
+    }
+
+    // ADMIN và EVM_STAFF xem được tất cả
+    console.log("🔍 Showing all customers for role:", userRole);
+    return customers;
+  };
+
   // Filter customers based on search term
   useEffect(() => {
     if (!searchTerm.trim()) {
-      setFilteredCustomers(customersSummary);
+      setFilteredCustomers(filteredCustomersSummary);
     } else {
-      const filtered = customersSummary.filter((customer) =>
+      const filtered = filteredCustomersSummary.filter((customer) =>
         Object.values(customer).some((value) =>
           String(value).toLowerCase().includes(searchTerm.toLowerCase())
         )
       );
       setFilteredCustomers(filtered);
     }
-  }, [searchTerm, customersSummary]);
+  }, [searchTerm, filteredCustomersSummary]);
 
   const fetchVehicles = async () => {
     try {
@@ -78,8 +106,13 @@ const CustomerRegistration = () => {
       setLoadingCustomersSummary(true);
       const res = await getCustomersApi();
       const list = res?.data?.data ?? [];
+
+      // ✅ Apply role-based filtering
+      const filteredList = filterCustomersByRole(list);
+
       setCustomersSummary(list);
-      setFilteredCustomers(list);
+      setFilteredCustomersSummary(filteredList); // ✅ Set filtered data
+      setFilteredCustomers(filteredList);
     } catch (err) {
       console.error("Error fetching customers summary:", err);
       setErrorMessage("Failed to load customers summary");
@@ -87,6 +120,15 @@ const CustomerRegistration = () => {
       setLoadingCustomersSummary(false);
     }
   };
+
+  // ✅ Re-filter when user data changes
+  useEffect(() => {
+    if (!userLoading && currentUser && customersSummary.length > 0) {
+      const filteredList = filterCustomersByRole(customersSummary);
+      setFilteredCustomersSummary(filteredList);
+      setFilteredCustomers(filteredList);
+    }
+  }, [currentUser, userLoading, customersSummary]);
 
   const fetchCustomersForVehicles = async (vehicles) => {
     const registeredVehicles = vehicles.filter(
@@ -254,13 +296,27 @@ const CustomerRegistration = () => {
   };
 
   useEffect(() => {
-    Promise.allSettled([fetchVehicles(), fetchCustomersSummary()]);
-  }, []);
+    if (!userLoading) {
+      Promise.allSettled([fetchVehicles(), fetchCustomersSummary()]);
+    }
+  }, [userLoading]);
 
   const formatDateTuple = (arr) =>
     Array.isArray(arr) && arr.length >= 3
       ? `${arr[2]}/${arr[1]}/${arr[0]}`
       : "-";
+
+  // ✅ Hiển thị loading khi đang fetch user data
+  if (userLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading user information...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 p-4 sm:p-6">
@@ -279,7 +335,14 @@ const CustomerRegistration = () => {
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex items-center gap-2 text-sm text-gray-500 bg-white/80 rounded-lg px-4 py-2 border border-gray-200">
                 <Users size={16} />
-                <span>{customersSummary.length} customers</span>
+                <span>{filteredCustomersSummary.length} customers</span>
+                {/*  Hiển thị số lượng đã filter */}
+                {currentUser?.role === "SC_STAFF" &&
+                  customersSummary.length > filteredCustomersSummary.length && (
+                    <span className="text-xs text-gray-400">
+                      (from {customersSummary.length} total)
+                    </span>
+                  )}
               </div>
               <button
                 onClick={() => setShowForm(true)}

@@ -8,10 +8,7 @@ import {
   ChevronDown,
   Plus,
 } from "lucide-react";
-import {
-  getAllVehiclesApi,
-  addVehicleToCustomerApi,
-} from "../../services/api.service";
+import { addVehicleToCustomerApi } from "../../services/api.service";
 
 const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
   const [formData, setFormData] = useState({
@@ -26,31 +23,7 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
   const [error, setError] = useState("");
   const vinDropdownRef = useRef(null);
 
-  // Fetch available vehicles (chưa đăng ký)
-  const fetchAvailableVehicles = async () => {
-    try {
-      setLoadingVehicles(true);
-      const res = await getAllVehiclesApi();
-      const allVehicles = res.data?.data?.vehicles || [];
-
-      const available = allVehicles.filter(
-        (vehicle) => vehicle.customerName === "N/A" || !vehicle.customerName
-      );
-
-      setAvailableVehicles(available);
-    } catch (err) {
-      console.error("Error fetching available vehicles:", err);
-      setError("Failed to load available vehicles");
-    } finally {
-      setLoadingVehicles(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchAvailableVehicles();
-  }, []);
-
-  // Filter vehicles based on search (giữ nguyên để không phá code khác)
+  // Filter vehicles based on search
   const filteredVins = availableVehicles.filter(
     (vehicle) =>
       vehicle.vin?.toLowerCase().includes(vinSearch.toLowerCase()) ||
@@ -63,7 +36,7 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
     setFormData((prev) => ({
       ...prev,
       vin: vehicle.vin,
-      licensePlate: vehicle.licensePlate || "", // Auto-fill license plate nếu có
+      licensePlate: vehicle.licensePlate || "", // Auto-fill license plate if available
     }));
     setVinSearch(vehicle.vin);
     setShowVinDropdown(false);
@@ -96,12 +69,6 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
       setError("VIN must be at least 5 characters long");
       return false;
     }
-    // (Tuỳ chọn) chặt chẽ hơn:
-    // const vinOk = /^[A-HJ-NPR-Z0-9]{5,17}$/i.test(vinTrim);
-    // if (!vinOk) {
-    //   setError("VIN format looks invalid");
-    //   return false;
-    // }
 
     // Validate license plate format
     if (formData.licensePlate && !validateLicensePlate(formData.licensePlate)) {
@@ -167,7 +134,7 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
     }
   };
 
-  // Close dropdown when clicking outside (giữ — dropdown hiện đã bị ẩn)
+  // Close dropdown when clicking outside ( dropdown hiện đã bị ẩn)
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -268,8 +235,9 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
                       <div
                         key={vehicle.vin}
                         onClick={() => handleVinSelect(vehicle)}
-                        className={`px-4 py-3 cursor-pointer transition-colors hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${formData.vin === vehicle.vin ? "bg-blue-50" : ""
-                          }`}
+                        className={`px-4 py-3 cursor-pointer transition-colors hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${
+                          formData.vin === vehicle.vin ? "bg-blue-50" : ""
+                        }`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
@@ -303,9 +271,7 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
                 </div>
               )}
             </div>
-            <p className="text-xs text-gray-500">
-              Enter VIN manually
-            </p>
+            <p className="text-xs text-gray-500">Enter VIN manually</p>
           </div>
 
           {/* License Plate Field */}
