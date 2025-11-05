@@ -18,7 +18,6 @@ import {
   createCustomerApi,
   updateCustomerApi,
 } from "../../services/api.service";
-import { useNotification } from "../../components/nortify/NotificationSystem";
 
 const CustomerCreate = ({
   vehicles,
@@ -38,11 +37,9 @@ const CustomerCreate = ({
   const [vinSearch, setVinSearch] = useState("");
   const [showVinDropdown, setShowVinDropdown] = useState(false);
   const [selectedVin, setSelectedVin] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const vinDropdownRef = useRef(null);
-
-  // THÊM HOOK NOTIFICATION
-  const { error: showError } = useNotification();
 
   // NẠP DỮ LIỆU KHI EDIT
   useEffect(() => {
@@ -81,7 +78,7 @@ const CustomerCreate = ({
     const requiredFields = {
       "Customer Name": formData.name,
       "Phone Number": formData.phoneNumber,
-      "Vehicle VIN": formData.vin,
+      "Vehicle VIN": formData.vin, // 🔧 CHANGED
     };
 
     const missingFields = Object.entries(requiredFields)
@@ -89,7 +86,7 @@ const CustomerCreate = ({
       .map(([field]) => field);
 
     if (missingFields.length > 0) {
-      showError(`Please fill all required fields: ${missingFields.join(", ")}`);
+      setError(`Please fill all required fields: ${missingFields.join(", ")}`);
       return false;
     }
 
@@ -97,7 +94,7 @@ const CustomerCreate = ({
     const phoneRegex = /^[0-9]{10,11}$/;
     const cleanPhone = formData.phoneNumber.replace(/\D/g, "");
     if (!phoneRegex.test(cleanPhone)) {
-      showError("Phone number must be 10 digits");
+      setError("Phone number must be 10 digits");
       return false;
     }
 
@@ -105,7 +102,7 @@ const CustomerCreate = ({
     if (formData.licensePlate && formData.licensePlate.trim() !== "") {
       const licensePlateRegex = /^[0-9]{2}[A-Z]{1}-[0-9]{3}\.[0-9]{2}$/;
       if (!licensePlateRegex.test(formData.licensePlate.trim())) {
-        showError("Wrong License plate format");
+        setError("Wrong License plate format");
         return false;
       }
     }
@@ -114,14 +111,14 @@ const CustomerCreate = ({
     if (formData.email && formData.email.trim() !== "") {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.email)) {
-        showError("Please enter a valid email address");
+        setError("Please enter a valid email address");
         return false;
       }
     }
 
     // Validate VIN format (nếu cần)
     if (formData.vin && formData.vin.length < 5) {
-      showError("VIN must be at least 5 characters long");
+      setError("VIN must be at least 5 characters long");
       return false;
     }
 
@@ -137,6 +134,7 @@ const CustomerCreate = ({
 
     try {
       setLoading(true);
+      setError("");
 
       //  dùng formData.vin trực tiếp khi create
       const submitData = {
@@ -145,7 +143,7 @@ const CustomerCreate = ({
         licensePlate: formData.licensePlate.trim(),
         email: formData.email.trim() || null,
         address: formData.address.trim() || null,
-        vin: isEditMode ? editCustomer.vin : formData.vin.trim(),
+        vin: isEditMode ? editCustomer.vin : formData.vin.trim(), // 🔧 CHANGED
       };
 
       console.log("Submitting data:", submitData);
@@ -204,7 +202,7 @@ const CustomerCreate = ({
         errorMsg += "Unexpected error occurred.";
       }
 
-      showError(errorMsg);
+      setError(errorMsg);
       if (onError) onError(errorMsg);
     } finally {
       setLoading(false);
@@ -249,6 +247,15 @@ const CustomerCreate = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+              <div className="flex items-center gap-2">
+                <X size={16} />
+                {error}
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
