@@ -55,7 +55,7 @@ const Sidebar = () => {
       : []),
 
     // Warranty Claims — chỉ dành cho SC Staff
-    ...(isScStaff || isTech || isAdmin
+    ...(isScStaff || isTech
       ? [
           {
             name: "Warranty Claims",
@@ -68,7 +68,7 @@ const Sidebar = () => {
       : []),
 
     // Repair Orders — chỉ dành cho SC Staff
-    ...(isScStaff || isTech || isAdmin
+    ...(isScStaff || isTech
       ? [
           {
             name: "Repair Orders",

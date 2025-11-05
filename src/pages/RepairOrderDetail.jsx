@@ -6,10 +6,16 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import axios from "../services/axios.customize";
+import { useCurrentUser } from "../hooks/useCurrentUser";
+
 
 const RepairOrderDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  const { currentUser } = useCurrentUser();
+  const isTech = currentUser?.role === "SC_STAFF";
+
 
   const [order, setOrder] = useState(null);
   const [techs, setTechs] = useState([]);
@@ -286,7 +292,8 @@ const RepairOrderDetail = () => {
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-lg font-semibold text-gray-900">{step.title}</h3>
 
-              {currentTech && !["COMPLETED", "CANCELLED"].includes(step.status) && (
+              {/* Tech */}
+              {!isSCStaff && currentTech && !["COMPLETED", "CANCELLED"].includes(step.status) && (
                 <div className="flex items-center gap-2">
                   <select
                     className="border border-gray-300 text-sm rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -432,7 +439,8 @@ const RepairOrderDetail = () => {
                 ) : (
                   <button
                     onClick={() => setShowVerifyModal(true)}
-                    className="px-5 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition"
+                    className={`px-5 py-2 rounded-lg text-white font-medium ${isSCStaff ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
+                      }`}
                   >
                     Confirmation completed
                   </button>
@@ -528,7 +536,7 @@ const RepairOrderDetail = () => {
               </div>
 
               {/* Upload file */}
-              <div>
+              {/* <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
                   Attachments (if any)
                 </label>
@@ -543,7 +551,7 @@ const RepairOrderDetail = () => {
                   }
                   className="w-full border border-gray-300 rounded-lg p-2"
                 />
-              </div>
+              </div> */}
 
               {/* Checkbox xác nhận */}
               <div className="flex items-center gap-2">
