@@ -14,7 +14,7 @@ const RepairOrderDetail = () => {
   const navigate = useNavigate();
 
   const { currentUser } = useCurrentUser();
-  const isTech = currentUser?.role === "SC_STAFF";
+  const isSCStaff = currentUser?.role === "SC_STAFF";
 
 
   const [order, setOrder] = useState(null);
@@ -228,37 +228,48 @@ const RepairOrderDetail = () => {
 
     return (
       <div className="border border-gray-200 rounded-lg shadow-sm bg-white">
-        <table className="w-full table-fixed border-collapse">
+        <table className="w-full table-auto border-collapse">
           <thead className="bg-gray-100">
             <tr>
-              <th className="w-[4%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">#</th>
-              <th className="w-[14%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">Part Name</th>
-              <th className="w-[22%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">Old Serial Number</th>
-              <th className="w-[6%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">Qty</th>
-              <th className="w-[8%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">Year</th>
-              <th className="w-[10%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">Model</th>
-              <th className="w-[15%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">VIN</th>
-              <th className="w-[11%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">License Plate</th>
-              <th className="w-[10%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">Category</th>
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">#</th>
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">Part</th>
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">Old SN</th>
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">Qty</th>
+              {/* <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">Year</th> */}
+              {/* <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">Model</th> */}
+              {/* <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">VIN</th> */}
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">License</th>
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">Category</th>
+              {/* <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">Technician</th> */}
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">Replacement</th>
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">New SN</th>
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">Install Date</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {data.map((item, index) => (
               <tr key={item.id || index} className="hover:bg-gray-50">
-                <td className="px-3 py-2 text-sm text-gray-700">{index + 1}</td>
-                <td className="px-3 py-2 text-sm text-gray-700 truncate">{item.partName}</td>
-                <td className="px-3 py-2 text-sm text-gray-700 break-all">{item.oldSerialNumber}</td>
-                <td className="px-3 py-2 text-sm text-gray-700 text-center">{item.quantity}</td>
-                <td className="px-3 py-2 text-sm text-gray-700 text-center">{item.productYear}</td>
-                <td className="px-3 py-2 text-sm text-gray-700">{item.modelName}</td>
-                <td className="px-3 py-2 text-sm text-gray-700 break-all">{item.vin}</td>
-                <td className="px-3 py-2 text-sm text-gray-700">{item.licensePlate}</td>
-                <td className="px-3 py-2 text-sm text-gray-700">{item.category}</td>
+                <td className="px-2 py-2 text-sm text-gray-700">{index + 1}</td>
+                <td className="px-2 py-2 text-sm text-gray-700">{item.partName}</td>
+                <td className="px-2 py-2 text-sm text-gray-700 break-words">{item.oldSerialNumber}</td>
+                <td className="px-2 py-2 text-sm text-gray-700 text-center">{item.quantity}</td>
+                {/* <td className="px-2 py-2 text-sm text-gray-700 text-center">{item.productYear}</td> */}
+                {/* <td className="px-2 py-2 text-sm text-gray-700">{item.modelName}</td> */}
+                {/* <td className="px-2 py-2 text-sm text-gray-700 break-words">{item.vin}</td> */}
+                <td className="px-2 py-2 text-sm text-gray-700">{item.licensePlate}</td>
+                <td className="px-2 py-2 text-sm text-gray-700">{item.category}</td>
+                {/* <td className="px-2 py-2 text-sm text-gray-700">{item.technicianName}</td> */}
+                <td className="px-2 py-2 text-sm text-gray-700">{item.replacementDescription}</td>
+                <td className="px-2 py-2 text-sm text-gray-700 break-words">{item.newSerialNumber}</td>
+                <td className="px-2 py-2 text-sm text-gray-700">
+                  {item.installationDate ? `${item.installationDate[2]}/${item.installationDate[1]}/${item.installationDate[0]}` : "-"}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
     );
   };
 

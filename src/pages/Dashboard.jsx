@@ -416,24 +416,7 @@ const Dashboard = () => {
         )}
 
         {/* Total Warranty Cost */}
-        {summary.totalWarrantyCost !== undefined && (
-          <section className="mb-8">
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-gray-600 mb-1">Total Warranty Cost</p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {summary.totalWarrantyCost}$
 
-                  </p>
-                </div>
-                <div className="p-4 rounded-full bg-white shadow-sm">
-                  <DollarSign className="text-blue-600" size={32} />
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
       </div>
     </div>
   );
