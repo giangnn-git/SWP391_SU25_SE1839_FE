@@ -22,6 +22,50 @@ const RepairOrderDetail = () => {
   const [updating, setUpdating] = useState(false);
   const [currentTech, setCurrentTech] = useState(null);
   const [updatingStepId, setUpdatingStepId] = useState(null);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [verifyData, setVerifyData] = useState({
+    signature: "",
+    notes: "",
+    files: [],
+    acceptedResponsibility: false,
+  });
+  const [verifying, setVerifying] = useState(false);
+
+  const handleVerifySubmit = async () => {
+    if (!verifyData.signature?.trim()) {
+      toast.error("Signature is required");
+      return;
+    }
+
+    try {
+      setVerifying(true);
+      const fd = new FormData();
+      const verifyObj = {
+        signature: verifyData.signature,
+        notes: verifyData.notes,
+        acceptedResponsibility: verifyData.acceptedResponsibility,
+      };
+      fd.append(
+        "verify",
+        new Blob([JSON.stringify(verifyObj)], { type: "application/json" })
+      );
+
+      verifyData.files.forEach((file) => fd.append("files", file));
+
+      const res = await axios.post(`/api/api/${id}/verify`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      toast.success("Repair order verified successfully!");
+      setShowVerifyModal(false);
+      await fetchOrderAndTechs();
+    } catch (err) {
+      console.error("Verification failed:", err);
+      toast.error("Verification failed.");
+    } finally {
+      setVerifying(false);
+    }
+  };
 
 
   // Fetch both order info and technician list
@@ -287,7 +331,7 @@ const RepairOrderDetail = () => {
 
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Repair Order Details</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Repair Order Detail</h1>
           <p className="text-gray-600 mt-1">
             Order ID:{" "}
             <span className="font-semibold text-gray-900">
@@ -323,7 +367,20 @@ const RepairOrderDetail = () => {
                 style={{ width: `${order.percentInProcess || 0}%` }}
               />
             </div>
+
+            {order.percentInProcess === 100 && (
+              <div className="mt-5 text-center">
+                <button
+                  onClick={() => setShowVerifyModal(true)}
+                  className="px-5 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition"
+                >
+                  Xác nhận hoàn tất
+                </button>
+              </div>
+            )}
+
           </div>
+
         </div>
 
         {/* Tabs */}
@@ -366,6 +423,105 @@ const RepairOrderDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal xác nhận hoàn tất */}
+      {showVerifyModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 text-center">
+              Xác nhận hoàn tất sửa chữa
+            </h2>
+
+            <div className="space-y-4">
+              {/* Nhập tên (chữ ký xác nhận) */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Họ và tên (chữ ký xác nhận)
+                </label>
+                <input
+                  type="text"
+                  value={verifyData.signature}
+                  onChange={(e) =>
+                    setVerifyData((prev) => ({ ...prev, signature: e.target.value }))
+                  }
+                  className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  placeholder="Nhập họ và tên người xác nhận..."
+                />
+              </div>
+
+              {/* Ghi chú */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Ghi chú
+                </label>
+                <textarea
+                  value={verifyData.notes}
+                  onChange={(e) =>
+                    setVerifyData((prev) => ({ ...prev, notes: e.target.value }))
+                  }
+                  rows={3}
+                  className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  placeholder="Nhập ghi chú (nếu có)..."
+                ></textarea>
+              </div>
+
+              {/* Upload file */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Tệp đính kèm (nếu có)
+                </label>
+                <input
+                  type="file"
+                  multiple
+                  onChange={(e) =>
+                    setVerifyData((prev) => ({
+                      ...prev,
+                      files: Array.from(e.target.files),
+                    }))
+                  }
+                  className="w-full border border-gray-300 rounded-lg p-2"
+                />
+              </div>
+
+              {/* Checkbox xác nhận */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={verifyData.acceptedResponsibility}
+                  onChange={(e) =>
+                    setVerifyData((prev) => ({
+                      ...prev,
+                      acceptedResponsibility: e.target.checked,
+                    }))
+                  }
+                />
+                <span className="text-sm text-gray-700">
+                  Tôi xác nhận toàn bộ quá trình sửa chữa đã hoàn tất chính xác.
+                </span>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setShowVerifyModal(false)}
+                className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleVerifySubmit}
+                disabled={verifying}
+                className="px-5 py-2 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 transition disabled:bg-gray-400"
+              >
+                {verifying ? "Đang xác nhận..." : "Xác nhận"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
     </div>
   );
 };

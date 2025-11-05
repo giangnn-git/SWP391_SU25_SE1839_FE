@@ -39,10 +39,12 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
   }, []);
 
   // Fetch parts by category if not already cached
-  const fetchParts = async (category) => {
+  const fetchParts = async (category, vin) => {
     if (!category || partsByCategory[category]) return;
     try {
-      const res = await axios.get(`/api/api/parts/${category}`);
+      const res = await axios.get(`/api/api/parts/${category}`, {
+        params: { vin: vin }
+      });
       setPartsByCategory((prev) => ({
         ...prev,
         [category]: res.data.data.partList || [],
@@ -51,6 +53,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
       console.error("Failed to fetch parts:", err);
     }
   };
+
 
   // Fetch vehicle list by customer phone
   const fetchVehiclesByPhone = async () => {
@@ -176,7 +179,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
 
     if (field === "category") {
       newParts[idx].partId = "";
-      fetchParts(value);
+      fetchParts(value, formData.vin);
     }
 
     setFormData({ ...formData, defectiveParts: newParts });

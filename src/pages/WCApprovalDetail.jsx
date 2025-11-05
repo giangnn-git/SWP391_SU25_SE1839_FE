@@ -269,23 +269,7 @@ const ClaimDetail = () => {
                             <h2 className="text-xl font-bold text-gray-900">Vehicle Information</h2>
                         </div>
 
-                        <button
-                            onClick={() => {
-                                const ModelVehicle = {
-                                    id: fcr?.modelId,
-                                    name: fcr?.modelName,
-                                    releaseYear: fcr?.productYear,
-                                    isInProduction: true,
-                                    description: "Vehicle description placeholder",
-                                };
-                                setSelectedVehicle(ModelVehicle);
-                                setShowPolicyModal(true);
-                            }}
-                            className="flex items-center gap-2 bg-blue-600 text-white font-medium px-4 py-2 rounded-md shadow-sm hover:bg-blue-700 transition"
-                        >
-                            <Eye size={16} />
-                            <span>View Policy</span>
-                        </button>
+
                     </div>
                     {/* Vehicle Information */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -297,8 +281,6 @@ const ClaimDetail = () => {
                     </div>
                 </div>
 
-
-
                 {/* View Vehicle Modal */}
                 {showPolicyModal && selectedVehicle && (
                     <ViewVehicleModal
@@ -306,6 +288,7 @@ const ClaimDetail = () => {
                         onClose={() => setShowPolicyModal(false)}
                     />
                 )}
+
                 {/* Images */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
                     <div className="flex items-center gap-2 mb-4">
@@ -373,30 +356,51 @@ const ClaimDetail = () => {
                                     </option>
                                 ))}
                             </select>
+
                             {fcr?.currentStatus === "PENDING" && (
                                 <button
                                     onClick={handleUpdate}
                                     disabled={updating}
-                                    className={`px-4 py-2 rounded-lg text-white font-medium ${updating ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700 transition"
+                                    className={`px-4 py-2 rounded-lg text-white font-medium ${updating
+                                        ? "bg-gray-400"
+                                        : "bg-blue-600 hover:bg-blue-700 transition"
                                         }`}
                                 >
                                     {updating ? "Updating..." : "Update Status"}
                                 </button>
                             )}
 
-
                             {isEditingParts && fcr?.currentStatus === "DRAFT" && (
                                 <button
                                     onClick={handleSaveParts}
                                     disabled={updating}
-                                    className={`px-4 py-2 ml-3 rounded-lg text-white font-medium ${updating ? "bg-gray-400" : "bg-green-600 hover:bg-green-700 transition"
+                                    className={`px-4 py-2 ml-3 rounded-lg text-white font-medium ${updating
+                                        ? "bg-gray-400"
+                                        : "bg-green-600 hover:bg-green-700 transition"
                                         }`}
                                 >
                                     {updating ? "Saving..." : "Save Parts"}
                                 </button>
                             )}
 
-
+                            {/* Nút View Policy bên phải */}
+                            <button
+                                onClick={() => {
+                                    const ModelVehicle = {
+                                        id: fcr?.modelId,
+                                        name: fcr?.modelName,
+                                        releaseYear: fcr?.productYear,
+                                        isInProduction: true,
+                                        description: "Vehicle description placeholder",
+                                    };
+                                    setSelectedVehicle(ModelVehicle);
+                                    setShowPolicyModal(true);
+                                }}
+                                className="ml-auto flex items-center gap-2 bg-blue-600 text-white font-medium px-4 py-2 rounded-md shadow-sm hover:bg-blue-700 transition"
+                            >
+                                <Eye size={16} />
+                                <span>View Policy</span>
+                            </button>
                         </div>
 
                         {selectedStatus === "REJECTED" && (
@@ -412,6 +416,7 @@ const ClaimDetail = () => {
                             </div>
                         )}
                     </div>
+
 
 
                     {/* Add Part */}
@@ -480,9 +485,11 @@ const ClaimDetail = () => {
                                     <thead>
                                         <tr className="border-b border-gray-200 bg-gray-50">
                                             <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Part Name</th>
-                                            <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Description</th>
+                                            <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Category</th>
+                                            <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Quantity</th>
+                                            <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Estimated Cost</th>
+                                            <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Effect</th>
                                             <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Policy</th>
-                                            {/* <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Status</th> */}
                                             <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Coverage</th>
                                             <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Conditional</th>
                                         </tr>
@@ -491,26 +498,33 @@ const ClaimDetail = () => {
                                         {claimDetail.partClaimsAndCampaigns.map((part) => (
                                             <tr key={part.partClaimId} className="hover:bg-gray-50">
                                                 <td className="py-3 px-4 text-sm font-medium text-gray-900">{part.partClaimName}</td>
-                                                <td className="py-3 px-4 text-sm text-gray-700">{part.description}</td>
-                                                <td className="py-3 px-4 text-sm text-gray-700">{part.policyName || "N/A"}</td>
-                                                {/* <td className="py-3 px-4 text-sm font-semibold">
-                                                    {part.status === "APPROVED" ? (
-                                                        <span className="text-green-600">APPROVED</span>
-                                                    ) : part.status === "REJECTED" ? (
-                                                        <span className="text-red-600">REJECTED</span>
-                                                    ) : (
-                                                        <span className="text-yellow-600">PENDING</span>
-                                                    )}
-                                                </td> */}
+                                                <td className="py-3 px-4 text-sm text-gray-700">{part.category}</td>
+                                                <td className="py-3 px-4 text-sm text-gray-700">{part.quantity}</td>
+                                                <td className="py-3 px-4 text-sm text-gray-700">${part.estimatedCost?.toFixed(2) || 0}</td>
+                                                <td className="py-3 px-4 text-sm text-gray-700">
+                                                    {Array.isArray(part.effect)
+                                                        ? formatDateTime(part.effect)
+                                                        : "Không có thời gian hiệu lực"}
+                                                </td>
+                                                <td className="py-3 px-4 text-sm text-gray-700">
+                                                    {part.policyName
+                                                        ? `${part.policyName} (${part.policyName === "N/A"
+                                                            ? "EXPIRED"
+                                                            : "ACTIVE"
+                                                        })`
+                                                        : "N/A"}
+                                                </td>
                                                 <td className="py-3 px-4 text-sm text-gray-700">{part.coverage}</td>
                                                 <td className="py-3 px-4 text-sm text-gray-700">{part.conditional}</td>
                                             </tr>
                                         ))}
                                     </tbody>
+
                                 </table>
                             </div>
                         </div>
                     )}
+
 
 
                 </div>
