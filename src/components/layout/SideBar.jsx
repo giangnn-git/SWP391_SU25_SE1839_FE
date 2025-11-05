@@ -68,7 +68,7 @@ const Sidebar = () => {
       : []),
 
     // Repair Orders — chỉ dành cho SC Staff
-    ...(isScStaff || isTech
+    ...(isScStaff || isTech || isAdmin
       ? [
           {
             name: "Repair Orders",
@@ -96,7 +96,7 @@ const Sidebar = () => {
       : []),
 
     //Warranty Claims Approval - for EVM Staff
-    ...(isEvmStaff || isAdmin
+    ...(isEvmStaff
       ? [
           {
             name: "Claim Approvals",

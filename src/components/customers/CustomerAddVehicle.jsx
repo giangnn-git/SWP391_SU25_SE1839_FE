@@ -26,7 +26,7 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
   // THÊM HOOK NOTIFICATION - XÓA STATE ERROR CŨ
   const { error: showError } = useNotification();
 
-  // Filter vehicles based on search
+  // Filter vehicles based on search (giữ nguyên để không phá code khác)
   const filteredVins = availableVehicles.filter(
     (vehicle) =>
       vehicle.vin?.toLowerCase().includes(vinSearch.toLowerCase()) ||
@@ -73,9 +73,22 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
       return false;
     }
 
+    // VIN nhập tay: kiểm tra tối thiểu độ dài/định dạng cơ bản
+    const vinTrim = formData.vin.trim();
+    if (vinTrim.length < 5) {
+      setError("VIN must be at least 5 characters long");
+      return false;
+    }
+    // (Tuỳ chọn) chặt chẽ hơn:
+    // const vinOk = /^[A-HJ-NPR-Z0-9]{5,17}$/i.test(vinTrim);
+    // if (!vinOk) {
+    //   setError("VIN format looks invalid");
+    //   return false;
+    // }
+
     // Validate license plate format
     if (formData.licensePlate && !validateLicensePlate(formData.licensePlate)) {
-      showError("Wrong License plate format. Correct format: 63A-003.33");
+      showError("Wrong License plate format. Correct format: XXA-XXX.XX");
       return false;
     }
 

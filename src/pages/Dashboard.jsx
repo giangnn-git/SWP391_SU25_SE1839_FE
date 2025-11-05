@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
 import {
   Loader, AlertCircle, TrendingUp, AlertTriangle, Package,
-  ClipboardList, CheckCircle, Clock, Zap
+  ClipboardList, CheckCircle, Clock, Zap, DollarSign, Calendar
 } from "lucide-react";
+import {
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, Cell
+} from "recharts";
 import axios from "../services/axios.customize";
 
 const Dashboard = () => {
@@ -36,25 +40,26 @@ const Dashboard = () => {
     fetchDashboardSummary();
   }, []);
 
-  const getMetricIcon = (label) => {
-    const lower = label.toLowerCase();
-    if (lower.includes("claim") || lower.includes("yêu cầu")) return <ClipboardList size={24} />;
-    if (lower.includes("order") || lower.includes("đơn")) return <Package size={24} />;
-    if (lower.includes("complete") || lower.includes("hoàn")) return <CheckCircle size={24} />;
-    if (lower.includes("urgent") || lower.includes("khẩn")) return <AlertTriangle size={24} />;
-    if (lower.includes("performance") || lower.includes("hiệu")) return <TrendingUp size={24} />;
-    return <Zap size={24} />;
-  };
 
-  const getMetricColor = (label) => {
-    const lower = label.toLowerCase();
-    if (lower.includes("urgent") || lower.includes("khẩn") || lower.includes("emergency"))
-      return { bg: "bg-red-50", border: "border-red-200", icon: "text-red-600" };
-    if (lower.includes("complete") || lower.includes("hoàn"))
-      return { bg: "bg-green-50", border: "border-green-200", icon: "text-green-600" };
-    if (lower.includes("week") || lower.includes("tuần"))
-      return { bg: "bg-blue-50", border: "border-blue-200", icon: "text-blue-600" };
-    return { bg: "bg-gray-50", border: "border-gray-200", icon: "text-gray-600" };
+  // Custom Tooltip
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+          <p className="text-sm font-semibold text-gray-900">{payload[0].payload.month}</p>
+          <p className="text-sm text-gray-600">
+            Performance: <span className="font-bold text-blue-600">{payload[0].value}</span>
+          </p>
+          {payload[0].payload.totalCostFormatted && (
+            <p className="text-sm text-gray-600">
+              Cost: <span className="font-bold text-green-600">{payload[0].payload.totalCostFormatted}$</span>
+
+            </p>
+          )}
+        </div>
+      );
+    }
+    return null;
   };
 
   if (loading) {
@@ -88,11 +93,14 @@ const Dashboard = () => {
     );
   }
 
+  const claimsBreakdown = summary.claimsBreakdown || {};
+  const monthlyTrend = summary.monthlyTrend || [];
+  const performanceMetrics = summary.performanceMetrics || {};
+  const urgentItems = summary.urgentItems || {};
+  const quickStats = summary.quickStatistics || {};
+
   return (
     <div className="bg-gray-50 min-h-screen py-6 px-4 sm:px-6 lg:px-8">
-
-
-
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -102,217 +110,274 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {/* Claims & Orders */}
+        {/* Key Metrics Cards */}
         {(summary.claims || summary.orders) && (
           <section className="mb-8">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Claims & Repair Orders</h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Overview</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {summary.claims && (
-                <>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-5 hover:shadow-md transition-all duration-200">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="p-2 rounded-lg bg-white">
-                        <ClipboardList className="text-blue-600" size={24} />
-                      </div>
-                    </div>
-                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">
-                      Total Warranty Claims
-                    </p>
-                    <p className="text-2xl font-bold text-gray-900">{summary.claims.count}</p>
-                  </div>
 
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-5 hover:shadow-md transition-all duration-200">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="p-2 rounded-lg bg-white">
-                        <AlertTriangle className="text-red-600" size={24} />
-                      </div>
+              {/* Total Claims */}
+              {summary.claims && (
+                <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md transition-all duration-200">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="p-2 rounded-lg bg-blue-50">
+                      <ClipboardList className="text-blue-600" size={24} />
                     </div>
-                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">
-                      Emergency Claims
-                    </p>
-                    <p className="text-2xl font-bold text-gray-900">{summary.claims.emegency}</p>
                   </div>
-                </>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                    Total Warranty Claims
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900 mb-1">
+                    {claimsBreakdown.total || summary.claims.count || 0}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {claimsBreakdown.newToday || 0} new today
+                  </p>
+                </div>
               )}
 
-              {summary.orders && (
-                <>
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-5 hover:shadow-md transition-all duration-200">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="p-2 rounded-lg bg-white">
-                        <Package className="text-purple-600" size={24} />
-                      </div>
+              {/* Emergency Claims */}
+              {summary.claims && (
+                <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md transition-all duration-200">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="p-2 rounded-lg bg-red-50">
+                      <AlertTriangle className="text-red-600" size={24} />
                     </div>
-                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">
-                      Orders This Week
-                    </p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {summary.orders.countOrderInOneWeek}
-                    </p>
+                    {summary.claims.emegency > 0 && (
+                      <span className="px-2 py-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold">
+                        URGENT
+                      </span>
+                    )}
                   </div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                    High Priority Claims
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900 mb-1">
+                    {urgentItems['High Priority Claims'] || summary.claims.emegency || 0}
+                  </p>
+                  <p className="text-xs text-red-600">
+                    {claimsBreakdown.pending || 0} pending review
+                  </p>
+                </div>
+              )}
 
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-5 hover:shadow-md transition-all duration-200">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="p-2 rounded-lg bg-white">
-                        <CheckCircle className="text-green-600" size={24} />
-                      </div>
+              {/* Orders This Week */}
+              {summary.orders && (
+                <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md transition-all duration-200">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="p-2 rounded-lg bg-purple-50">
+                      <Package className="text-purple-600" size={24} />
                     </div>
-                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">
-                      Completed This Month
-                    </p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {summary.orders.completeOneMonth}
-                    </p>
                   </div>
-                </>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                    Orders This Week
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900 mb-1">
+                    {summary.orders.countOrderInOneWeek || 0}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {summary.orders.differenceOneWeek >= 0 ? '+' : ''}{summary.orders.differenceOneWeek || 0}% vs last week
+                  </p>
+                </div>
+              )}
+
+              {/* Completed This Month */}
+              {summary.orders && (
+                <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md transition-all duration-200">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="p-2 rounded-lg bg-green-50">
+                      <CheckCircle className="text-green-600" size={24} />
+                    </div>
+                  </div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                    Completed This Month
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900 mb-1">
+                    {Math.round(summary.orders.completeOneMonth) || 0}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {quickStats['Completed Today'] || 0} completed today
+                  </p>
+                </div>
               )}
             </div>
           </section>
         )}
 
-        {/* Layout: Left (Recent) | Right (Performance + Quick) */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-
-          {/* Left side - Recent Activity */}
-          <div>
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Recent Activity</h2>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden max-h-[500px] overflow-y-auto">
-              {recentList.length > 0 ? (
-                <div className="divide-y divide-gray-200">
-                  {recentList.map((item, index) => (
-                    <div key={index} className="p-4 hover:bg-blue-50 transition-colors duration-150">
-                      <div className="flex items-start justify-between mb-1">
-                        <h4 className="font-semibold text-gray-900 text-base">{item.title}</h4>
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
-                          {item.status}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-700 mb-1 whitespace-pre-line">{item.vehicleInfo}</p>
-                      <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <Clock size={12} />
-                        {item.timeAgo}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-6 text-center">
-                  <Clock className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-500 font-medium text-sm">No recent activity</p>
-                  <p className="text-gray-400 text-xs mt-1">
-                    Activity will appear here as items are updated
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right side - Performance Metrics + Quick Statistics */}
-          <div className="space-y-6">
-
-            {/* Performance Metrics */}
-            {summary.performanceMetrics && Object.entries(summary.performanceMetrics).length > 0 && (
-              <section>
-                <h2 className="text-lg font-bold text-gray-900 mb-4">Performance Metrics</h2>
-                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Metric</th>
-                        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Value</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {Object.entries(summary.performanceMetrics).map(([key, value]) => (
-                        <tr key={key} className="hover:bg-blue-50 transition">
-                          <td className="px-4 py-2 text-sm font-medium text-gray-700">{key}</td>
-                          <td className="px-4 py-2 text-sm text-gray-900">
-                            <div className="flex items-center gap-2">
-                              <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div
-                                  className="bg-blue-500 h-2 rounded-full"
-                                  style={{ width: `${value}%` }}
-                                ></div>
-                              </div>
-                              <span className="text-xs font-semibold text-blue-600">{value}%</span>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-            )}
-
-            {/* Quick Statistics */}
-            {summary.quickStatistics && Object.entries(summary.quickStatistics).length > 0 && (
-              <section>
-                <h2 className="text-lg font-bold text-gray-900 mb-4">Quick Statistics</h2>
-                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Statistic</th>
-                        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Value</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {Object.entries(summary.quickStatistics).map(([key, value]) => (
-                        <tr key={key} className="hover:bg-green-50 transition">
-                          <td className="px-4 py-2 text-sm font-medium text-gray-700">{key}</td>
-                          <td className="px-4 py-2 text-sm font-bold text-gray-900">{value}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-            )}
-          </div>
-        </section>
-
-        {/* Urgent Alerts full width */}
-        {summary.urgentItems && Object.entries(summary.urgentItems).length > 0 && (
+        {/* Quick Statistics Cards */}
+        {quickStats && Object.keys(quickStats).length > 0 && (
           <section className="mb-8">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Urgent Alerts</h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Quick Statistics</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
-            <div className="bg-white border border-red-200 rounded-xl shadow-sm overflow-hidden">
-              {/* Header */}
-              <div className="bg-red-100 px-4 py-3 border-b border-red-200 flex items-center gap-2">
-                <AlertTriangle className="text-red-600" size={18} />
-                <span className="text-sm font-semibold text-red-800">Cảnh báo khẩn cấp</span>
+              {/* Revenue This Week */}
+              <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md transition-all duration-200">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-green-50">
+                    <DollarSign className="text-green-600" size={20} />
+                  </div>
+                  <p className="text-sm font-semibold text-gray-700">Revenue This Week</p>
+                </div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {quickStats['Revenue This Week'] || 0}$
+                </p>
               </div>
 
-              {/* Content */}
-              <div className="divide-y divide-red-100">
-                {Object.entries(summary.urgentItems).map(([key, value]) => (
+              {/* Average Repair Days */}
+              <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md transition-all duration-200">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-blue-50">
+                    <Calendar className="text-blue-600" size={20} />
+                  </div>
+                  <p className="text-sm font-semibold text-gray-700">Average Repair Days</p>
+                </div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {quickStats['Average Repair Days'] || 0} days
+                </p>
+              </div>
+
+              {/* Completed Today */}
+              <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md transition-all duration-200">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-purple-50">
+                    <CheckCircle className="text-purple-600" size={20} />
+                  </div>
+                  <p className="text-sm font-semibold text-gray-700">Completed Today</p>
+                </div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {quickStats['Completed Today'] || 0} orders
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+          {/* Monthly Trend Chart */}
+          {monthlyTrend && monthlyTrend.length > 0 && (
+            <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-all duration-200">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Monthly Claims Trend</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={monthlyTrend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fill: '#6b7280', fontSize: 12 }}
+                  />
+                  <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Line
+                    type="monotone"
+                    dataKey="totalClaims"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    dot={{ fill: '#3b82f6', r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Performance Metrics Chart */}
+          {performanceMetrics && Object.keys(performanceMetrics).length > 0 && (
+            <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-all duration-200">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Performance Metrics</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={Object.entries(performanceMetrics).map(([name, value]) => ({
+                  name: name.length > 15 ? name.substring(0, 15) + '...' : name,
+                  value: value,
+                  fullName: name,
+                  fill: value >= 80 ? '#22c55e' : value >= 50 ? '#f59e0b' : '#ef4444'
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fill: '#6b7280', fontSize: 11 }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                    {Object.entries(performanceMetrics).map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry[1] >= 80 ? '#22c55e' : entry[1] >= 50 ? '#f59e0b' : '#ef4444'}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+
+        {/* Claims Breakdown */}
+        {claimsBreakdown && Object.keys(claimsBreakdown).length > 0 && (
+          <section className="mb-8">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Claims Breakdown</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+              <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
+                <p className="text-xs text-gray-500 mb-1">New Today</p>
+                <p className="text-2xl font-bold text-blue-600">{claimsBreakdown.newToday || 0}</p>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
+                <p className="text-xs text-gray-500 mb-1">New This Week</p>
+                <p className="text-2xl font-bold text-blue-600">{claimsBreakdown.newThisWeek || 0}</p>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
+                <p className="text-xs text-gray-500 mb-1">Pending</p>
+                <p className="text-2xl font-bold text-yellow-600">{claimsBreakdown.pending || 0}</p>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
+                <p className="text-xs text-gray-500 mb-1">Approved</p>
+                <p className="text-2xl font-bold text-green-600">{claimsBreakdown.approved || 0}</p>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
+                <p className="text-xs text-gray-500 mb-1">Rejected</p>
+                <p className="text-2xl font-bold text-red-600">{claimsBreakdown.rejected || 0}</p>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
+                <p className="text-xs text-gray-500 mb-1">Draft</p>
+                <p className="text-2xl font-bold text-gray-600">{claimsBreakdown.draft || 0}</p>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
+                <p className="text-xs text-gray-500 mb-1">Total</p>
+                <p className="text-2xl font-bold text-gray-900">{claimsBreakdown.total || 0}</p>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Urgent Alerts */}
+        {urgentItems && Object.keys(urgentItems).length > 0 && (
+          <section className="mb-8">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Urgent Alerts</h2>
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              <div className="divide-y divide-gray-100">
+                {Object.entries(urgentItems).map(([key, value]) => (
                   <div
                     key={key}
-                    className={`flex items-center justify-between px-6 py-4 transition-all duration-200 hover:bg-red-50 ${value > 0 ? "bg-red-50" : ""
+                    className={`flex items-center justify-between px-6 py-4 transition-colors hover:bg-gray-50 ${value > 0 ? 'bg-red-50' : ''
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div
-                        className={`p-2 rounded-lg ${value > 0 ? "bg-red-200 text-red-700" : "bg-gray-100 text-gray-500"
-                          }`}
-                      >
-                        <AlertTriangle size={20} />
+                      <div className={`p-2 rounded-lg ${value > 0 ? 'bg-red-100' : 'bg-gray-100'}`}>
+                        <AlertTriangle
+                          size={20}
+                          className={value > 0 ? 'text-red-600' : 'text-gray-400'}
+                        />
                       </div>
-                      <p
-                        className={`text-sm font-medium ${value > 0 ? "text-red-800" : "text-gray-700"
-                          }`}
-                      >
+                      <p className={`text-sm font-medium ${value > 0 ? 'text-gray-900' : 'text-gray-500'}`}>
                         {key}
                       </p>
                     </div>
-
-                    <span
-                      className={`text-base font-bold px-3 py-1 rounded-lg ${value > 0
-                        ? "bg-red-100 text-red-800 border border-red-200"
-                        : "bg-gray-100 text-gray-600"
-                        }`}
-                    >
+                    <span className={`text-lg font-bold px-4 py-1 rounded-lg ${value > 0 ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-600'
+                      }`}>
                       {value}
                     </span>
                   </div>
@@ -322,7 +387,53 @@ const Dashboard = () => {
           </section>
         )}
 
+        {/* Recent Activity */}
+        {recentList && recentList.length > 0 && (
+          <section className="mb-8">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Recent Activity</h2>
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <div className="divide-y divide-gray-100">
+                {recentList.map((item, index) => (
+                  <div key={index} className="p-4 hover:bg-gray-50 transition-colors duration-150">
+                    <div className="flex items-start justify-between mb-1">
+                      <h4 className="font-semibold text-gray-900 text-sm">{item.title}</h4>
+                      <span className="text-xs font-semibold px-2 py-1 rounded-full bg-blue-100 text-blue-700">
+                        {item.status}
+                      </span>
+                    </div>
+                    {item.vehicleInfo && (
+                      <p className="text-sm text-gray-600 mb-1">{item.vehicleInfo}</p>
+                    )}
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <Clock size={12} />
+                      {item.timeAgo}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
+        {/* Total Warranty Cost */}
+        {summary.totalWarrantyCost !== undefined && (
+          <section className="mb-8">
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-gray-600 mb-1">Total Warranty Cost</p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {summary.totalWarrantyCost}$
+
+                  </p>
+                </div>
+                <div className="p-4 rounded-full bg-white shadow-sm">
+                  <DollarSign className="text-blue-600" size={32} />
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );
