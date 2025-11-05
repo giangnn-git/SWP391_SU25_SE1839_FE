@@ -56,16 +56,16 @@ const ForgotPasswordModal = ({ showModal, onClose, onBackToLogin }) => {
   if (!showModal) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-lg w-[440px] max-w-[95vw] mx-4 animate-fadeIn">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-auto animate-fadeIn border border-gray-200">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
             <button
               onClick={onBackToLogin}
-              className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              <ArrowLeft size={20} className="text-gray-600" />
+              <ArrowLeft size={18} className="text-gray-600" />
             </button>
             <h2 className="text-lg font-semibold text-gray-900">
               Forgot Password
@@ -73,19 +73,19 @@ const ForgotPasswordModal = ({ showModal, onClose, onBackToLogin }) => {
           </div>
           <button
             onClick={handleClose}
-            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <X size={20} className="text-gray-600" />
+            <X size={18} className="text-gray-600" />
           </button>
         </div>
 
         {/* Content */}
         <div className="p-6">
           <div className="text-center mb-6">
-            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
-              <Mail size={24} className="text-blue-600" />
+            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gray-100 mb-4">
+              <Mail size={24} className="text-gray-700" />
             </div>
-            <p className="text-gray-600">
+            <p className="text-gray-600 text-sm">
               Enter your email address and we'll send you instructions to reset
               your password.
             </p>
@@ -95,7 +95,7 @@ const ForgotPasswordModal = ({ showModal, onClose, onBackToLogin }) => {
             <div>
               <label
                 htmlFor="forgotEmail"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-gray-700 mb-2"
               >
                 Email Address
               </label>
@@ -104,7 +104,7 @@ const ForgotPasswordModal = ({ showModal, onClose, onBackToLogin }) => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400 transition-all duration-200"
                 placeholder="Enter your email"
                 disabled={loading}
                 autoFocus
@@ -112,39 +112,47 @@ const ForgotPasswordModal = ({ showModal, onClose, onBackToLogin }) => {
             </div>
 
             {error && (
-              <div className="rounded-lg bg-red-50 p-3 border border-red-200">
-                <div className="flex items-center text-sm text-red-700">
+              <div className="rounded-lg bg-red-50 p-4 border border-red-200">
+                <div className="flex items-center">
                   <svg
-                    className="w-4 h-4 mr-2 flex-shrink-0"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
+                    className="h-4 w-4 text-red-400 mr-2 flex-shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
                     <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                      clipRule="evenodd"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  {error}
+                  <div className="text-sm text-red-700 font-medium">
+                    {error}
+                  </div>
                 </div>
               </div>
             )}
 
             {success && (
-              <div className="rounded-lg bg-green-50 p-3 border border-green-200">
-                <div className="flex items-center text-sm text-green-700">
+              <div className="rounded-lg bg-green-50 p-4 border border-green-200">
+                <div className="flex items-center">
                   <svg
-                    className="w-4 h-4 mr-2 flex-shrink-0"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
+                    className="h-4 w-4 text-green-400 mr-2 flex-shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
                     <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
                     />
                   </svg>
-                  {success}
+                  <div className="text-sm text-green-700 font-medium">
+                    {success}
+                  </div>
                 </div>
               </div>
             )}
@@ -152,12 +160,13 @@ const ForgotPasswordModal = ({ showModal, onClose, onBackToLogin }) => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg text-base font-semibold text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
             >
               {loading ? (
-                <div className="flex items-center">
+                <>
                   <svg
                     className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
                   >
@@ -176,7 +185,7 @@ const ForgotPasswordModal = ({ showModal, onClose, onBackToLogin }) => {
                     ></path>
                   </svg>
                   Sending...
-                </div>
+                </>
               ) : (
                 "Send Reset Instructions"
               )}

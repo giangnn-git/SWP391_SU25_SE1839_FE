@@ -7,13 +7,13 @@ const CustomerManagement = ({
   customersSummary = [],
   loadingCustomersSummary = false,
   onViewCustomer,
-  searchTerm,              // ✅ nhận searchTerm từ props
-  onSearchChange,          // ✅ nhận onSearchChange từ props
-  showHeader = false,      // ✅ mới: điều khiển hiển thị header bên trong component
-  showRegisterBtn = false, // ✅ mới: điều khiển hiển thị nút Register bên trong component
+  onViewVehicle,
+  onAddVehicle,
+  searchTerm,
+  onSearchChange,
+  showHeader = false,
+  showRegisterBtn = false,
 }) => {
-  // ✅ đã bỏ state searchTerm nội bộ, dùng từ props
-
   const filtered = useMemo(() => {
     if (!searchTerm.trim()) return customersSummary;
     const q = searchTerm.toLowerCase();
@@ -71,7 +71,6 @@ const CustomerManagement = ({
               className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
             />
           </div>
-          {/* ✅ đã xoá nút reset */}
         </div>
       </div>
 
@@ -80,7 +79,8 @@ const CustomerManagement = ({
         customers={filtered}
         loading={loadingCustomersSummary}
         onViewCustomer={onViewCustomer}
-      // ✅ đã xoá onEditCustomer prop
+        onViewVehicle={onViewVehicle}
+        onAddVehicle={onAddVehicle}
       />
     </>
   );

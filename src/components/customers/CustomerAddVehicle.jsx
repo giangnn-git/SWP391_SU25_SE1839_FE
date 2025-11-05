@@ -9,6 +9,7 @@ import {
   Plus,
 } from "lucide-react";
 import { addVehicleToCustomerApi } from "../../services/api.service";
+import { useNotification } from "../../components/nortify/NotificationSystem";
 
 const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
   const [formData, setFormData] = useState({
@@ -20,8 +21,10 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
   const [availableVehicles, setAvailableVehicles] = useState([]);
   const [loadingVehicles, setLoadingVehicles] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const vinDropdownRef = useRef(null);
+
+  // THÊM HOOK NOTIFICATION - XÓA STATE ERROR CŨ
+  const { error: showError } = useNotification();
 
   // Filter vehicles based on search
   const filteredVins = availableVehicles.filter(
@@ -59,20 +62,20 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
   const validateForm = () => {
     // Required VIN
     if (!formData.vin.trim()) {
-      setError("VIN is required");
+      showError("VIN is required");
       return false;
     }
 
     // VIN nhập tay: kiểm tra tối thiểu độ dài/định dạng cơ bản
     const vinTrim = formData.vin.trim();
     if (vinTrim.length < 5) {
-      setError("VIN must be at least 5 characters long");
+      showError("VIN must be at least 5 characters long");
       return false;
     }
 
     // Validate license plate format
     if (formData.licensePlate && !validateLicensePlate(formData.licensePlate)) {
-      setError("Wrong License plate format. Correct format: 63A-003.33");
+      showError("Wrong License plate format. Correct format: 63A-003.33");
       return false;
     }
 
@@ -82,7 +85,7 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+    // XÓA: setError("");
 
     if (!validateForm()) {
       return;
@@ -125,7 +128,7 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
         errorMsg += "Unexpected error occurred.";
       }
 
-      setError(errorMsg);
+      showError(errorMsg);
       if (onError) {
         onError(errorMsg);
       }
@@ -183,11 +186,12 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && (
+          {/* XÓA PHẦN HIỂN THỊ ERROR CŨ */}
+          {/* {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
               {error}
             </div>
-          )}
+          )} */}
 
           {/* VIN Field – NHẬP TAY */}
           <div className="space-y-2" ref={vinDropdownRef}>

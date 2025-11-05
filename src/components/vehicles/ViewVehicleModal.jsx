@@ -6,14 +6,12 @@ import {
   Loader2,
   AlertCircle,
   Package,
-  Calendar,
-  Gauge,
   FileText,
   MoreVertical,
-  Shield,
+  Calendar,
+  Gauge,
 } from "lucide-react";
 import { getVehicleDetailApi } from "../../services/api.service";
-import { calculateWarrantyPeriod } from "../../utils/WarrantyCalculator";
 
 // Format date function
 const formatDate = (dateString) => {
@@ -107,7 +105,6 @@ const ViewVehicleModal = ({ vehicle, onClose }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTooltip, setActiveTooltip] = useState(null);
-  const [warrantyPeriod, setWarrantyPeriod] = useState(null);
   const tooltipRef = useRef(null);
 
   useEffect(() => {
@@ -120,13 +117,6 @@ const ViewVehicleModal = ({ vehicle, onClose }) => {
         const response = await getVehicleDetailApi(vehicle.id);
         const data = response.data?.data || response.data;
         setVehicleDetail(data);
-
-        // Tính toán warranty period
-        if (data?.partPolicies) {
-          const period = calculateWarrantyPeriod(data.partPolicies);
-          setWarrantyPeriod(period);
-          console.log("🛡️ Calculated warranty period:", period);
-        }
       } catch (err) {
         console.error("Error fetching vehicle details:", err);
         setError("Failed to load vehicle details. Please try again.");
@@ -207,7 +197,7 @@ const ViewVehicleModal = ({ vehicle, onClose }) => {
             </div>
           ) : (
             <div className="space-y-4 text-sm text-gray-700">
-              {/* Basic Info Section với Warranty */}
+              {/* Basic Info Section */}
               <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
                 <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
                   <Info size={16} />
@@ -240,28 +230,6 @@ const ViewVehicleModal = ({ vehicle, onClose }) => {
                         : "Discontinued"}
                     </span>
                   </div>
-
-                  {/* WARRANTY PERIOD */}
-                  {warrantyPeriod && warrantyPeriod.years > 0 && (
-                    <div className="pt-2 border-t border-blue-200 mt-2 space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium text-blue-800 flex items-center gap-1">
-                          <Shield size={14} />
-                          Warranty Period:
-                        </span>
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-md text-xs font-semibold border border-green-200">
-                          {warrantyPeriod.years}{" "}
-                          {warrantyPeriod.years === 1 ? "year" : "years"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-xs text-blue-700">
-                        <span>
-                          From: {formatDate(warrantyPeriod.startDate)}
-                        </span>
-                        <span>To: {formatDate(warrantyPeriod.endDate)}</span>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 

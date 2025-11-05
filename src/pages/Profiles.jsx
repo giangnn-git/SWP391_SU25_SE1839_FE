@@ -4,8 +4,6 @@ import ChangePasswordModal from "../components/auth/ChangePassModal";
 import EditUserModal from "../components/users/editUserModal";
 import { useNavigate } from "react-router-dom";
 import { updateUserApi } from "../services/api.service";
-// 🔧 CHỈNH: ưu tiên lấy user/role từ hook
-import { useCurrentUser } from "../hooks/useCurrentUser";
 
 const ProfilePage = () => {
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -15,48 +13,25 @@ const ProfilePage = () => {
   const [successMsg, setSuccessMsg] = useState("");
   const navigate = useNavigate();
 
-  // 🔧 CHỈNH: nguồn sự thật về user
-  const { currentUser } = useCurrentUser();
-
-  // 🔧 CHỈNH: gộp nhiều nguồn -> roleRaw
-  const roleRaw = (
-    currentUser?.role ??
-    storage.get("userRole") ??
-    storage.get("role") ??
-    ""
-  ).toString();
-
-  // Chuẩn hóa nhãn role
-  const formatRole = (raw = "") => {
-    const key = String(raw).trim().toUpperCase();
-    const map = {
-      ADMIN: "Administrator",
-      SC_STAFF: "Sc_staff",
-      EVM_STAFF: "Evm_staff",
-      TECHNICIAN: "Technician",
-    };
-    return map[key] || (raw ? raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase() : "");
-  };
-  const roleLabel = formatRole(roleRaw); // "" nếu không có role
-
-  // 🔧 CHỈNH: userInfo cũng ưu tiên currentUser
+  // Get user info from storage
   const userInfo = {
-    id: currentUser?.id ?? storage.get("id"),
-    name: currentUser?.name ?? storage.get("userName") ?? "User",
-    email: currentUser?.email ?? storage.get("userEmail") ?? "No email",
-    phoneNumber: currentUser?.phoneNumber ?? storage.get("userPhone") ?? "No phone",
-    role: roleRaw,
-    serviceCenterId: currentUser?.serviceCenterId ?? storage.get("serviceCenterId") ?? "",
-    status: currentUser?.status ?? storage.get("userStatus") ?? "ACTIVE",
+    id: storage.get("id"),
+    name: storage.get("userName") || "User",
+    email: storage.get("userEmail") || "No email",
+    phoneNumber: storage.get("userPhone") || "No phone",
+    role: storage.get("userRole") || "",
+    serviceCenterId: storage.get("serviceCenterId") || "",
+    status: storage.get("userStatus") || "ACTIVE",
   };
 
+  // Handle save from EditUserModal
   const handleSaveProfile = async (id, formData) => {
     setLoading(true);
     setErrorMsg("");
     setSuccessMsg("");
     try {
       await updateUserApi(id, formData);
-      // cập nhật local storage để lần sau fallback vẫn đúng
+      // Update local storage
       storage.set("userName", formData.name);
       storage.set("userEmail", formData.email);
       storage.set("userPhone", formData.phoneNumber);
@@ -64,8 +39,11 @@ const ProfilePage = () => {
       storage.set("serviceCenterId", formData.serviceCenterId);
 
       setSuccessMsg("Profile updated successfully!");
-      setTimeout(() => setSuccessMsg(""), 3000);
-    } catch {
+
+      setTimeout(() => {
+        setSuccessMsg("");
+      }, 3000);
+    } catch (err) {
       setErrorMsg("Update failed. Please try again.");
     } finally {
       setLoading(false);
@@ -76,13 +54,23 @@ const ProfilePage = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Back */}
+        {/* Back Icon */}
         <button
           onClick={() => navigate("/")}
           className="flex items-center text-gray-600 hover:text-blue-600 mb-4"
         >
-          <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          <svg
+            className="w-6 h-6 mr-2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           Back
         </button>
@@ -95,11 +83,15 @@ const ProfilePage = () => {
           </p>
         </div>
 
-        {/* Success / Error */}
+        {/* SUCCESS MESSAGE */}
         {successMsg && (
           <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
             <div className="flex items-center">
-              <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <svg
+                className="w-5 h-5 text-green-500 mr-2"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
                 <path
                   fillRule="evenodd"
                   d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
@@ -110,10 +102,16 @@ const ProfilePage = () => {
             </div>
           </div>
         )}
+
+        {/* Error message */}
         {errorMsg && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center">
-              <svg className="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <svg
+                className="w-5 h-5 text-red-500 mr-2"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
                 <path
                   fillRule="evenodd"
                   d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
@@ -126,9 +124,11 @@ const ProfilePage = () => {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left */}
+          {/* Left Column - Personal Information */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Personal Information Card */}
             <div className="bg-white shadow-sm rounded-lg border border-gray-200">
+              {/* Header with Edit Profile button on the top right */}
               <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-gray-900">
                   Personal Information
@@ -142,30 +142,31 @@ const ProfilePage = () => {
                 </button>
               </div>
               <div className="p-6 space-y-6">
-                {/* Avatar + Name + Role */}
+                {/* User Avatar and Name */}
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full border border-blue-200">
-                    <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    <svg
+                      className="w-8 h-8 text-blue-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
                     </svg>
                   </div>
                   <div>
                     <h3 className="text-xl font-semibold text-gray-900">
                       {userInfo.name}
                     </h3>
-                    {/* 🔧 CHỈNH: badge role đúng theo đăng nhập (ẩn nếu không có) */}
-                    {roleLabel && (
-                      <span
-                        className="inline-flex items-center mt-1 px-2 py-[2px] rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 shadow-sm"
-                        title={roleLabel}
-                      >
-                        {roleLabel}
-                      </span>
-                    )}
                   </div>
                 </div>
 
-                {/* Info fields */}
+                {/* Information Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -177,11 +178,13 @@ const ProfilePage = () => {
                   </div>
 
                   <div className="relative">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone Number
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex justify-between items-center">
+                      <span>Phone Number</span>
                     </label>
                     <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                      <p className="text-sm text-gray-900">{userInfo.phoneNumber}</p>
+                      <p className="text-sm text-gray-900">
+                        {userInfo.phoneNumber}
+                      </p>
                     </div>
                   </div>
 
@@ -197,7 +200,7 @@ const ProfilePage = () => {
               </div>
             </div>
 
-            {/* Account Settings */}
+            {/* Account Settings Card */}
             <div className="bg-white shadow-sm rounded-lg border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900">
@@ -225,8 +228,9 @@ const ProfilePage = () => {
             </div>
           </div>
 
-          {/* Right */}
+          {/* Right Column - Quick Actions */}
           <div className="space-y-6">
+            {/* Account Status */}
             <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Account Status
@@ -249,6 +253,7 @@ const ProfilePage = () => {
               </div>
             </div>
 
+            {/* Quick Links */}
             <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Quick Links
@@ -269,6 +274,7 @@ const ProfilePage = () => {
         </div>
       </div>
 
+      {/*  THÊM PROP isEditingOwnProfile CHO EditUserModal */}
       <EditUserModal
         user={userInfo}
         isOpen={showEditProfile}
@@ -278,6 +284,7 @@ const ProfilePage = () => {
         isEditingOwnProfile={true}
       />
 
+      {/* Change Password Modal */}
       <ChangePasswordModal
         isOpen={showChangePassword}
         onClose={() => setShowChangePassword(false)}

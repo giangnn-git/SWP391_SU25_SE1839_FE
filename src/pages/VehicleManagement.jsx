@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Search, Filter, Car, Eye, Loader2, Shield } from "lucide-react";
 import ViewVehicleModal from "../components/vehicles/ViewVehicleModal";
 import { getAllModelsApi, getVehicleDetailApi } from "../services/api.service";
-import { calculateWarrantyYears } from "../utils/WarrantyCalculator";
 
 const VehicleManagement = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -28,7 +27,6 @@ const VehicleManagement = () => {
           try {
             const detailResponse = await getVehicleDetailApi(vehicle.id);
             const partPolicies = detailResponse.data?.data?.partPolicies || [];
-            const warrantyYears = calculateWarrantyYears(partPolicies);
 
             return {
               ...vehicle,
@@ -148,7 +146,7 @@ const VehicleManagement = () => {
                   <th className="py-3 px-4 text-left">Model Name</th>
                   <th className="py-3 px-4 text-left">Release Year</th>
                   <th className="py-3 px-4 text-left">Description</th>
-                  <th className="py-3 px-4 text-left">Warranty</th>
+                  {/* <th className="py-3 px-4 text-left">Warranty</th> */}
                   <th className="py-3 px-4 text-left">Status</th>
                   <th className="py-3 px-4 text-center">Action</th>
                 </tr>
@@ -164,7 +162,7 @@ const VehicleManagement = () => {
                     <td className="py-3 px-4">{v.description}</td>
 
                     {/* WARRANTY COLUMN - NEW */}
-                    <td className="py-3 px-4">
+                    {/* <td className="py-3 px-4">
                       {v.warrantyYears > 0 ? (
                         <div className="flex items-center gap-1">
                           <Shield size={14} className="text-green-600" />
@@ -178,7 +176,7 @@ const VehicleManagement = () => {
                           No warranty
                         </span>
                       )}
-                    </td>
+                    </td> */}
 
                     <td className="py-3 px-4">
                       <span

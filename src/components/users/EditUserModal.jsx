@@ -110,35 +110,37 @@ const EditUserModal = ({
               </p>
             </div>
 
-            {/*   SERVICE CENTER  */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Service Center {!isEditingOwnProfile && "*"}
-              </label>
-              <select
-                value={formData.serviceCenterId || ""}
-                onChange={(e) =>
-                  handleChange("serviceCenterId", e.target.value)
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={scLoading}
-                required={!isEditingOwnProfile} // Chỉ bắt buộc khi admin edit user
-              >
-                <option value="">Select Service Center</option>
-                {serviceCenters.map((sc) => (
-                  <option key={sc.id} value={sc.id}>
-                    {sc.address}
-                  </option>
-                ))}
-              </select>
-              {scLoading && (
-                <p className="mt-1 text-sm text-gray-500">
-                  Loading service centers...
-                </p>
-              )}
-            </div>
+            {/* SERVICE CENTER - CHỈ HIỆN KHI KHÔNG PHẢI EDIT OWN PROFILE */}
+            {!isEditingOwnProfile && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Service Center *
+                </label>
+                <select
+                  value={formData.serviceCenterId || ""}
+                  onChange={(e) =>
+                    handleChange("serviceCenterId", e.target.value)
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={scLoading}
+                  required
+                >
+                  <option value="">Select Service Center</option>
+                  {serviceCenters.map((sc) => (
+                    <option key={sc.id} value={sc.id}>
+                      {sc.address}
+                    </option>
+                  ))}
+                </select>
+                {scLoading && (
+                  <p className="mt-1 text-sm text-gray-500">
+                    Loading service centers...
+                  </p>
+                )}
+              </div>
+            )}
 
-            {/*  CHỈ hiển thị Role khi Admin Edit User */}
+            {/* CHỈ hiển thị Role khi Admin Edit User (không phải edit own profile) */}
             {!isEditingOwnProfile && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
