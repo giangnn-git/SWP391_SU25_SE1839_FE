@@ -129,7 +129,7 @@ const ClaimTable = ({ claims = [], loading, error }) => {
                   <th className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">
                     Status
                   </th>
-                  {!isTech && ( // ẩn nút nếu là TECHNICIAN
+                  {!isTech && (
                     <th className="px-6 py-3 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
                       Action
                     </th>)}

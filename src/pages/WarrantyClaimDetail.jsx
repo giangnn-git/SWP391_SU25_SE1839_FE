@@ -297,22 +297,6 @@ const ClaimDetail = () => {
                     )}
                 </div>
 
-
-
-                {/* <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Car size={22} className="text-blue-600" />
-                        <h2 className="text-xl font-bold text-gray-900">Vehicle Information</h2>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <InfoItem label="Model Name" value={fcr?.modelName} />
-                        <InfoItem label="VIN" value={fcr?.vin} />
-                        <InfoItem label="License Plate" value={fcr?.licensePlate} />
-                        <InfoItem label="Mileage" value={`${fcr?.milege || 0} km`} />
-                        <InfoItem label="Production Year" value={fcr?.productYear} />
-                    </div>
-                </div> */}
-
                 {/* View Policy */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
                     <div className="flex items-center justify-between mb-4">
@@ -321,23 +305,6 @@ const ClaimDetail = () => {
                             <h2 className="text-xl font-bold text-gray-900">Vehicle Information</h2>
                         </div>
 
-                        {/* <button
-                            onClick={() => {
-                                const ModelVehicle = {
-                                    id: fcr?.modelId,
-                                    name: fcr?.modelName,
-                                    releaseYear: fcr?.productYear,
-                                    isInProduction: true,
-                                    description: "Vehicle description placeholder",
-                                };
-                                setSelectedVehicle(ModelVehicle);
-                                setShowPolicyModal(true);
-                            }}
-                            className="flex items-center gap-2 bg-blue-600 text-white font-medium px-4 py-2 rounded-md shadow-sm hover:bg-blue-700 transition"
-                        >
-                            <Eye size={16} />
-                            <span>View Policy</span>
-                        </button> */}
                     </div>
                     {/* Vehicle Information */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
