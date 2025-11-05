@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useCurrentUser } from "../../hooks/useCurrentUser";
+
 
 import { ChevronLeft, ChevronRight, AlertCircle, Loader } from "lucide-react";
 
@@ -8,6 +10,9 @@ const ClaimTable = ({ claims = [], loading, error }) => {
   const claimsPerPage = 15;
 
   const navigate = useNavigate();
+
+  const { currentUser } = useCurrentUser();
+  const isTech = currentUser?.role === "TECHNICIAN";
 
   const totalPages = Math.ceil(claims.length / claimsPerPage);
   const startIndex = (currentPage - 1) * claimsPerPage;
@@ -124,9 +129,10 @@ const ClaimTable = ({ claims = [], loading, error }) => {
                   <th className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-                    Action
-                  </th>
+                  {!isTech && ( // ẩn nút nếu là TECHNICIAN
+                    <th className="px-6 py-3 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                      Action
+                    </th>)}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -169,25 +175,27 @@ const ClaimTable = ({ claims = [], loading, error }) => {
                       <span className="text-sm text-gray-700">
                         {claim.claimDate
                           ? `${String(claim.claimDate[2]).padStart(
-                              2,
-                              "0"
-                            )}/${String(claim.claimDate[1]).padStart(2, "0")}/${
-                              claim.claimDate[0]
-                            }`
+                            2,
+                            "0"
+                          )}/${String(claim.claimDate[1]).padStart(2, "0")}/${claim.claimDate[0]
+                          }`
                           : "–"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(claim.currentStatus)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <button
-                        className="bg-blue-600 text-white px-4 py-1.5 rounded hover:bg-blue-700 text-sm font-medium"
-                        onClick={() => navigate(`/claim/${claim.id}`)}
-                      >
-                        View Details
-                      </button>
-                    </td>
+                    {!isTech && ( // ẩn nút nếu là TECHNICIAN
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+
+                        <button
+                          className="bg-blue-600 text-white px-4 py-1.5 rounded hover:bg-blue-700 text-sm font-medium"
+                          onClick={() => navigate(`/claim/${claim.id}`)}
+                        >
+                          View Details
+                        </button>
+
+                      </td>)}
                   </tr>
                 ))}
               </tbody>
@@ -224,11 +232,10 @@ const ClaimTable = ({ claims = [], loading, error }) => {
                       <button
                         key={page}
                         onClick={() => setCurrentPage(page)}
-                        className={`px-3 py-2 rounded-lg border transition-colors ${
-                          currentPage === page
-                            ? "bg-blue-600 text-white border-blue-600 font-semibold"
-                            : "border-gray-300 text-gray-700 hover:bg-gray-100"
-                        }`}
+                        className={`px-3 py-2 rounded-lg border transition-colors ${currentPage === page
+                          ? "bg-blue-600 text-white border-blue-600 font-semibold"
+                          : "border-gray-300 text-gray-700 hover:bg-gray-100"
+                          }`}
                       >
                         {page}
                       </button>

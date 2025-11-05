@@ -69,19 +69,43 @@ const RepairOrderDetail = () => {
 
 
   // Fetch both order info and technician list
+  // Fetch both order info and technician list
   const fetchOrderAndTechs = async () => {
     try {
       const res = await axios.get(`/api/api/repair-orders/${id}`);
-      const data = res.data?.data || {};
-      setOrder(data.filterOrderResponse || {});
+      const data = res.data?.data;
+
+      // Nếu không có dữ liệu hoặc trả về null → hiển thị thông báo
+      if (!data || !data.filterOrderResponse) {
+        setOrder(null);
+        toast.error("Không tìm thấy Repair Order này. Vui lòng kiểm tra lại ID.");
+        return;
+      }
+
+      setOrder({
+        ...data.filterOrderResponse,
+        verifiedBy: data.verifiedBy,
+        verifiedAt: data.verifiedAt,
+        notes: data.notes,
+        acceptedResponsibility: data.acceptedResponsibility,
+        signature: data.signature,
+      });
+
       setTechs(data.getTechnicalsResponse?.technicians || []);
     } catch (err) {
       console.error("Failed to fetch data:", err);
-      toast.error("Failed to load repair order data.");
+
+      if (err.response?.status === 404 || err.response?.data?.errorCode === "Repair order not found") {
+        setOrder(null);
+        toast.error("Không tìm thấy Repair Order này. Vui lòng kiểm tra lại ID.");
+      } else {
+        toast.error("Không thể tải dữ liệu Repair Order. Vui lòng thử lại sau.");
+      }
     } finally {
       setLoading(false);
     }
   };
+
 
   // Fetch repair details
   const fetchDetails = async () => {
@@ -191,31 +215,39 @@ const RepairOrderDetail = () => {
       return (
         <div className="text-center py-12">
           <AlertCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">No data available</p>
+          <p className="text-gray-500 font-medium">No repair details available</p>
           <p className="text-gray-400 text-sm mt-1">There are no items to display</p>
         </div>
       );
 
     return (
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              {Object.keys(data[0]).map((key) => (
-                <th key={key} className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">
-                  {key}
-                </th>
-              ))}
+      <div className="border border-gray-200 rounded-lg shadow-sm bg-white">
+        <table className="w-full table-fixed border-collapse">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="w-[4%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">#</th>
+              <th className="w-[14%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">Part Name</th>
+              <th className="w-[22%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">Old Serial Number</th>
+              <th className="w-[6%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">Qty</th>
+              <th className="w-[8%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">Year</th>
+              <th className="w-[10%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">Model</th>
+              <th className="w-[15%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">VIN</th>
+              <th className="w-[11%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">License Plate</th>
+              <th className="w-[10%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">Category</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {data.map((item, i) => (
-              <tr key={i} className="hover:bg-blue-50 transition-colors">
-                {Object.values(item).map((val, j) => (
-                  <td key={j} className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
-                    {String(val)}
-                  </td>
-                ))}
+            {data.map((item, index) => (
+              <tr key={item.id || index} className="hover:bg-gray-50">
+                <td className="px-3 py-2 text-sm text-gray-700">{index + 1}</td>
+                <td className="px-3 py-2 text-sm text-gray-700 truncate">{item.partName}</td>
+                <td className="px-3 py-2 text-sm text-gray-700 break-all">{item.oldSerialNumber}</td>
+                <td className="px-3 py-2 text-sm text-gray-700 text-center">{item.quantity}</td>
+                <td className="px-3 py-2 text-sm text-gray-700 text-center">{item.productYear}</td>
+                <td className="px-3 py-2 text-sm text-gray-700">{item.modelName}</td>
+                <td className="px-3 py-2 text-sm text-gray-700 break-all">{item.vin}</td>
+                <td className="px-3 py-2 text-sm text-gray-700">{item.licensePlate}</td>
+                <td className="px-3 py-2 text-sm text-gray-700">{item.category}</td>
               </tr>
             ))}
           </tbody>
@@ -223,6 +255,8 @@ const RepairOrderDetail = () => {
       </div>
     );
   };
+
+
 
   const renderSteps = (data) => {
     if (loadingTab)
@@ -331,18 +365,18 @@ const RepairOrderDetail = () => {
 
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Repair Order Detail</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Repair Order Details</h1>
           <p className="text-gray-600 mt-1">
             Order ID:{" "}
             <span className="font-semibold text-gray-900">
-              RO-{String(order.repairOrderId || id).padStart(4, "0")}
+              RO-{String(order?.repairOrderId || id).padStart(4, "0")}
             </span>
           </p>
         </div>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <QuickStat label="Status" value={order.status ? "Active" : "Inactive"} icon={<CheckCircle className="text-blue-600" size={20} />} bg="bg-blue-100" />
+          <QuickStat label="Status" value={order.claimStatus} icon={<CheckCircle className="text-blue-600" size={20} />} bg="bg-blue-100" />
           <QuickStat label="Progress" value={`${order.percentInProcess || 0}%`} icon={<Clock className="text-green-600" size={20} />} bg="bg-green-100" />
           <QuickStat label="Technician" value={order.techinal || "Unassigned"} icon={<User className="text-purple-600" size={20} />} bg="bg-purple-100" />
         </div>
@@ -370,14 +404,42 @@ const RepairOrderDetail = () => {
 
             {order.percentInProcess === 100 && (
               <div className="mt-5 text-center">
-                <button
-                  onClick={() => setShowVerifyModal(true)}
-                  className="px-5 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition"
-                >
-                  Xác nhận hoàn tất
-                </button>
+                {order.claimStatus === "COMPLETED" ? (
+                  <div className="bg-green-50 border border-green-300 rounded-lg p-5 max-w-md mx-auto">
+                    <h3 className="text-green-700 font-semibold text-lg mb-3">
+                      Tested and confirmed complete
+                    </h3>
+                    <p className="text-sm text-gray-700">
+                      Confirmer:{" "}
+                      <span className="font-semibold">{order.verifiedBy || "Chưa rõ"}</span>
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      Confirmation time:{" "}
+                      <span className="font-semibold">
+                        {order.verifiedAt
+                          ? `${order.verifiedAt[2]}/${order.verifiedAt[1]}/${order.verifiedAt[0]} ${order.verifiedAt[3]}:${String(
+                            order.verifiedAt[4]
+                          ).padStart(2, "0")}`
+                          : "–"}
+                      </span>
+                    </p>
+                    {order.notes && (
+                      <p className="text-sm text-gray-700 mt-2 italic">
+                        Note: “{order.notes}”
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowVerifyModal(true)}
+                    className="px-5 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition"
+                  >
+                    Confirmation completed
+                  </button>
+                )}
               </div>
             )}
+
 
           </div>
 
@@ -429,14 +491,14 @@ const RepairOrderDetail = () => {
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
           <div className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4 text-center">
-              Xác nhận hoàn tất sửa chữa
+              Confirm repair completion
             </h2>
 
             <div className="space-y-4">
               {/* Nhập tên (chữ ký xác nhận) */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Họ và tên (chữ ký xác nhận)
+                  Full name (confirmation signature)
                 </label>
                 <input
                   type="text"
@@ -445,14 +507,14 @@ const RepairOrderDetail = () => {
                     setVerifyData((prev) => ({ ...prev, signature: e.target.value }))
                   }
                   className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  placeholder="Nhập họ và tên người xác nhận..."
+                  placeholder="Enter the name of the person confirming..."
                 />
               </div>
 
               {/* Ghi chú */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Ghi chú
+                  Note
                 </label>
                 <textarea
                   value={verifyData.notes}
@@ -461,14 +523,14 @@ const RepairOrderDetail = () => {
                   }
                   rows={3}
                   className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  placeholder="Nhập ghi chú (nếu có)..."
+                  placeholder="Enter notes (if any)..."
                 ></textarea>
               </div>
 
               {/* Upload file */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Tệp đính kèm (nếu có)
+                  Attachments (if any)
                 </label>
                 <input
                   type="file"
@@ -496,7 +558,7 @@ const RepairOrderDetail = () => {
                   }
                 />
                 <span className="text-sm text-gray-700">
-                  Tôi xác nhận toàn bộ quá trình sửa chữa đã hoàn tất chính xác.
+                  I confirm that the entire repair process has been completed correctly.
                 </span>
               </div>
             </div>
@@ -507,14 +569,14 @@ const RepairOrderDetail = () => {
                 onClick={() => setShowVerifyModal(false)}
                 className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition"
               >
-                Hủy
+                Cancel
               </button>
               <button
                 onClick={handleVerifySubmit}
                 disabled={verifying}
                 className="px-5 py-2 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 transition disabled:bg-gray-400"
               >
-                {verifying ? "Đang xác nhận..." : "Xác nhận"}
+                {verifying ? "Confirming..." : "Confirm"}
               </button>
             </div>
           </div>

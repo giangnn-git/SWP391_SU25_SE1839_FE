@@ -321,7 +321,7 @@ const ClaimDetail = () => {
                             <h2 className="text-xl font-bold text-gray-900">Vehicle Information</h2>
                         </div>
 
-                        <button
+                        {/* <button
                             onClick={() => {
                                 const ModelVehicle = {
                                     id: fcr?.modelId,
@@ -337,7 +337,7 @@ const ClaimDetail = () => {
                         >
                             <Eye size={16} />
                             <span>View Policy</span>
-                        </button>
+                        </button> */}
                     </div>
                     {/* Vehicle Information */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
