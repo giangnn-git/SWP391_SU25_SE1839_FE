@@ -11,6 +11,7 @@ const EditCampaignModal = ({ isOpen, onClose, campaign, onCampaignUpdated }) => 
         endDate: "",
         produceDateFrom: "",
         produceDateTo: "",
+        // vẫn giữ để không ảnh hưởng API, chỉ không render UI
         affectedModels: "",
         status: "UPCOMING",
     });
@@ -19,7 +20,7 @@ const EditCampaignModal = ({ isOpen, onClose, campaign, onCampaignUpdated }) => 
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
 
-    //  Load dữ liệu khi mở modal
+    // Load dữ liệu khi mở modal
     useEffect(() => {
         if (isOpen && campaign) {
             setFormData({
@@ -30,6 +31,7 @@ const EditCampaignModal = ({ isOpen, onClose, campaign, onCampaignUpdated }) => 
                 endDate: campaign.formattedEndDate || "",
                 produceDateFrom: campaign.formattedProduceFrom || "",
                 produceDateTo: campaign.formattedProduceTo || "",
+                // giữ giá trị cũ để gửi lại (nếu BE cần)
                 affectedModels: campaign.affectedModels
                     ? campaign.affectedModels.join(", ")
                     : "",
@@ -50,20 +52,20 @@ const EditCampaignModal = ({ isOpen, onClose, campaign, onCampaignUpdated }) => 
         }
     }, [isOpen, campaign]);
 
-    //  Chuyển chuỗi dd/mm/yyyy -> [yyyy, mm, dd]
+    // Chuyển chuỗi dd/mm/yyyy -> [yyyy, mm, dd]
     const parseDateArray = (dateStr) => {
         if (!dateStr) return null;
         const [day, month, year] = dateStr.split("/").map(Number);
         return [year, month, day];
     };
 
-    //  Bắt sự kiện nhập form
+    // Bắt sự kiện nhập form
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    //  Submit cập nhật
+    // Submit cập nhật
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -79,6 +81,7 @@ const EditCampaignModal = ({ isOpen, onClose, campaign, onCampaignUpdated }) => 
                 endDate: parseDateArray(formData.endDate),
                 produceDateFrom: parseDateArray(formData.produceDateFrom),
                 produceDateTo: parseDateArray(formData.produceDateTo),
+                // vẫn gửi để không breaking API; nếu không cần có thể xoá 2 field này
                 affectedModels: formData.affectedModels
                     ? formData.affectedModels.split(",").map((m) => m.trim())
                     : [],
@@ -218,38 +221,6 @@ const EditCampaignModal = ({ isOpen, onClose, campaign, onCampaignUpdated }) => 
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                             />
                         </div>
-                    </div>
-
-                    {/* Models */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Affected Models (comma separated)
-                        </label>
-                        <input
-                            type="text"
-                            name="affectedModels"
-                            value={formData.affectedModels}
-                            onChange={handleChange}
-                            placeholder="e.g., VF8, VF9"
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                        />
-                    </div>
-
-                    {/* Status */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Status
-                        </label>
-                        <select
-                            name="status"
-                            value={formData.status}
-                            onChange={handleChange}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                        >
-                            <option value="UPCOMING">Upcoming</option>
-                            <option value="ACTIVE">Active</option>
-                            <option value="COMPLETED">Completed</option>
-                        </select>
                     </div>
 
                     {/* Notifications */}
