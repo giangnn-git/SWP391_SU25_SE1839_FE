@@ -30,7 +30,7 @@ const VehicleManagement = () => {
 
             return {
               ...vehicle,
-              warrantyYears,
+              // warrantyYears,
               partPoliciesCount: partPolicies.length,
             };
           } catch (err) {
@@ -40,7 +40,7 @@ const VehicleManagement = () => {
             );
             return {
               ...vehicle,
-              warrantyYears: 0,
+              // warrantyYears: 0,
               partPoliciesCount: 0,
             };
           }

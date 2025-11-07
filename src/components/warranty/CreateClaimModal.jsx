@@ -29,14 +29,21 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get("/api/api/categories");
+        const res = await axios.get('/api/api/categories', {
+          params: { vin: formData.vin }
+        });
         setCategories(res.data.data.category || []);
+        setPartsByCategory({}); // reset cache parts khi đổi xe
       } catch (err) {
         console.error("Failed to fetch categories:", err);
       }
     };
-    fetchCategories();
-  }, []);
+
+    if (formData.vin) {
+      fetchCategories();
+    }
+  }, [formData.vin]);
+
 
   // Fetch parts by category if not already cached
   const fetchParts = async (category, vin) => {

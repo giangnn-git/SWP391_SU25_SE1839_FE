@@ -1,13 +1,20 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  Loader, AlertCircle, UserCog, Layers, List, ArrowLeft,
-  CheckCircle, Clock, User, Briefcase
+  Loader,
+  AlertCircle,
+  UserCog,
+  Layers,
+  List,
+  ArrowLeft,
+  CheckCircle,
+  Clock,
+  User,
+  Briefcase,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import axios from "../services/axios.customize";
 import { useCurrentUser } from "../hooks/useCurrentUser";
-
 
 const RepairOrderDetail = () => {
   const { id } = useParams();
@@ -15,7 +22,6 @@ const RepairOrderDetail = () => {
 
   const { currentUser } = useCurrentUser();
   const isSCStaff = currentUser?.role === "SC_STAFF";
-
 
   const [order, setOrder] = useState(null);
   const [techs, setTechs] = useState([]);
@@ -73,7 +79,6 @@ const RepairOrderDetail = () => {
     }
   };
 
-
   // Fetch both order info and technician list
   // Fetch both order info and technician list
   const fetchOrderAndTechs = async () => {
@@ -84,7 +89,9 @@ const RepairOrderDetail = () => {
       // Nếu không có dữ liệu hoặc trả về null → hiển thị thông báo
       if (!data || !data.filterOrderResponse) {
         setOrder(null);
-        toast.error("Không tìm thấy Repair Order này. Vui lòng kiểm tra lại ID.");
+        toast.error(
+          "Không tìm thấy Repair Order này. Vui lòng kiểm tra lại ID."
+        );
         return;
       }
 
@@ -101,17 +108,23 @@ const RepairOrderDetail = () => {
     } catch (err) {
       console.error("Failed to fetch data:", err);
 
-      if (err.response?.status === 404 || err.response?.data?.errorCode === "Repair order not found") {
+      if (
+        err.response?.status === 404 ||
+        err.response?.data?.errorCode === "Repair order not found"
+      ) {
         setOrder(null);
-        toast.error("Không tìm thấy Repair Order này. Vui lòng kiểm tra lại ID.");
+        toast.error(
+          "Không tìm thấy Repair Order này. Vui lòng kiểm tra lại ID."
+        );
       } else {
-        toast.error("Không thể tải dữ liệu Repair Order. Vui lòng thử lại sau.");
+        toast.error(
+          "Không thể tải dữ liệu Repair Order. Vui lòng thử lại sau."
+        );
       }
     } finally {
       setLoading(false);
     }
   };
-
 
   // Fetch repair details
   const fetchDetails = async () => {
@@ -143,12 +156,11 @@ const RepairOrderDetail = () => {
   const handleUpdateStatus = async (stepId, newStatus) => {
     try {
       setUpdatingStepId(stepId);
-      await axios.patch(`/api/api/repair-steps/${stepId}`, { status: newStatus });
+      await axios.patch(`/api/api/repair-steps/${stepId}`, {
+        status: newStatus,
+      });
       toast.success("Status update successful");
-      await Promise.all([
-        fetchSteps(),
-        fetchOrderAndTechs(),
-      ]);
+      await Promise.all([fetchSteps(), fetchOrderAndTechs()]);
       const channel = new BroadcastChannel("repair_order_updates");
       channel.postMessage({ type: "ORDER_UPDATED", id });
       channel.close();
@@ -160,13 +172,14 @@ const RepairOrderDetail = () => {
     }
   };
 
-
   // Assign or reassign technician
   const handleAssignTech = async () => {
     if (!selectedTech) return toast.error("Please select a technician");
     try {
       setUpdating(true);
-      await axios.put(`/api/api/repair-orders/${id}`, { technicalName: selectedTech });
+      await axios.put(`/api/api/repair-orders/${id}`, {
+        technicalName: selectedTech,
+      });
       toast.success("Technician updated successfully!");
       await fetchOrderAndTechs();
       setSelectedTech("");
@@ -174,7 +187,6 @@ const RepairOrderDetail = () => {
       const channel = new BroadcastChannel("repair_order_updates");
       channel.postMessage({ type: "ORDER_UPDATED", id });
       channel.close();
-
     } catch (err) {
       console.error(err);
       toast.error("Failed to update technician.");
@@ -221,8 +233,12 @@ const RepairOrderDetail = () => {
       return (
         <div className="text-center py-12">
           <AlertCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">No repair details available</p>
-          <p className="text-gray-400 text-sm mt-1">There are no items to display</p>
+          <p className="text-gray-500 font-medium">
+            No repair details available
+          </p>
+          <p className="text-gray-400 text-sm mt-1">
+            There are no items to display
+          </p>
         </div>
       );
 
@@ -273,8 +289,6 @@ const RepairOrderDetail = () => {
     );
   };
 
-
-
   const renderSteps = (data) => {
     if (loadingTab)
       return (
@@ -288,7 +302,9 @@ const RepairOrderDetail = () => {
         <div className="text-center py-12">
           <AlertCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500 font-medium">No steps available</p>
-          <p className="text-gray-400 text-sm mt-1">There are no repair steps to display</p>
+          <p className="text-gray-400 text-sm mt-1">
+            There are no repair steps to display
+          </p>
         </div>
       );
 
@@ -301,50 +317,63 @@ const RepairOrderDetail = () => {
           >
             {/* Header */}
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-semibold text-gray-900">{step.title}</h3>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {step.title}
+              </h3>
 
               {/* Tech */}
-              {!isSCStaff && currentTech && !["COMPLETED", "CANCELLED"].includes(step.status) && (
-                <div className="flex items-center gap-2">
-                  <select
-                    className="border border-gray-300 text-sm rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    onChange={(e) => handleUpdateStatus(step.stepId, e.target.value)}
-                    disabled={updatingStepId === step.stepId}
-                    defaultValue=""
-                  >
-                    <option value="" disabled>Change status...</option>
-                    {step.nextStatuses.map((status) => (
-                      <option key={status} value={status}>{status}</option>
-                    ))}
-                  </select>
+              {!isSCStaff &&
+                currentTech &&
+                !["COMPLETED", "CANCELLED"].includes(step.status) && (
+                  <div className="flex items-center gap-2">
+                    <select
+                      className="border border-gray-300 text-sm rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onChange={(e) =>
+                        handleUpdateStatus(step.stepId, e.target.value)
+                      }
+                      disabled={updatingStepId === step.stepId}
+                      defaultValue=""
+                    >
+                      <option value="" disabled>
+                        Change status...
+                      </option>
+                      {step.nextStatuses.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
 
-                  {updatingStepId === step.stepId && (
-                    <Loader className="animate-spin h-4 w-4 text-blue-600" />
-                  )}
-                </div>
-              )}
-
+                    {updatingStepId === step.stepId && (
+                      <Loader className="animate-spin h-4 w-4 text-blue-600" />
+                    )}
+                  </div>
+                )}
             </div>
 
             {/* Info */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-2 text-sm text-gray-700">
               <p>
-                <span className="font-medium text-gray-900">Estimated Hour:</span> {step.estimatedHour}
+                <span className="font-medium text-gray-900">
+                  Estimated Hour:
+                </span>{" "}
+                {step.estimatedHour}
               </p>
               <p>
-                <span className="font-medium text-gray-900">Actual Hour:</span> {step.actualHour}
+                <span className="font-medium text-gray-900">Actual Hour:</span>{" "}
+                {step.actualHour}
               </p>
               <div className="ml-auto">
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-semibold ${step.status === "PENDING"
-                    ? "bg-yellow-100 text-yellow-700"
-                    : step.status === "IN_PROGRESS"
-                      ? "bg-blue-100 text-blue-700"
-                      : step.status === "WAITING"
-                        ? "bg-purple-100 text-purple-700"
-                        : step.status === "CANCELLED"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-green-100 text-green-700"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : step.status === "IN_PROGRESS"
+                        ? "bg-blue-100 text-blue-700"
+                        : step.status === "WAITING"
+                          ? "bg-purple-100 text-purple-700"
+                          : step.status === "CANCELLED"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-green-100 text-green-700"
                     }`}
                 >
                   {step.status}
@@ -356,8 +385,6 @@ const RepairOrderDetail = () => {
       </div>
     );
   };
-
-
 
   if (loading)
     return (
@@ -383,7 +410,9 @@ const RepairOrderDetail = () => {
 
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Repair Order Details</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Repair Order Details
+          </h1>
           <p className="text-gray-600 mt-1">
             Order ID:{" "}
             <span className="font-semibold text-gray-900">
@@ -394,14 +423,31 @@ const RepairOrderDetail = () => {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <QuickStat label="Status" value={order.claimStatus} icon={<CheckCircle className="text-blue-600" size={20} />} bg="bg-blue-100" />
-          <QuickStat label="Progress" value={`${order.percentInProcess || 0}%`} icon={<Clock className="text-green-600" size={20} />} bg="bg-green-100" />
-          <QuickStat label="Technician" value={order.techinal || "Unassigned"} icon={<User className="text-purple-600" size={20} />} bg="bg-purple-100" />
+          <QuickStat
+            label="Status"
+            value={order.claimStatus}
+            icon={<CheckCircle className="text-blue-600" size={20} />}
+            bg="bg-blue-100"
+          />
+          <QuickStat
+            label="Progress"
+            value={`${order.percentInProcess || 0}%`}
+            icon={<Clock className="text-green-600" size={20} />}
+            bg="bg-green-100"
+          />
+          <QuickStat
+            label="Technician"
+            value={order.techinal || "Unassigned"}
+            icon={<User className="text-purple-600" size={20} />}
+            bg="bg-purple-100"
+          />
         </div>
 
         {/* Order Info */}
         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Order Information</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-4">
+            Order Information
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <InfoItem label="Model Name" value={order.modelName} />
             <InfoItem label="VIN" value={order.vin} mono />
@@ -410,12 +456,18 @@ const RepairOrderDetail = () => {
 
           <div className="mt-6">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-semibold text-gray-700">Repair Progress</p>
-              <p className="text-sm font-semibold text-gray-900">{order.percentInProcess || 0}%</p>
+              <p className="text-sm font-semibold text-gray-700">
+                Repair Progress
+              </p>
+              <p className="text-sm font-semibold text-gray-900">
+                {order.percentInProcess || 0}%
+              </p>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3">
               <div
-                className={`h-3 rounded-full transition-all duration-500 ${getProgressColor(order.percentInProcess)}`}
+                className={`h-3 rounded-full transition-all duration-500 ${getProgressColor(
+                  order.percentInProcess
+                )}`}
                 style={{ width: `${order.percentInProcess || 0}%` }}
               />
             </div>
@@ -429,13 +481,16 @@ const RepairOrderDetail = () => {
                     </h3>
                     <p className="text-sm text-gray-700">
                       Confirmer:{" "}
-                      <span className="font-semibold">{order.verifiedBy || "Chưa rõ"}</span>
+                      <span className="font-semibold">
+                        {order.verifiedBy || "Chưa rõ"}
+                      </span>
                     </p>
                     <p className="text-sm text-gray-700">
                       Confirmation time:{" "}
                       <span className="font-semibold">
                         {order.verifiedAt
-                          ? `${order.verifiedAt[2]}/${order.verifiedAt[1]}/${order.verifiedAt[0]} ${order.verifiedAt[3]}:${String(
+                          ? `${order.verifiedAt[2]}/${order.verifiedAt[1]}/${order.verifiedAt[0]
+                          } ${order.verifiedAt[3]}:${String(
                             order.verifiedAt[4]
                           ).padStart(2, "0")}`
                           : "–"}
@@ -450,7 +505,9 @@ const RepairOrderDetail = () => {
                 ) : (
                   <button
                     onClick={() => setShowVerifyModal(true)}
-                    className={`px-5 py-2 rounded-lg text-white font-medium ${isSCStaff ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
+                    className={`px-5 py-2 rounded-lg text-white font-medium ${isSCStaff
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-green-600 hover:bg-green-700"
                       }`}
                   >
                     Confirmation completed
@@ -458,26 +515,31 @@ const RepairOrderDetail = () => {
                 )}
               </div>
             )}
-
-
           </div>
-
         </div>
 
         {/* Tabs */}
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <div className="flex border-b border-gray-200">
             {[
-              { key: "technicians", label: "Technicians", icon: <UserCog size={18} /> },
-              { key: "details", label: "Repair Details", icon: <Layers size={18} /> },
+              {
+                key: "technicians",
+                label: "Technicians",
+                icon: <UserCog size={18} />,
+              },
+              {
+                key: "details",
+                label: "Repair Details",
+                icon: <Layers size={18} />,
+              },
               { key: "steps", label: "Repair Steps", icon: <List size={18} /> },
             ].map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-2 px-6 py-4 font-medium transition ${activeTab === tab.key
-                  ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
-                  : "text-gray-600 hover:text-blue-500 hover:bg-gray-50"
+                    ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
+                    : "text-gray-600 hover:text-blue-500 hover:bg-gray-50"
                   }`}
               >
                 {tab.icon}
@@ -523,7 +585,10 @@ const RepairOrderDetail = () => {
                   type="text"
                   value={verifyData.signature}
                   onChange={(e) =>
-                    setVerifyData((prev) => ({ ...prev, signature: e.target.value }))
+                    setVerifyData((prev) => ({
+                      ...prev,
+                      signature: e.target.value,
+                    }))
                   }
                   className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   placeholder="Enter the name of the person confirming..."
@@ -538,7 +603,10 @@ const RepairOrderDetail = () => {
                 <textarea
                   value={verifyData.notes}
                   onChange={(e) =>
-                    setVerifyData((prev) => ({ ...prev, notes: e.target.value }))
+                    setVerifyData((prev) => ({
+                      ...prev,
+                      notes: e.target.value,
+                    }))
                   }
                   rows={3}
                   className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -577,7 +645,8 @@ const RepairOrderDetail = () => {
                   }
                 />
                 <span className="text-sm text-gray-700">
-                  I confirm that the entire repair process has been completed correctly.
+                  I confirm that the entire repair process has been completed
+                  correctly.
                 </span>
               </div>
             </div>
@@ -601,8 +670,6 @@ const RepairOrderDetail = () => {
           </div>
         </div>
       )}
-
-
     </div>
   );
 };
@@ -623,16 +690,30 @@ const QuickStat = ({ label, value, icon, bg }) => (
 
 const InfoItem = ({ label, value, mono = false }) => (
   <div>
-    <p className="text-xs font-semibold text-gray-600 uppercase mb-1">{label}</p>
-    <p className={`text-base font-semibold text-gray-900 ${mono ? "font-mono bg-gray-100 px-2 py-1 rounded inline-block" : ""}`}>
+    <p className="text-xs font-semibold text-gray-600 uppercase mb-1">
+      {label}
+    </p>
+    <p
+      className={`text-base font-semibold text-gray-900 ${mono ? "font-mono bg-gray-100 px-2 py-1 rounded inline-block" : ""
+        }`}
+    >
       {value || "–"}
     </p>
   </div>
 );
 
-const TechnicianTab = ({ currentTech, techs, selectedTech, setSelectedTech, handleAssignTech, updating }) => (
+const TechnicianTab = ({
+  currentTech,
+  techs,
+  selectedTech,
+  setSelectedTech,
+  handleAssignTech,
+  updating,
+}) => (
   <div>
-    <h3 className="text-lg font-bold text-gray-900 mb-6">Technician Management</h3>
+    <h3 className="text-lg font-bold text-gray-900 mb-6">
+      Technician Management
+    </h3>
 
     {/* Current technician */}
     {currentTech ? (
@@ -642,8 +723,12 @@ const TechnicianTab = ({ currentTech, techs, selectedTech, setSelectedTech, hand
             <User className="text-white" size={24} />
           </div>
           <div>
-            <h4 className="font-bold text-gray-900 text-xl">{currentTech.name}</h4>
-            <p className="text-sm font-semibold text-blue-700">Currently Assigned</p>
+            <h4 className="font-bold text-gray-900 text-xl">
+              {currentTech.name}
+            </h4>
+            <p className="text-sm font-semibold text-blue-700">
+              Currently Assigned
+            </p>
           </div>
         </div>
 
@@ -682,12 +767,15 @@ const TechnicianTab = ({ currentTech, techs, selectedTech, setSelectedTech, hand
             disabled={updating || !selectedTech}
             className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
           >
-            {updating ? <Loader size={18} className="animate-spin" /> : "Assign"}
+            {updating ? (
+              <Loader size={18} className="animate-spin" />
+            ) : (
+              "Assign"
+            )}
           </button>
         </div>
       </div>
     )}
-
   </div>
 );
 

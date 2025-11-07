@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Car, Users, Plus, CheckCircle, X } from "lucide-react";
+import { CheckCircle, AlertCircle, X, Car, Users, Plus } from "lucide-react";
 import CustomerCreate from "../components/customers/CustomerCreateAndUpdate";
 import CustomerManagement from "../components/customers/CustomerManagement";
 import CustomerView from "../components/customers/CustomerView";
 import AddVehicleModal from "../components/customers/CustomerAddVehicle";
-import NotificationSystem, {
-  useNotification,
-} from "../components/nortify/NotificationSystem";
 import {
   getCustomerByVinApi,
   getCampaignByVinApi,
@@ -34,15 +31,15 @@ const CustomerRegistration = () => {
   const [customerVehicles, setCustomerVehicles] = useState([]);
   const [viewingCustomer, setViewingCustomer] = useState(null);
 
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
   const [showAddVehicleForCustomer, setShowAddVehicleForCustomer] =
     useState(null);
 
   // Search state
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredCustomers, setFilteredCustomers] = useState([]);
-
-  // SỬ DỤNG HOOK NOTIFICATION - THAY THẾ CÁC STATE THÔNG BÁO CŨ
-  const { success: showSuccess, error: showError } = useNotification();
 
   // Filter customers based on user role and serviceCenterId
   const filterCustomersByRole = (customers) => {
@@ -88,7 +85,7 @@ const CustomerRegistration = () => {
       setFilteredCustomers(filteredList);
     } catch (err) {
       console.error("Error fetching customers summary:", err);
-      showError("Failed to load customers summary");
+      setErrorMessage("Failed to load customers summary");
     } finally {
       setLoadingCustomersSummary(false);
     }
@@ -110,7 +107,6 @@ const CustomerRegistration = () => {
     } catch (err) {
       console.error("Error fetching customer details:", err);
       setCustomerDetail(null);
-      showError("Failed to load customer details");
     } finally {
       setLoadingCustomer(false);
     }
@@ -127,7 +123,6 @@ const CustomerRegistration = () => {
       } else {
         console.error("Error fetching campaign:", err);
         setCampaignData(null);
-        showError("Failed to load campaign data");
       }
     } finally {
       setLoadingCampaign(false);
@@ -139,7 +134,6 @@ const CustomerRegistration = () => {
 
     if (!vehicleData?.vin) {
       console.warn("⚠️ No VIN found for selected vehicle");
-      showError("No VIN found for selected vehicle");
       return;
     }
 
@@ -160,9 +154,9 @@ const CustomerRegistration = () => {
     setCampaignData(null);
   };
 
-  // HÀM XỬ LÝ KHI EDIT THÀNH CÔNG TỪ CustomerView - SỬ DỤNG NOTIFICATION MỚI
+  // HÀM XỬ LÝ KHI EDIT THÀNH CÔNG TỪ CustomerView
   const handleEditSuccessFromView = async (updated) => {
-    showSuccess("Customer updated successfully!");
+    setSuccessMessage("Customer updated successfully!");
     if (updated?.vin && viewVehicle?.vin === updated.vin) {
       setViewVehicle((prev) =>
         prev ? { ...prev, licensePlate: updated.licensePlate } : prev
@@ -175,11 +169,13 @@ const CustomerRegistration = () => {
     if (viewVehicle?.vin) {
       await fetchCustomerDetail(viewVehicle.vin);
     }
+
+    setTimeout(() => setSuccessMessage(""), 5000);
   };
 
-  // HÀM XỬ LÝ KHI THÊM VEHICLE THÀNH CÔNG - SỬ DỤNG NOTIFICATION MỚI
+  // HÀM XỬ LÝ KHI THÊM VEHICLE THÀNH CÔNG
   const handleAddVehicleSuccess = async () => {
-    showSuccess("Vehicle added successfully!");
+    setSuccessMessage("Vehicle added successfully!");
     // Refresh data sau khi thêm vehicle thành công
     await fetchCustomersSummary();
 
@@ -187,6 +183,8 @@ const CustomerRegistration = () => {
     if (viewingCustomer) {
       await handleViewCustomerRow(viewingCustomer);
     }
+
+    setTimeout(() => setSuccessMessage(""), 5000);
   };
 
   const handleViewCustomerRow = async (row) => {
@@ -201,7 +199,7 @@ const CustomerRegistration = () => {
       setCustomerVehicles(Array.isArray(list) ? list : []);
     } catch (err) {
       console.error("Error fetching vehicles by customer id:", err);
-      showError("Failed to load vehicles for this customer");
+      setErrorMessage("Failed to load vehicles for this customer");
       setCustomerVehicles([]);
     } finally {
       setLoadingCustomerVehicles(false);
@@ -210,18 +208,21 @@ const CustomerRegistration = () => {
 
   const handleRegistrationSuccess = async () => {
     setShowForm(false);
-    showSuccess("Customer registered successfully!");
+    setSuccessMessage("Customer registered successfully!");
     // TỰ ĐỘNG RESET SEARCH KHI ĐĂNG KÝ THÀNH CÔNG
     setSearchTerm("");
     await fetchCustomersSummary();
+    setTimeout(() => setSuccessMessage(""), 5000);
   };
 
   const handleEditError = (error) => {
-    showError(error || "Failed to update customer. Please try again.");
+    setErrorMessage(error || "Failed to update customer. Please try again.");
+    setTimeout(() => setErrorMessage(""), 5000);
   };
 
   const handleCloseCreate = () => {
     setShowForm(false);
+    setErrorMessage("");
   };
 
   useEffect(() => {
@@ -245,7 +246,7 @@ const CustomerRegistration = () => {
     return total + (customer.vehicleCount > 0 ? 1 : 0);
   }, 0);
 
-  // Hiển thị loading khi đang fetch user data
+  //   Hiển thị loading khi đang fetch user data
   if (userLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 p-6 flex items-center justify-center">
@@ -259,9 +260,6 @@ const CustomerRegistration = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 p-4 sm:p-6">
-      {/* THÊM NOTIFICATION SYSTEM */}
-      <NotificationSystem />
-
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="mb-8">
@@ -296,9 +294,24 @@ const CustomerRegistration = () => {
           </div>
         </div>
 
-        {/* XÓA PHẦN NOTIFICATION MESSAGES CŨ */}
-        {/* {successMessage && ... } */}
-        {/* {errorMessage && ... } */}
+        {/* Notification Messages */}
+        {successMessage && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-2xl text-green-700 shadow-sm">
+            <div className="flex items-center gap-3">
+              <CheckCircle size={20} className="text-green-500 flex-shrink-0" />
+              <span className="font-medium">{successMessage}</span>
+            </div>
+          </div>
+        )}
+
+        {errorMessage && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700 shadow-sm">
+            <div className="flex items-center gap-3">
+              <AlertCircle size={20} className="text-red-500 flex-shrink-0" />
+              <span className="font-medium">{errorMessage}</span>
+            </div>
+          </div>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -372,7 +385,7 @@ const CustomerRegistration = () => {
               <CustomerCreate
                 onClose={handleCloseCreate}
                 onSuccess={handleRegistrationSuccess}
-                onError={showError} // SỬA THÀNH showError
+                onError={setErrorMessage}
               />
             </div>
           </div>
@@ -390,7 +403,6 @@ const CustomerRegistration = () => {
             onTabChange={setActiveDetailTab}
             onClose={handleCloseDetail}
             onEditSuccess={handleEditSuccessFromView}
-            onEditError={handleEditError}
           />
         )}
 
@@ -400,7 +412,10 @@ const CustomerRegistration = () => {
             customer={showAddVehicleForCustomer}
             onClose={() => setShowAddVehicleForCustomer(null)}
             onSuccess={handleAddVehicleSuccess}
-            onError={showError}
+            onError={(error) => {
+              setErrorMessage(error);
+              setShowAddVehicleForCustomer(null);
+            }}
           />
         )}
 
