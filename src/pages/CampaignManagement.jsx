@@ -5,6 +5,7 @@ import {
   Filter,
   AlertTriangle,
   Calendar,
+  CheckCircle2,          // 👉 thêm icon cho toast
 } from "lucide-react";
 import CreateCampaignModal from "../components/campaigns/CreateCampaignModal";
 import EditCampaignModal from "../components/campaigns/EditCampaignModal";
@@ -21,6 +22,9 @@ const CampaignManagement = () => {
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+
+  // 👉 state mới: message toast cho toàn trang
+  const [toastMessage, setToastMessage] = useState("");
 
   // Format date (dd/mm/yyyy)
   const formatDate = (dateArray) => {
@@ -98,13 +102,22 @@ const CampaignManagement = () => {
   const handleCampaignCreated = () => {
     fetchCampaigns(); // reload danh sách
     setShowCreateModal(false);
+
+    // 👉 hiện toast tạo thành công
+    setToastMessage("Campaign created successfully!");
+    setTimeout(() => setToastMessage(""), 2000);
   };
 
   // Handle campaign update success
-  const handleCampaignUpdated = () => {
+  const handleCampaignUpdated = (updatedCampaign) => {
+    // updatedCampaign được EditCampaignModal truyền lên, ở đây không dùng cũng được
     fetchCampaigns(); // reload danh sách
     setShowEditModal(false);
     setSelectedCampaign(null);
+
+    // 👉 hiện toast update thành công
+    setToastMessage("Campaign updated successfully!");
+    setTimeout(() => setToastMessage(""), 2000);
   };
 
   // Statistics với real data
@@ -131,6 +144,14 @@ const CampaignManagement = () => {
 
   return (
     <div className="p-6">
+      {/* Toast thông báo toàn trang */}
+      {toastMessage && (
+        <div className="fixed top-4 right-4 z-[9999] bg-green-600 text-white text-sm px-4 py-2 rounded-xl shadow-lg flex items-center gap-2">
+          <CheckCircle2 size={18} />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">

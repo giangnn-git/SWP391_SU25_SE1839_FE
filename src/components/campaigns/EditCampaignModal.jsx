@@ -11,7 +11,6 @@ const EditCampaignModal = ({ isOpen, onClose, campaign, onCampaignUpdated }) => 
         endDate: "",
         produceDateFrom: "",
         produceDateTo: "",
-        // vẫn giữ để không ảnh hưởng API, chỉ không render UI
         affectedModels: "",
         status: "UPCOMING",
     });
@@ -20,7 +19,6 @@ const EditCampaignModal = ({ isOpen, onClose, campaign, onCampaignUpdated }) => 
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
 
-    // Load dữ liệu khi mở modal
     useEffect(() => {
         if (isOpen && campaign) {
             setFormData({
@@ -31,12 +29,13 @@ const EditCampaignModal = ({ isOpen, onClose, campaign, onCampaignUpdated }) => 
                 endDate: campaign.formattedEndDate || "",
                 produceDateFrom: campaign.formattedProduceFrom || "",
                 produceDateTo: campaign.formattedProduceTo || "",
-                // giữ giá trị cũ để gửi lại (nếu BE cần)
                 affectedModels: campaign.affectedModels
                     ? campaign.affectedModels.join(", ")
                     : "",
                 status: campaign.status ? campaign.status.toUpperCase() : "UPCOMING",
             });
+            setError("");
+            setSuccess("");
         } else if (!isOpen) {
             setFormData({
                 code: "",
@@ -49,23 +48,22 @@ const EditCampaignModal = ({ isOpen, onClose, campaign, onCampaignUpdated }) => 
                 affectedModels: "",
                 status: "UPCOMING",
             });
+            setError("");
+            setSuccess("");
         }
     }, [isOpen, campaign]);
 
-    // Chuyển chuỗi dd/mm/yyyy -> [yyyy, mm, dd]
     const parseDateArray = (dateStr) => {
         if (!dateStr) return null;
         const [day, month, year] = dateStr.split("/").map(Number);
         return [year, month, day];
     };
 
-    // Bắt sự kiện nhập form
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    // Submit cập nhật
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -81,7 +79,6 @@ const EditCampaignModal = ({ isOpen, onClose, campaign, onCampaignUpdated }) => 
                 endDate: parseDateArray(formData.endDate),
                 produceDateFrom: parseDateArray(formData.produceDateFrom),
                 produceDateTo: parseDateArray(formData.produceDateTo),
-                // vẫn gửi để không breaking API; nếu không cần có thể xoá 2 field này
                 affectedModels: formData.affectedModels
                     ? formData.affectedModels.split(",").map((m) => m.trim())
                     : [],
@@ -89,9 +86,19 @@ const EditCampaignModal = ({ isOpen, onClose, campaign, onCampaignUpdated }) => 
             };
 
             const res = await updateCampaignApi(campaign.id, updatedData);
+
+            // Hiển thị message nhỏ trong modal (tuỳ bạn)
             setSuccess("Campaign updated successfully!");
-            if (onCampaignUpdated) onCampaignUpdated(res.data);
-            setTimeout(() => onClose(), 1200);
+
+            // Báo cho trang cha biết là update OK
+            if (onCampaignUpdated) {
+                onCampaignUpdated(res.data);
+            }
+
+            // Đóng modal sau 800ms để user thấy message trong modal (nếu cần)
+            setTimeout(() => {
+                onClose();
+            }, 800);
         } catch (err) {
             setError("Failed to update campaign. Please try again.");
         } finally {
@@ -223,7 +230,7 @@ const EditCampaignModal = ({ isOpen, onClose, campaign, onCampaignUpdated }) => 
                         </div>
                     </div>
 
-                    {/* Notifications */}
+                    {/* Thông báo trong modal (tuỳ, giữ nguyên logic cũ) */}
                     {error && (
                         <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md border border-red-200">
                             {error}
