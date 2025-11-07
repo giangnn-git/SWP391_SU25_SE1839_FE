@@ -11,9 +11,16 @@ import {
   getVehiclesByCustomerIdApi,
 } from "../services/api.service";
 import { useCurrentUser } from "../hooks/useCurrentUser";
+import ToastMessage from "../components/common/ToastMessage";
 
 const CustomerRegistration = () => {
   const { currentUser, loading: userLoading } = useCurrentUser();
+
+  // CHỈ GIỮ LẠI toast state
+  const [actionMessage, setActionMessage] = useState("");
+  const [messageType, setMessageType] = useState("");
+
+  // Các state khác...
   const [showForm, setShowForm] = useState(false);
   const [viewVehicle, setViewVehicle] = useState(null);
   const [customerDetail, setCustomerDetail] = useState(null);
@@ -31,15 +38,16 @@ const CustomerRegistration = () => {
   const [customerVehicles, setCustomerVehicles] = useState([]);
   const [viewingCustomer, setViewingCustomer] = useState(null);
 
-  const [successMessage, setSuccessMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-
   const [showAddVehicleForCustomer, setShowAddVehicleForCustomer] =
     useState(null);
-
-  // Search state
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredCustomers, setFilteredCustomers] = useState([]);
+
+  // Hàm hiển thị toast
+  const showMessage = (message, type = "info") => {
+    setActionMessage(message);
+    setMessageType(type);
+  };
 
   // Filter customers based on user role and serviceCenterId
   const filterCustomersByRole = (customers) => {
@@ -85,7 +93,7 @@ const CustomerRegistration = () => {
       setFilteredCustomers(filteredList);
     } catch (err) {
       console.error("Error fetching customers summary:", err);
-      setErrorMessage("Failed to load customers summary");
+      showMessage("Failed to load customers summary", "error");
     } finally {
       setLoadingCustomersSummary(false);
     }
@@ -156,7 +164,7 @@ const CustomerRegistration = () => {
 
   // HÀM XỬ LÝ KHI EDIT THÀNH CÔNG TỪ CustomerView
   const handleEditSuccessFromView = async (updated) => {
-    setSuccessMessage("Customer updated successfully!");
+    showMessage("Customer updated successfully!", "success");
     if (updated?.vin && viewVehicle?.vin === updated.vin) {
       setViewVehicle((prev) =>
         prev ? { ...prev, licensePlate: updated.licensePlate } : prev
@@ -169,22 +177,16 @@ const CustomerRegistration = () => {
     if (viewVehicle?.vin) {
       await fetchCustomerDetail(viewVehicle.vin);
     }
-
-    setTimeout(() => setSuccessMessage(""), 5000);
   };
 
   // HÀM XỬ LÝ KHI THÊM VEHICLE THÀNH CÔNG
   const handleAddVehicleSuccess = async () => {
-    setSuccessMessage("Vehicle added successfully!");
-    // Refresh data sau khi thêm vehicle thành công
+    showMessage("Vehicle added successfully!", "success");
     await fetchCustomersSummary();
 
-    // Nếu đang xem customer vehicles, refresh danh sách
     if (viewingCustomer) {
       await handleViewCustomerRow(viewingCustomer);
     }
-
-    setTimeout(() => setSuccessMessage(""), 5000);
   };
 
   const handleViewCustomerRow = async (row) => {
@@ -199,7 +201,7 @@ const CustomerRegistration = () => {
       setCustomerVehicles(Array.isArray(list) ? list : []);
     } catch (err) {
       console.error("Error fetching vehicles by customer id:", err);
-      setErrorMessage("Failed to load vehicles for this customer");
+      showMessage("Failed to load vehicles for this customer", "error");
       setCustomerVehicles([]);
     } finally {
       setLoadingCustomerVehicles(false);
@@ -208,21 +210,20 @@ const CustomerRegistration = () => {
 
   const handleRegistrationSuccess = async () => {
     setShowForm(false);
-    setSuccessMessage("Customer registered successfully!");
-    // TỰ ĐỘNG RESET SEARCH KHI ĐĂNG KÝ THÀNH CÔNG
+    showMessage("Customer registered successfully!", "success");
     setSearchTerm("");
     await fetchCustomersSummary();
-    setTimeout(() => setSuccessMessage(""), 5000);
   };
 
   const handleEditError = (error) => {
-    setErrorMessage(error || "Failed to update customer. Please try again.");
-    setTimeout(() => setErrorMessage(""), 5000);
+    showMessage(
+      error || "Failed to update customer. Please try again.",
+      "error"
+    );
   };
 
   const handleCloseCreate = () => {
     setShowForm(false);
-    setErrorMessage("");
   };
 
   useEffect(() => {
@@ -236,17 +237,14 @@ const CustomerRegistration = () => {
       ? `${arr[2]}/${arr[1]}/${arr[0]}`
       : "-";
 
-  // Tính toán số lượng vehicles và campaigns từ customersSummary
   const totalVehicles = customersSummary.reduce(
     (total, customer) => total + (customer.vehicleCount || 0),
     0
   );
   const totalCampaigns = customersSummary.reduce((total, customer) => {
-    // Giả sử mỗi customer có 1 campaign (có thể điều chỉnh logic này sau)
     return total + (customer.vehicleCount > 0 ? 1 : 0);
   }, 0);
 
-  //   Hiển thị loading khi đang fetch user data
   if (userLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 p-6 flex items-center justify-center">
@@ -261,6 +259,15 @@ const CustomerRegistration = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
+        {/* Toast Message - CHỈ GIỮ LẠI PHẦN NÀY */}
+        {actionMessage && (
+          <ToastMessage
+            type={messageType}
+            message={actionMessage}
+            onClose={() => setActionMessage("")}
+          />
+        )}
+
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -294,24 +301,7 @@ const CustomerRegistration = () => {
           </div>
         </div>
 
-        {/* Notification Messages */}
-        {successMessage && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-2xl text-green-700 shadow-sm">
-            <div className="flex items-center gap-3">
-              <CheckCircle size={20} className="text-green-500 flex-shrink-0" />
-              <span className="font-medium">{successMessage}</span>
-            </div>
-          </div>
-        )}
-
-        {errorMessage && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700 shadow-sm">
-            <div className="flex items-center gap-3">
-              <AlertCircle size={20} className="text-red-500 flex-shrink-0" />
-              <span className="font-medium">{errorMessage}</span>
-            </div>
-          </div>
-        )}
+        {/* XÓA HẲN PHẦN NOTIFICATION MESSAGES CŨ */}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -364,7 +354,7 @@ const CustomerRegistration = () => {
           </div>
         </div>
 
-        {/* SỬ DỤNG COMPONENT CustomerManagement  */}
+        {/* SỬ DỤNG COMPONENT CustomerManagement */}
         <CustomerManagement
           onShowForm={() => setShowForm(true)}
           customersSummary={filteredCustomers}
@@ -385,7 +375,7 @@ const CustomerRegistration = () => {
               <CustomerCreate
                 onClose={handleCloseCreate}
                 onSuccess={handleRegistrationSuccess}
-                onError={setErrorMessage}
+                onError={handleEditError}
               />
             </div>
           </div>
@@ -403,6 +393,7 @@ const CustomerRegistration = () => {
             onTabChange={setActiveDetailTab}
             onClose={handleCloseDetail}
             onEditSuccess={handleEditSuccessFromView}
+            onEditError={handleEditError}
           />
         )}
 
@@ -413,13 +404,13 @@ const CustomerRegistration = () => {
             onClose={() => setShowAddVehicleForCustomer(null)}
             onSuccess={handleAddVehicleSuccess}
             onError={(error) => {
-              setErrorMessage(error);
+              showMessage(error, "error");
               setShowAddVehicleForCustomer(null);
             }}
           />
         )}
 
-        {/* Customer Vehicles Modal - GIỮ LẠI ĐỂ BACKUP */}
+        {/* Customer Vehicles Modal */}
         {openCustomerVehicles && (
           <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4">
             <div className="bg-white w-full max-w-6xl rounded-2xl shadow-2xl overflow-hidden">

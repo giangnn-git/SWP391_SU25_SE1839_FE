@@ -15,6 +15,7 @@ import {
   Edit,
 } from "lucide-react";
 import CustomerCreate from "./CustomerCreateAndUpdate";
+import ToastMessage from "../common/ToastMessage";
 
 const CustomerView = ({
   vehicle,
@@ -26,12 +27,23 @@ const CustomerView = ({
   onTabChange,
   onClose,
   onEditSuccess,
+  onEditError,
   vehicles,
 }) => {
+  // State cho toast
+  const [actionMessage, setActionMessage] = useState("");
+  const [messageType, setMessageType] = useState("");
+
   const [activeTab, setActiveTab] = useState("view");
   const [editingCustomer, setEditingCustomer] = useState(null);
 
-  //  HÀM CHUYỂN SANG CHẾ ĐỘ EDIT
+  // Hàm hiển thị toast
+  const showMessage = (message, type = "info") => {
+    setActionMessage(message);
+    setMessageType(type);
+  };
+
+  // HÀM CHUYỂN SANG CHẾ ĐỘ EDIT
   const handleEdit = () => {
     if (customerDetail) {
       setEditingCustomer({
@@ -47,18 +59,29 @@ const CustomerView = ({
     }
   };
 
-  //  HÀM QUAY LẠI CHẾ ĐỘ VIEW
+  // HÀM QUAY LẠI CHẾ ĐỘ VIEW
   const handleBackToView = () => {
     setActiveTab("view");
     setEditingCustomer(null);
   };
 
-  //  HÀM XỬ LÝ KHI EDIT THÀNH CÔNG
+  // HÀM XỬ LÝ KHI EDIT THÀNH CÔNG
   const handleEditSuccess = (updated) => {
     setActiveTab("view");
     setEditingCustomer(null);
+    showMessage("Customer updated successfully!", "success");
     if (onEditSuccess) {
-      onEditSuccess(updated); // chuyển dữ liệu đã cập nhật lên parent
+      onEditSuccess(updated);
+    }
+  };
+
+  const handleEditErrorInView = (error) => {
+    showMessage(
+      error || "Failed to update customer. Please try again.",
+      "error"
+    );
+    if (onEditError) {
+      onEditError(error);
     }
   };
 
@@ -74,6 +97,15 @@ const CustomerView = ({
   if (activeTab === "edit" && editingCustomer) {
     return (
       <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4">
+        {/* Toast Message - CHỈ GIỮ LẠI PHẦN NÀY */}
+        {actionMessage && (
+          <ToastMessage
+            type={messageType}
+            message={actionMessage}
+            onClose={() => setActionMessage("")}
+          />
+        )}
+
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between p-6 border-b border-gray-100">
             <div className="flex items-center gap-3">
@@ -96,12 +128,11 @@ const CustomerView = ({
             </button>
           </div>
 
-          {/* SỬ DỤNG COMPONENT CustomerCreate VỚI CHẾ ĐỘ EDIT */}
           <CustomerCreate
             vehicles={vehicles}
             onClose={handleBackToView}
             onSuccess={handleEditSuccess}
-            onError={(error) => console.error("Edit error:", error)}
+            onError={handleEditErrorInView}
             editCustomer={editingCustomer}
           />
         </div>
@@ -112,21 +143,29 @@ const CustomerView = ({
   // CHẾ ĐỘ VIEW BÌNH THƯỜNG
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4">
+      {/* Toast Message - CHỈ GIỮ LẠI PHẦN NÀY */}
+      {actionMessage && (
+        <ToastMessage
+          type={messageType}
+          message={actionMessage}
+          onClose={() => setActionMessage("")}
+        />
+      )}
+
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header  */}
+        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
             <Eye className="text-blue-600" size={20} />
             Vehicle & Customer Details
           </h2>
           <div className="flex items-center gap-2">
-            {/*  NÚT EDIT */}
             <button
               onClick={handleEdit}
-              disabled={loadingCustomer || !customerDetail} //  chặn edit khi chưa có data
+              disabled={loadingCustomer || !customerDetail}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                 loadingCustomer || !customerDetail
-                  ? "bg-gray-200 text-gray-500 cursor-not-allowed" //  trạng thái disabled
+                  ? "bg-gray-200 text-gray-500 cursor-not-allowed"
                   : "bg-blue-600 text-white hover:bg-blue-700"
               }`}
             >

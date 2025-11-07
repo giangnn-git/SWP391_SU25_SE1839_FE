@@ -18,6 +18,7 @@ import {
   createCustomerApi,
   updateCustomerApi,
 } from "../../services/api.service";
+import ToastMessage from "../common/ToastMessage";
 
 const CustomerCreate = ({
   vehicles,
@@ -26,6 +27,10 @@ const CustomerCreate = ({
   onError,
   editCustomer = null,
 }) => {
+  // State cho toast
+  const [actionMessage, setActionMessage] = useState("");
+  const [messageType, setMessageType] = useState("");
+
   const [formData, setFormData] = useState({
     name: "",
     phoneNumber: "",
@@ -37,9 +42,15 @@ const CustomerCreate = ({
   const [vinSearch, setVinSearch] = useState("");
   const [showVinDropdown, setShowVinDropdown] = useState(false);
   const [selectedVin, setSelectedVin] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(""); // XÓA state error này
   const [loading, setLoading] = useState(false);
   const vinDropdownRef = useRef(null);
+
+  // Hàm hiển thị toast
+  const showMessage = (message, type = "info") => {
+    setActionMessage(message);
+    setMessageType(type);
+  };
 
   // NẠP DỮ LIỆU KHI EDIT
   useEffect(() => {
@@ -64,21 +75,20 @@ const CustomerCreate = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  //  khi nhập tay VIN, chỉ ghi thẳng vào formData.vin, không bật dropdown
+  // khi nhập tay VIN, chỉ ghi thẳng vào formData.vin, không bật dropdown
   const handleVinInputChange = (value) => {
     setVinSearch(value);
     setSelectedVin(value);
     setFormData((prev) => ({ ...prev, vin: value }));
-    // Không mở dropdown nữa
     setShowVinDropdown(false);
   };
 
   const validateForm = () => {
-    //  yêu cầu VIN dựa trên formData.vin (không dùng selectedVin)
+    // yêu cầu VIN dựa trên formData.vin
     const requiredFields = {
       "Customer Name": formData.name,
       "Phone Number": formData.phoneNumber,
-      "Vehicle VIN": formData.vin, // 🔧 CHANGED
+      "Vehicle VIN": formData.vin,
     };
 
     const missingFields = Object.entries(requiredFields)
@@ -86,39 +96,42 @@ const CustomerCreate = ({
       .map(([field]) => field);
 
     if (missingFields.length > 0) {
-      setError(`Please fill all required fields: ${missingFields.join(", ")}`);
+      showMessage(
+        `Please fill all required fields: ${missingFields.join(", ")}`,
+        "error"
+      );
       return false;
     }
 
-    // Validate phone number (chỉ số, 10-11 ký tự)
+    // Validate phone number
     const phoneRegex = /^[0-9]{10,11}$/;
     const cleanPhone = formData.phoneNumber.replace(/\D/g, "");
     if (!phoneRegex.test(cleanPhone)) {
-      setError("Phone number must be 10 digits");
+      showMessage("Phone number must be 10 digits", "error");
       return false;
     }
 
-    // Validate license plate format: 63A-003.33
+    // Validate license plate format
     if (formData.licensePlate && formData.licensePlate.trim() !== "") {
       const licensePlateRegex = /^[0-9]{2}[A-Z]{1}-[0-9]{3}\.[0-9]{2}$/;
       if (!licensePlateRegex.test(formData.licensePlate.trim())) {
-        setError("Wrong License plate format");
+        showMessage("Wrong License plate format", "error");
         return false;
       }
     }
 
-    // Validate email format (nếu có email)
+    // Validate email format
     if (formData.email && formData.email.trim() !== "") {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.email)) {
-        setError("Please enter a valid email address");
+        showMessage("Please enter a valid email address", "error");
         return false;
       }
     }
 
-    // Validate VIN format (nếu cần)
+    // Validate VIN format
     if (formData.vin && formData.vin.length < 5) {
-      setError("VIN must be at least 5 characters long");
+      showMessage("VIN must be at least 5 characters long", "error");
       return false;
     }
 
@@ -134,24 +147,24 @@ const CustomerCreate = ({
 
     try {
       setLoading(true);
-      setError("");
 
-      //  dùng formData.vin trực tiếp khi create
       const submitData = {
         name: formData.name.trim(),
         phoneNumber: formData.phoneNumber.trim().replace(/\D/g, ""),
         licensePlate: formData.licensePlate.trim(),
         email: formData.email.trim() || null,
         address: formData.address.trim() || null,
-        vin: isEditMode ? editCustomer.vin : formData.vin.trim(), // 🔧 CHANGED
+        vin: isEditMode ? editCustomer.vin : formData.vin.trim(),
       };
 
       console.log("Submitting data:", submitData);
 
       if (isEditMode) {
         await updateCustomerApi(editCustomer.id, submitData);
+        showMessage("Customer updated successfully!", "success");
       } else {
         await createCustomerApi(submitData);
+        showMessage("Customer registered successfully!", "success");
       }
 
       const updatedPayload = {
@@ -202,14 +215,14 @@ const CustomerCreate = ({
         errorMsg += "Unexpected error occurred.";
       }
 
-      setError(errorMsg);
+      showMessage(errorMsg, "error");
       if (onError) onError(errorMsg);
     } finally {
       setLoading(false);
     }
   };
 
-  // Đóng dropdown khi click ngoài – vẫn giữ, nhưng dropdown không còn hiển thị
+  // Đóng dropdown khi click ngoài
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -228,6 +241,15 @@ const CustomerCreate = ({
 
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4">
+      {/* Toast Message - CHỈ GIỮ LẠI PHẦN NÀY */}
+      {actionMessage && (
+        <ToastMessage
+          type={messageType}
+          message={actionMessage}
+          onClose={() => setActionMessage("")}
+        />
+      )}
+
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
@@ -247,14 +269,7 @@ const CustomerCreate = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
-              <div className="flex items-center gap-2">
-                <X size={16} />
-                {error}
-              </div>
-            </div>
-          )}
+          {/* XÓA HẲN PHẦN ERROR MESSAGE INLINE CŨ */}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
@@ -364,7 +379,7 @@ const CustomerCreate = ({
             </div>
           </div>
 
-          {/*  VIN Field  */}
+          {/* VIN Field */}
           <div className="space-y-2" ref={vinDropdownRef}>
             <label className="block text-sm font-medium text-gray-700">
               Vehicle VIN *
@@ -387,7 +402,6 @@ const CustomerCreate = ({
                       className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                       size={16}
                     />
-                    {/*  input VIN nhập tay, không mở dropdown */}
                     <input
                       type="text"
                       name="vin"
@@ -397,14 +411,6 @@ const CustomerCreate = ({
                       placeholder="Enter VIN (e.g. VF8A1234567890001)"
                       required
                     />
-                    {/*  bỏ nút Chevron mở dropdown */}
-                    {/* <button
-                      type="button"
-                      onClick={() => setShowVinDropdown(!showVinDropdown)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      <ChevronDown size={20} />
-                    </button> */}
                   </div>
                 </>
               )}

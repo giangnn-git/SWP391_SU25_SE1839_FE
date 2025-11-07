@@ -9,8 +9,13 @@ import {
   Plus,
 } from "lucide-react";
 import { addVehicleToCustomerApi } from "../../services/api.service";
+import ToastMessage from "../common/ToastMessage";
 
 const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
+  // State cho toast
+  const [actionMessage, setActionMessage] = useState("");
+  const [messageType, setMessageType] = useState("");
+
   const [formData, setFormData] = useState({
     vin: "",
     licensePlate: "",
@@ -20,8 +25,14 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
   const [availableVehicles, setAvailableVehicles] = useState([]);
   const [loadingVehicles, setLoadingVehicles] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(""); // XÓA state error này nếu không cần
   const vinDropdownRef = useRef(null);
+
+  // Hàm hiển thị toast
+  const showMessage = (message, type = "info") => {
+    setActionMessage(message);
+    setMessageType(type);
+  };
 
   // Filter vehicles based on search
   const filteredVins = availableVehicles.filter(
@@ -36,7 +47,7 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
     setFormData((prev) => ({
       ...prev,
       vin: vehicle.vin,
-      licensePlate: vehicle.licensePlate || "", // Auto-fill license plate if available
+      licensePlate: vehicle.licensePlate || "",
     }));
     setVinSearch(vehicle.vin);
     setShowVinDropdown(false);
@@ -49,9 +60,9 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
     setShowVinDropdown(false);
   };
 
-  // Validate license plate format (giống CustomerCreate)
+  // Validate license plate format
   const validateLicensePlate = (licensePlate) => {
-    if (!licensePlate || licensePlate.trim() === "") return true; // Optional field
+    if (!licensePlate || licensePlate.trim() === "") return true;
     const licensePlateRegex = /^[0-9]{2}[A-Z]{1}-[0-9]{3}\.[0-9]{2}$/;
     return licensePlateRegex.test(licensePlate.trim());
   };
@@ -59,30 +70,31 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
   const validateForm = () => {
     // Required VIN
     if (!formData.vin.trim()) {
-      setError("VIN is required");
+      showMessage("VIN is required", "error");
       return false;
     }
 
     // VIN nhập tay: kiểm tra tối thiểu độ dài/định dạng cơ bản
     const vinTrim = formData.vin.trim();
     if (vinTrim.length < 5) {
-      setError("VIN must be at least 5 characters long");
+      showMessage("VIN must be at least 5 characters long", "error");
       return false;
     }
 
     // Validate license plate format
     if (formData.licensePlate && !validateLicensePlate(formData.licensePlate)) {
-      setError("Wrong License plate format. Correct format: 63A-003.33");
+      showMessage(
+        "Wrong License plate format. Correct format: 63A-003.33",
+        "error"
+      );
       return false;
     }
 
-    // BỎ ràng buộc: VIN phải thuộc availableVehicles (để cho phép nhập tay)
     return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
 
     if (!validateForm()) {
       return;
@@ -100,6 +112,7 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
 
       await addVehicleToCustomerApi(customer.id, submitData);
 
+      showMessage("Vehicle added successfully!", "success");
       onSuccess();
 
       // Reset form
@@ -125,7 +138,7 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
         errorMsg += "Unexpected error occurred.";
       }
 
-      setError(errorMsg);
+      showMessage(errorMsg, "error");
       if (onError) {
         onError(errorMsg);
       }
@@ -134,7 +147,7 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
     }
   };
 
-  // Close dropdown when clicking outside ( dropdown hiện đã bị ẩn)
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -153,6 +166,15 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      {/* Toast Message - CHỈ GIỮ LẠI PHẦN NÀY */}
+      {actionMessage && (
+        <ToastMessage
+          type={messageType}
+          message={actionMessage}
+          onClose={() => setActionMessage("")}
+        />
+      )}
+
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
@@ -183,11 +205,7 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-              {error}
-            </div>
-          )}
+          {/* XÓA HẲN PHẦN ERROR MESSAGE INLINE CŨ */}
 
           {/* VIN Field – NHẬP TAY */}
           <div className="space-y-2" ref={vinDropdownRef}>
@@ -208,68 +226,7 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
                   placeholder="Enter VIN (e.g. VF8A1234567890001)"
                   required
                 />
-                {/* Bỏ nút Chevron để không mở dropdown */}
-                {/* <button
-                  type="button"
-                  onClick={() => setShowVinDropdown(!showVinDropdown)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <ChevronDown size={20} />
-                </button> */}
               </div>
-
-              {/* Ẩn hẳn dropdown (giữ code nhưng không render) */}
-              {false && showVinDropdown && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  {loadingVehicles ? (
-                    <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                      Loading available vehicles...
-                    </div>
-                  ) : filteredVins.length === 0 ? (
-                    <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                      <Car size={20} className="mx-auto mb-1 text-gray-300" />
-                      No available vehicles found
-                    </div>
-                  ) : (
-                    filteredVins.map((vehicle) => (
-                      <div
-                        key={vehicle.vin}
-                        onClick={() => handleVinSelect(vehicle)}
-                        className={`px-4 py-3 cursor-pointer transition-colors hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${
-                          formData.vin === vehicle.vin ? "bg-blue-50" : ""
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-900 font-mono text-sm">
-                              {vehicle.vin}
-                            </div>
-                            <div className="text-xs text-gray-600 flex items-center gap-2 mt-1">
-                              <span>{vehicle.modelName}</span>
-                              <span>•</span>
-                              <span>{vehicle.productYear}</span>
-                              {vehicle.licensePlate && (
-                                <>
-                                  <span>•</span>
-                                  <span className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">
-                                    {vehicle.licensePlate}
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          {formData.vin === vehicle.vin && (
-                            <Check
-                              size={16}
-                              className="text-blue-600 flex-shrink-0"
-                            />
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
             </div>
             <p className="text-xs text-gray-500">Enter VIN manually</p>
           </div>
