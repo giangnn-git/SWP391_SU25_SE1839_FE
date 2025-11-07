@@ -292,6 +292,16 @@ export const addVehicleToCustomerApi = (customerId, vehicleData) => {
   return axios.post(`/api/api/customers/${customerId}/vehicles`, vehicleData);
 };
 
+// {Repair History API}
+export const getRepairHistoryByVinApi = (vin) => {
+  return axios.get(`/api/api/repair-orders/history/${vin}`);
+};
+
+// Search Cus by VIN or Phone
+export const searchCustomerApi = (searchKey) => {
+  return axios.get(`/api/api/vehicles/find?key=${searchKey}`);
+};
+
 export const updateCampaignApi = (id, campaignData) => {
   return axios.put(`/api/api/campaigns/${id}`, {
     code: campaignData.code,

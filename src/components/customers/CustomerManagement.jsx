@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { UserPlus, Plus, Search } from "lucide-react";
+import React, { useMemo } from "react";
+import { UserPlus, Plus } from "lucide-react";
 import CustomerTable from "./CustomerTable";
 
 const CustomerManagement = ({
@@ -14,19 +14,13 @@ const CustomerManagement = ({
   showHeader = false,
   showRegisterBtn = false,
 }) => {
+  // Filter logic đơn giản - chỉ dùng cho basic filtering nếu cần
   const filtered = useMemo(() => {
-    if (!searchTerm.trim()) return customersSummary;
-    const q = searchTerm.toLowerCase();
-    return customersSummary.filter((c) =>
-      [c?.id, c?.name, c?.phoneNumber, c?.email, c?.address]
-        .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(q))
-    );
-  }, [customersSummary, searchTerm]);
+    return customersSummary; // Đã được filter từ parent component
+  }, [customersSummary]);
 
   return (
     <>
-      {/* Header (ẩn/hiện theo props) */}
       {showHeader && (
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -54,25 +48,6 @@ const CustomerManagement = ({
           </div>
         </div>
       )}
-
-      {/* Search Bar */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border mb-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              size={20}
-            />
-            <input
-              type="text"
-              placeholder="Search by name, phone, email, address, or ID…"
-              value={searchTerm}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-            />
-          </div>
-        </div>
-      </div>
 
       {/* Table */}
       <CustomerTable
