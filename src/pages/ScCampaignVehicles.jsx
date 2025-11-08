@@ -115,9 +115,6 @@ const ScCampaignVehicles = () => {
             <h1 className="text-2xl font-semibold text-gray-800">
               Campaign Recall Vehicles
             </h1>
-            <p className="text-sm text-gray-500">
-              View vehicles under recall campaigns in your service center
-            </p>
           </div>
         </div>
       </div>

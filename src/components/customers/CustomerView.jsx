@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   Eye,
@@ -13,8 +13,20 @@ import {
   CheckCircle,
   AlertCircle,
   Edit,
+  History,
+  Settings,
+  ClipboardList,
+  UserCheck,
+  Package,
+  Clock,
+  Wrench,
+  Cog,
+  Users,
+  ShieldCheck,
 } from "lucide-react";
 import CustomerCreate from "./CustomerCreateAndUpdate";
+import ToastMessage from "../common/ToastMessage";
+import { getRepairHistoryByVinApi } from "../../services/api.service";
 
 const CustomerView = ({
   vehicle,
@@ -26,12 +38,51 @@ const CustomerView = ({
   onTabChange,
   onClose,
   onEditSuccess,
+  onEditError,
   vehicles,
 }) => {
+  // State cho toast
+  const [actionMessage, setActionMessage] = useState("");
+  const [messageType, setMessageType] = useState("");
+
   const [activeTab, setActiveTab] = useState("view");
   const [editingCustomer, setEditingCustomer] = useState(null);
 
-  //  HÀM CHUYỂN SANG CHẾ ĐỘ EDIT
+  // State mới cho repair history
+  const [repairHistory, setRepairHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Hàm hiển thị toast
+  const showMessage = (message, type = "info") => {
+    setActionMessage(message);
+    setMessageType(type);
+  };
+
+  // HÀM FETCH REPAIR HISTORY
+  const fetchRepairHistory = async (vin) => {
+    if (!vin) return;
+
+    try {
+      setLoadingHistory(true);
+      const response = await getRepairHistoryByVinApi(vin);
+      setRepairHistory(response.data.data || []);
+    } catch (err) {
+      console.error("Error fetching repair history:", err);
+      setRepairHistory([]);
+      showMessage("Failed to load repair history", "error");
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  // KHI VEHICLE THAY ĐỔI, FETCH HISTORY
+  useEffect(() => {
+    if (vehicle?.vin && activeDetailTab === "history") {
+      fetchRepairHistory(vehicle.vin);
+    }
+  }, [vehicle?.vin, activeDetailTab]);
+
+  // HÀM CHUYỂN SANG CHẾ ĐỘ EDIT
   const handleEdit = () => {
     if (customerDetail) {
       setEditingCustomer({
@@ -47,18 +98,29 @@ const CustomerView = ({
     }
   };
 
-  //  HÀM QUAY LẠI CHẾ ĐỘ VIEW
+  // HÀM QUAY LẠI CHẾ ĐỘ VIEW
   const handleBackToView = () => {
     setActiveTab("view");
     setEditingCustomer(null);
   };
 
-  //  HÀM XỬ LÝ KHI EDIT THÀNH CÔNG
+  // HÀM XỬ LÝ KHI EDIT THÀNH CÔNG
   const handleEditSuccess = (updated) => {
     setActiveTab("view");
     setEditingCustomer(null);
+    showMessage("Customer updated successfully!", "success");
     if (onEditSuccess) {
-      onEditSuccess(updated); // chuyển dữ liệu đã cập nhật lên parent
+      onEditSuccess(updated);
+    }
+  };
+
+  const handleEditErrorInView = (error) => {
+    showMessage(
+      error || "Failed to update customer. Please try again.",
+      "error"
+    );
+    if (onEditError) {
+      onEditError(error);
     }
   };
 
@@ -70,10 +132,52 @@ const CustomerView = ({
       .padStart(2, "0")}/${year}`;
   };
 
+  // HÀM ĐỊNH DẠNG STATUS
+  const formatStatus = (status) => {
+    const statusMap = {
+      WAITING: {
+        label: "Waiting",
+        color: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      },
+      PENDING: {
+        label: "Pending",
+        color: "bg-orange-100 text-orange-800 border-orange-200",
+      },
+      IN_PROGRESS: {
+        label: "In Progress",
+        color: "bg-blue-100 text-blue-800 border-blue-200",
+      },
+      COMPLETED: {
+        label: "Completed",
+        color: "bg-green-100 text-green-800 border-green-200",
+      },
+      CANCELLED: {
+        label: "Cancelled",
+        color: "bg-red-100 text-red-800 border-red-200",
+      },
+    };
+
+    return (
+      statusMap[status] || {
+        label: status,
+        color: "bg-gray-100 text-gray-800 border-gray-200",
+      }
+    );
+  };
+
   // NẾU ĐANG Ở CHẾ ĐỘ EDIT, HIỂN THỊ FORM EDIT
   if (activeTab === "edit" && editingCustomer) {
     return (
       <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4">
+        {/* Toast Message */}
+        {actionMessage && (
+          <ToastMessage
+            type={messageType}
+            message={actionMessage}
+            onClose={() => setActionMessage("")}
+          />
+        )}
+
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between p-6 border-b border-gray-100">
             <div className="flex items-center gap-3">
@@ -84,7 +188,7 @@ const CustomerView = ({
                 <X size={20} />
               </button>
               <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <Edit className="text-blue-600" size={20} />
+                <Settings className="text-blue-600" size={20} />
                 Edit Customer
               </h2>
             </div>
@@ -96,12 +200,11 @@ const CustomerView = ({
             </button>
           </div>
 
-          {/* SỬ DỤNG COMPONENT CustomerCreate VỚI CHẾ ĐỘ EDIT */}
           <CustomerCreate
             vehicles={vehicles}
             onClose={handleBackToView}
             onSuccess={handleEditSuccess}
-            onError={(error) => console.error("Edit error:", error)}
+            onError={handleEditErrorInView}
             editCustomer={editingCustomer}
           />
         </div>
@@ -112,25 +215,33 @@ const CustomerView = ({
   // CHẾ ĐỘ VIEW BÌNH THƯỜNG
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4">
+      {/* Toast Message */}
+      {actionMessage && (
+        <ToastMessage
+          type={messageType}
+          message={actionMessage}
+          onClose={() => setActionMessage("")}
+        />
+      )}
+
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header  */}
+        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-            <Eye className="text-blue-600" size={20} />
+            <ClipboardList className="text-blue-600" size={20} />
             Vehicle & Customer Details
           </h2>
           <div className="flex items-center gap-2">
-            {/*  NÚT EDIT */}
             <button
               onClick={handleEdit}
-              disabled={loadingCustomer || !customerDetail} //  chặn edit khi chưa có data
+              disabled={loadingCustomer || !customerDetail}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                 loadingCustomer || !customerDetail
-                  ? "bg-gray-200 text-gray-500 cursor-not-allowed" //  trạng thái disabled
+                  ? "bg-gray-200 text-gray-500 cursor-not-allowed"
                   : "bg-blue-600 text-white hover:bg-blue-700"
               }`}
             >
-              <Edit size={16} />
+              <Settings size={16} />
               Edit
             </button>
             <button
@@ -163,7 +274,7 @@ const CustomerView = ({
               </div>
               {campaignData && campaignData.length > 0 && (
                 <div className="text-sm text-green-600 font-medium mt-2 flex items-center gap-1">
-                  <Shield size={14} />
+                  <ShieldCheck size={14} />
                   Active Campaigns: {campaignData.length} campaign(s) found
                 </div>
               )}
@@ -171,28 +282,41 @@ const CustomerView = ({
           </div>
         </div>
 
-        {/* Tab Navigation */}
+        {/* Tab Navigation - CẬP NHẬT ICON MỚI */}
         <div className="border-b border-gray-200">
           <div className="flex px-6">
             <button
               onClick={() => onTabChange("customer")}
-              className={`py-3 px-4 font-medium text-sm border-b-2 transition-colors ${
+              className={`py-3 px-4 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 ${
                 activeDetailTab === "customer"
                   ? "border-blue-500 text-blue-600"
                   : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
-              👤 Customer Information
+              <Users size={16} />
+              Customer Info
             </button>
             <button
               onClick={() => onTabChange("warranty")}
-              className={`py-3 px-4 font-medium text-sm border-b-2 transition-colors ${
+              className={`py-3 px-4 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 ${
                 activeDetailTab === "warranty"
                   ? "border-blue-500 text-blue-600"
                   : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
-              🛡️ Warranty & Campaigns
+              <ShieldCheck size={16} />
+              Warranty & Campaigns
+            </button>
+            <button
+              onClick={() => onTabChange("history")}
+              className={`py-3 px-4 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 ${
+                activeDetailTab === "history"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <History size={16} />
+              Repair History
             </button>
           </div>
         </div>
@@ -203,7 +327,7 @@ const CustomerView = ({
           {activeDetailTab === "customer" && (
             <div className="p-6 space-y-4">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <User className="text-green-600" size={18} />
+                <Users className="text-green-600" size={18} />
                 Customer Details
               </h3>
 
@@ -255,7 +379,7 @@ const CustomerView = ({
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-xl">
-                  <User className="mx-auto mb-2 text-gray-400" size={24} />
+                  <Users className="mx-auto mb-2 text-gray-400" size={24} />
                   <p>No customer details found</p>
                 </div>
               )}
@@ -266,7 +390,7 @@ const CustomerView = ({
           {activeDetailTab === "warranty" && (
             <div className="p-6 space-y-6">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Shield className="text-orange-600" size={18} />
+                <ShieldCheck className="text-orange-600" size={18} />
                 Warranty Campaigns
               </h3>
 
@@ -362,13 +486,180 @@ const CustomerView = ({
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-xl">
-                  <AlertCircle
+                  <ShieldCheck
                     className="mx-auto mb-2 text-gray-400"
                     size={24}
                   />
                   <p className="font-medium">No active campaign found</p>
                   <p className="text-sm mt-1">
                     This vehicle is not part of any warranty campaign
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Repair History Tab */}
+          {activeDetailTab === "history" && (
+            <div className="p-6 space-y-6">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <History className="text-purple-600" size={18} />
+                Repair History
+              </h3>
+
+              {loadingHistory ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                  <span className="ml-2 text-gray-600">
+                    Loading repair history...
+                  </span>
+                </div>
+              ) : repairHistory.length > 0 ? (
+                <div className="space-y-4">
+                  {repairHistory.map((repair, index) => {
+                    const statusInfo = formatStatus(repair.status);
+                    return (
+                      <div
+                        key={repair.orderId || index}
+                        className="bg-purple-50 rounded-xl p-4 border border-purple-200"
+                      >
+                        {/* Repair Header */}
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <div className="font-semibold text-gray-900 text-lg mb-1">
+                              Repair Order #{repair.orderId}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              Mileage: {repair.claimMileage} km
+                            </div>
+                          </div>
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusInfo.color}`}
+                          >
+                            {statusInfo.label}
+                          </span>
+                        </div>
+
+                        {/* Repair Description */}
+                        {repair.claimDescription && (
+                          <div className="text-sm text-gray-700 mb-4 p-3 bg-white rounded-lg border">
+                            <div className="font-medium text-gray-900 mb-1">
+                              Description:
+                            </div>
+                            {repair.claimDescription}
+                          </div>
+                        )}
+
+                        {/* Repair Details */}
+                        <div className="space-y-3">
+                          <div className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                            <Cog size={14} />
+                            Repair Parts:
+                          </div>
+                          {repair.details && repair.details.length > 0 ? (
+                            <div className="space-y-2">
+                              {repair.details.map((detail, detailIndex) => {
+                                const detailStatus = formatStatus(
+                                  detail.status
+                                );
+                                return (
+                                  <div
+                                    key={detailIndex}
+                                    className="flex items-center justify-between p-3 bg-white rounded-lg border"
+                                  >
+                                    <div className="flex-1">
+                                      <div className="font-medium text-gray-900">
+                                        {detail.partName}
+                                      </div>
+                                      {detail.description && (
+                                        <div className="text-sm text-gray-600 mt-1">
+                                          {detail.description}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <span
+                                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${detailStatus.color}`}
+                                    >
+                                      {detailStatus.label}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div className="text-center py-4 text-gray-500 bg-white rounded-lg border">
+                              No repair parts details available
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Repair Dates & Approval */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mt-4 pt-4 border-t border-purple-200">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Calendar size={14} className="text-gray-400" />
+                              <span className="text-gray-600 font-medium">
+                                Start Date:
+                              </span>
+                            </div>
+                            <div className="ml-6">
+                              <span className="font-medium">
+                                {repair.startDate
+                                  ? formatDate(repair.startDate)
+                                  : "Not started"}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Calendar size={14} className="text-gray-400" />
+                              <span className="text-gray-600 font-medium">
+                                End Date:
+                              </span>
+                            </div>
+                            <div className="ml-6">
+                              <span className="font-medium">
+                                {repair.endDate
+                                  ? formatDate(repair.endDate)
+                                  : "Not completed"}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle
+                                size={14}
+                                className="text-gray-400"
+                              />
+                              <span className="text-gray-600 font-medium">
+                                Supervisor Approved:
+                              </span>
+                            </div>
+                            <div className="ml-6">
+                              <span
+                                className={`font-medium ${
+                                  repair.supervisorApproved
+                                    ? "text-green-600"
+                                    : "text-red-600"
+                                }`}
+                              >
+                                {repair.supervisorApproved ? "Yes" : "No"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-xl">
+                  <History className="mx-auto mb-2 text-gray-400" size={24} />
+                  <p className="font-medium">No repair history found</p>
+                  <p className="text-sm mt-1">
+                    This vehicle has no recorded repair orders
                   </p>
                 </div>
               )}

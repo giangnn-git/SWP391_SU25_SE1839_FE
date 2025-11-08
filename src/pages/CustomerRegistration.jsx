@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { CheckCircle, AlertCircle, X, Car, Users, Plus } from "lucide-react";
+import {
+  CheckCircle,
+  AlertCircle,
+  X,
+  Car,
+  Users,
+  Plus,
+  Search,
+} from "lucide-react";
 import CustomerCreate from "../components/customers/CustomerCreateAndUpdate";
 import CustomerManagement from "../components/customers/CustomerManagement";
 import CustomerView from "../components/customers/CustomerView";
@@ -9,11 +17,19 @@ import {
   getCampaignByVinApi,
   getCustomersApi,
   getVehiclesByCustomerIdApi,
+  searchCustomerApi,
 } from "../services/api.service";
 import { useCurrentUser } from "../hooks/useCurrentUser";
+import ToastMessage from "../components/common/ToastMessage";
 
 const CustomerRegistration = () => {
   const { currentUser, loading: userLoading } = useCurrentUser();
+
+  // State cho toast
+  const [actionMessage, setActionMessage] = useState("");
+  const [messageType, setMessageType] = useState("");
+
+  // State chính
   const [showForm, setShowForm] = useState(false);
   const [viewVehicle, setViewVehicle] = useState(null);
   const [customerDetail, setCustomerDetail] = useState(null);
@@ -23,7 +39,6 @@ const CustomerRegistration = () => {
   const [activeDetailTab, setActiveDetailTab] = useState("customer");
 
   const [customersSummary, setCustomersSummary] = useState([]);
-  const [filteredCustomersSummary, setFilteredCustomersSummary] = useState([]);
   const [loadingCustomersSummary, setLoadingCustomersSummary] = useState(false);
 
   const [openCustomerVehicles, setOpenCustomerVehicles] = useState(false);
@@ -31,46 +46,80 @@ const CustomerRegistration = () => {
   const [customerVehicles, setCustomerVehicles] = useState([]);
   const [viewingCustomer, setViewingCustomer] = useState(null);
 
-  const [successMessage, setSuccessMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-
   const [showAddVehicleForCustomer, setShowAddVehicleForCustomer] =
     useState(null);
 
-  // Search state
+  // State cho search
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
   const [filteredCustomers, setFilteredCustomers] = useState([]);
 
-  // Filter customers based on user role and serviceCenterId
-  const filterCustomersByRole = (customers) => {
-    if (!currentUser) return customers;
-
-    const userRole = currentUser.role?.toUpperCase();
-    const userServiceCenterId = currentUser.serviceCenterId;
-
-    if (userRole === "SC_STAFF" && userServiceCenterId) {
-      const filtered = customers.filter(
-        (customer) => customer.scId === userServiceCenterId
-      );
-      return filtered;
-    }
-
-    return customers;
+  // Hàm hiển thị toast
+  const showMessage = (message, type = "info") => {
+    setActionMessage(message);
+    setMessageType(type);
   };
 
-  // Filter customers based on search term
-  useEffect(() => {
+  // Hàm xử lý tìm kiếm THÔNG MINH (SEARCH API + BASIC FILTER)
+  const handleSearch = async () => {
     if (!searchTerm.trim()) {
-      setFilteredCustomers(filteredCustomersSummary);
-    } else {
-      const filtered = filteredCustomersSummary.filter((customer) =>
+      // Nếu search rỗng, reset về data gốc
+      setSearchResults([]);
+      setFilteredCustomers(customersSummary);
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+
+      // SIMPLIFIED: Luôn dùng API search cho mọi từ khóa
+      const res = await searchCustomerApi(searchTerm.trim());
+
+      const data = res?.data?.data || [];
+
+      // Format data để phù hợp với cấu trúc hiện tại
+      const formattedResults = data.map((item) => ({
+        id: item.id,
+        name: item.name,
+        phoneNumber: item.phoneNumber,
+        email: item.email,
+        address: item.address,
+        vehicleCount: item.vehicleCount,
+        scId: item.scId,
+      }));
+
+      setSearchResults(formattedResults);
+      setFilteredCustomers(formattedResults);
+    } catch (err) {
+      // Fallback: nếu API fail thì dùng basic search
+      const filtered = customersSummary.filter((customer) =>
         Object.values(customer).some((value) =>
           String(value).toLowerCase().includes(searchTerm.toLowerCase())
         )
       );
+      setSearchResults([]);
       setFilteredCustomers(filtered);
+      showMessage("Search API failed, using local search", "warning");
+    } finally {
+      setIsSearching(false);
     }
-  }, [searchTerm, filteredCustomersSummary]);
+  };
+
+  // Hàm xử lý khi nhấn Enter
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
+  // Reset search khi component mount hoặc khi data thay đổi
+  useEffect(() => {
+    if (!searchTerm) {
+      setFilteredCustomers(customersSummary);
+      setSearchResults([]);
+    }
+  }, [customersSummary, searchTerm]);
 
   const fetchCustomersSummary = async () => {
     try {
@@ -78,26 +127,22 @@ const CustomerRegistration = () => {
       const res = await getCustomersApi();
       const list = res?.data?.data ?? [];
 
-      const filteredList = filterCustomersByRole(list);
-
+      // DÙNG TRỰC TIẾP DATA TỪ API
       setCustomersSummary(list);
-      setFilteredCustomersSummary(filteredList);
-      setFilteredCustomers(filteredList);
+      setFilteredCustomers(list);
     } catch (err) {
       console.error("Error fetching customers summary:", err);
-      setErrorMessage("Failed to load customers summary");
+      showMessage("Failed to load customers summary", "error");
     } finally {
       setLoadingCustomersSummary(false);
     }
   };
 
   useEffect(() => {
-    if (!userLoading && currentUser && customersSummary.length > 0) {
-      const filteredList = filterCustomersByRole(customersSummary);
-      setFilteredCustomersSummary(filteredList);
-      setFilteredCustomers(filteredList);
+    if (!userLoading) {
+      fetchCustomersSummary();
     }
-  }, [currentUser, userLoading, customersSummary]);
+  }, [userLoading]);
 
   const fetchCustomerDetail = async (vin) => {
     try {
@@ -156,7 +201,7 @@ const CustomerRegistration = () => {
 
   // HÀM XỬ LÝ KHI EDIT THÀNH CÔNG TỪ CustomerView
   const handleEditSuccessFromView = async (updated) => {
-    setSuccessMessage("Customer updated successfully!");
+    showMessage("Customer updated successfully!", "success");
     if (updated?.vin && viewVehicle?.vin === updated.vin) {
       setViewVehicle((prev) =>
         prev ? { ...prev, licensePlate: updated.licensePlate } : prev
@@ -169,22 +214,16 @@ const CustomerRegistration = () => {
     if (viewVehicle?.vin) {
       await fetchCustomerDetail(viewVehicle.vin);
     }
-
-    setTimeout(() => setSuccessMessage(""), 5000);
   };
 
   // HÀM XỬ LÝ KHI THÊM VEHICLE THÀNH CÔNG
   const handleAddVehicleSuccess = async () => {
-    setSuccessMessage("Vehicle added successfully!");
-    // Refresh data sau khi thêm vehicle thành công
+    showMessage("Vehicle added successfully!", "success");
     await fetchCustomersSummary();
 
-    // Nếu đang xem customer vehicles, refresh danh sách
     if (viewingCustomer) {
       await handleViewCustomerRow(viewingCustomer);
     }
-
-    setTimeout(() => setSuccessMessage(""), 5000);
   };
 
   const handleViewCustomerRow = async (row) => {
@@ -199,7 +238,7 @@ const CustomerRegistration = () => {
       setCustomerVehicles(Array.isArray(list) ? list : []);
     } catch (err) {
       console.error("Error fetching vehicles by customer id:", err);
-      setErrorMessage("Failed to load vehicles for this customer");
+      showMessage("Failed to load vehicles for this customer", "error");
       setCustomerVehicles([]);
     } finally {
       setLoadingCustomerVehicles(false);
@@ -208,21 +247,21 @@ const CustomerRegistration = () => {
 
   const handleRegistrationSuccess = async () => {
     setShowForm(false);
-    setSuccessMessage("Customer registered successfully!");
-    // TỰ ĐỘNG RESET SEARCH KHI ĐĂNG KÝ THÀNH CÔNG
+    showMessage("Customer registered successfully!", "success");
     setSearchTerm("");
+    setSearchResults([]);
     await fetchCustomersSummary();
-    setTimeout(() => setSuccessMessage(""), 5000);
   };
 
   const handleEditError = (error) => {
-    setErrorMessage(error || "Failed to update customer. Please try again.");
-    setTimeout(() => setErrorMessage(""), 5000);
+    showMessage(
+      error || "Failed to update customer. Please try again.",
+      "error"
+    );
   };
 
   const handleCloseCreate = () => {
     setShowForm(false);
-    setErrorMessage("");
   };
 
   useEffect(() => {
@@ -236,17 +275,14 @@ const CustomerRegistration = () => {
       ? `${arr[2]}/${arr[1]}/${arr[0]}`
       : "-";
 
-  // Tính toán số lượng vehicles và campaigns từ customersSummary
   const totalVehicles = customersSummary.reduce(
     (total, customer) => total + (customer.vehicleCount || 0),
     0
   );
   const totalCampaigns = customersSummary.reduce((total, customer) => {
-    // Giả sử mỗi customer có 1 campaign (có thể điều chỉnh logic này sau)
     return total + (customer.vehicleCount > 0 ? 1 : 0);
   }, 0);
 
-  //   Hiển thị loading khi đang fetch user data
   if (userLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 p-6 flex items-center justify-center">
@@ -261,6 +297,15 @@ const CustomerRegistration = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
+        {/* Toast Message */}
+        {actionMessage && (
+          <ToastMessage
+            type={messageType}
+            message={actionMessage}
+            onClose={() => setActionMessage("")}
+          />
+        )}
+
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -275,13 +320,8 @@ const CustomerRegistration = () => {
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex items-center gap-2 text-sm text-gray-500 bg-white/80 rounded-lg px-4 py-2 border border-gray-200">
                 <Users size={16} />
-                <span>{filteredCustomersSummary.length} customers</span>
-                {currentUser?.role === "SC_STAFF" &&
-                  customersSummary.length > filteredCustomersSummary.length && (
-                    <span className="text-xs text-gray-400">
-                      (from {customersSummary.length} total)
-                    </span>
-                  )}
+                <span>{customersSummary.length} customers</span>
+                {/* 🎯 ĐÃ BỎ HIỂN THỊ "from X total" vì không còn filter theo SC */}
               </div>
               <button
                 onClick={() => setShowForm(true)}
@@ -293,25 +333,6 @@ const CustomerRegistration = () => {
             </div>
           </div>
         </div>
-
-        {/* Notification Messages */}
-        {successMessage && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-2xl text-green-700 shadow-sm">
-            <div className="flex items-center gap-3">
-              <CheckCircle size={20} className="text-green-500 flex-shrink-0" />
-              <span className="font-medium">{successMessage}</span>
-            </div>
-          </div>
-        )}
-
-        {errorMessage && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700 shadow-sm">
-            <div className="flex items-center gap-3">
-              <AlertCircle size={20} className="text-red-500 flex-shrink-0" />
-              <span className="font-medium">{errorMessage}</span>
-            </div>
-          </div>
-        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -364,11 +385,47 @@ const CustomerRegistration = () => {
           </div>
         </div>
 
-        {/* SỬ DỤNG COMPONENT CustomerManagement  */}
+        {/* Search Bar  */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border mb-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 flex gap-3">
+              <div className="flex-1 relative">
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  size={20}
+                />
+                <input
+                  type="text"
+                  placeholder="Search by name, phone, email, address, ID, or VIN…"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                />
+              </div>
+              <button
+                onClick={handleSearch}
+                disabled={isSearching || !searchTerm.trim()}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                {isSearching ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Searching...
+                  </div>
+                ) : (
+                  "Search"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* SỬ DỤNG COMPONENT CustomerManagement */}
         <CustomerManagement
           onShowForm={() => setShowForm(true)}
           customersSummary={filteredCustomers}
-          loadingCustomersSummary={loadingCustomersSummary}
+          loadingCustomersSummary={loadingCustomersSummary || isSearching}
           onViewCustomer={handleViewCustomerRow}
           onViewVehicle={handleViewVehicle}
           onAddVehicle={setShowAddVehicleForCustomer}
@@ -385,7 +442,7 @@ const CustomerRegistration = () => {
               <CustomerCreate
                 onClose={handleCloseCreate}
                 onSuccess={handleRegistrationSuccess}
-                onError={setErrorMessage}
+                onError={handleEditError}
               />
             </div>
           </div>
@@ -403,6 +460,7 @@ const CustomerRegistration = () => {
             onTabChange={setActiveDetailTab}
             onClose={handleCloseDetail}
             onEditSuccess={handleEditSuccessFromView}
+            onEditError={handleEditError}
           />
         )}
 
@@ -413,13 +471,13 @@ const CustomerRegistration = () => {
             onClose={() => setShowAddVehicleForCustomer(null)}
             onSuccess={handleAddVehicleSuccess}
             onError={(error) => {
-              setErrorMessage(error);
+              showMessage(error, "error");
               setShowAddVehicleForCustomer(null);
             }}
           />
         )}
 
-        {/* Customer Vehicles Modal - GIỮ LẠI ĐỂ BACKUP */}
+        {/* Customer Vehicles Modal */}
         {openCustomerVehicles && (
           <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4">
             <div className="bg-white w-full max-w-6xl rounded-2xl shadow-2xl overflow-hidden">

@@ -2,9 +2,11 @@ import { useState, useRef, useEffect } from "react";
 import { storage } from "../../utils/storage";
 import { useNavigate } from "react-router-dom";
 import { useCurrentUser } from "../../hooks/useCurrentUser";
+import { getServiceCentersApi } from "../../services/api.service"; // Import API
 
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [serviceCenterName, setServiceCenterName] = useState("");
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
@@ -15,6 +17,33 @@ const Header = () => {
   const roleRaw = currentUser?.role || "";
   const roleLabel =
     roleRaw.charAt(0).toUpperCase() + roleRaw.slice(1).toLowerCase();
+
+  // Lấy service center name
+  useEffect(() => {
+    const fetchServiceCenterName = async () => {
+      try {
+        const serviceCenterId = storage.get("serviceCenterId");
+
+        if (serviceCenterId) {
+          const response = await getServiceCentersApi();
+          const serviceCenters = response.data.data;
+
+          const foundServiceCenter = serviceCenters.find(
+            (sc) => sc.id === parseInt(serviceCenterId)
+          );
+
+          if (foundServiceCenter) {
+            setServiceCenterName(foundServiceCenter.name);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching service center:", error);
+        setServiceCenterName("");
+      }
+    };
+
+    fetchServiceCenterName();
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -35,6 +64,7 @@ const Header = () => {
     storage.remove("userName");
     storage.remove("isLoggedIn");
     storage.remove("id");
+    storage.remove("serviceCenterId"); // Xóa cả serviceCenterId khi logout
     navigate("/login");
   };
 
@@ -46,11 +76,38 @@ const Header = () => {
   return (
     <header className="bg-white shadow-sm border-b">
       <div className="flex justify-between items-center h-16 px-6">
-        {/* Title */}
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900">
+        {/* Title & Service Center */}
+        <div className="flex flex-col">
+          <h1 className="text-xl font-bold text-gray-900">
             EV Warranty Management System
           </h1>
+          {/* Hiển thị tên service center - NỔI BẬT HƠN */}
+          {serviceCenterName && (
+            <div className="flex items-center mt-1">
+              <svg
+                className="w-4 h-4 text-blue-600 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+              <span className="text-sm font-semibold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200 shadow-sm">
+                {serviceCenterName}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* User Section */}
@@ -94,8 +151,9 @@ const Header = () => {
 
               {/* Chevron */}
               <svg
-                className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""
-                  }`}
+                className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${
+                  isDropdownOpen ? "rotate-180" : ""
+                }`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
