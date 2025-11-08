@@ -57,17 +57,17 @@ const ClaimDetail = () => {
     }, [id]);
 
     // Fetch categories
-    useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                const res = await axios.get("/api/api/categories");
-                setCategories(res.data.data.category || []);
-            } catch (err) {
-                console.error("Failed to fetch categories:", err);
-            }
-        };
-        fetchCategories();
-    }, []);
+    // useEffect(() => {
+    //     const fetchCategories = async () => {
+    //         try {
+    //             const res = await axios.get("/api/api/categories");
+    //             setCategories(res.data.data.category || []);
+    //         } catch (err) {
+    //             console.error("Failed to fetch categories:", err);
+    //         }
+    //     };
+    //     fetchCategories();
+    // }, []);
 
     // Fetch parts by category
     const fetchParts = async (category) => {
@@ -248,6 +248,21 @@ const ClaimDetail = () => {
     return (
         <div className="bg-gray-50 min-h-screen py-6 px-4 sm:px-6 lg:px-8">
             <div className="max-w-5xl mx-auto">
+                {/* Breadcrumb */}
+                <div className="text-sm text-gray-500 mb-2">
+                    <Link to="/" className="hover:underline text-blue-600">
+                        Dashboard
+                    </Link>
+                    <span className="mx-1">/</span>
+                    <Link to="/warranty-claims" className="hover:underline text-blue-600">
+                        Warranty Claims
+                    </Link>
+                    <span className="mx-1">/</span>
+                    <Link className="text-gray-700 font-medium">
+                        Claim Detail
+                    </Link>
+                </div>
+
                 {/* Header */}
                 <div className="mb-6">
                     <button
@@ -367,7 +382,7 @@ const ClaimDetail = () => {
                             <RefreshCcw size={20} className="text-blue-600" />
                             <h2 className="text-lg font-bold text-gray-900">Claim Status & Parts</h2>
                         </div>
-                        {fcr?.currentStatus === "DRAFT" && (
+                        {fcr?.currentStatus === "DRAFT" && !editedParts.some(p => p.remainingStock === 0) && (
                             <button
                                 onClick={() => {
                                     setTempParts(editedParts.map(p => ({ ...p }))); // clone để chỉnh tạm
@@ -495,6 +510,26 @@ const ClaimDetail = () => {
                     {/* Parts Table */}
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
+                            {editedParts.some(p => p.remainingStock === 0) && (
+                                <div className="mt-3 text-sm text-red-600 font-medium border border-red-300 bg-red-50 rounded-lg p-3">
+                                    No stock available for:{" "}
+                                    {editedParts
+                                        .filter(p => p.remainingStock === 0)
+                                        .map(p => p.name)
+                                        .join(", ")}.
+                                    Please request additional stock before updating parts.
+                                </div>
+                            )}
+                            {editedParts.some(p => p.remainingStock > 0 && p.remainingStock < 10) && (
+                                <div className="mt-3 text-sm text-amber-700 font-medium border border-amber-300 bg-amber-50 rounded-lg p-3">
+                                    Low stock warning for:{" "}
+                                    {editedParts
+                                        .filter(p => p.remainingStock > 0 && p.remainingStock < 10)
+                                        .map(p => p.name)
+                                        .join(", ")}.
+                                    Please restock soon.
+                                </div>
+                            )}
                             <thead>
                                 <tr className="border-b border-gray-200">
                                     <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Part Name</th>
@@ -508,7 +543,15 @@ const ClaimDetail = () => {
                             <tbody className="divide-y divide-gray-100">
                                 {editedParts.length > 0 ? (
                                     editedParts.map((part, i) => (
-                                        <tr key={i} className="hover:bg-gray-50">
+                                        <tr
+                                            key={i}
+                                            className={`hover:bg-gray-50 ${part.remainingStock === 0
+                                                ? "bg-red-50"
+                                                : part.remainingStock < 10
+                                                    ? "bg-yellow-50"
+                                                    : ""
+                                                }`}
+                                        >
                                             <td className="py-3 px-4 text-sm text-gray-900 font-medium">{part.name}</td>
                                             <td className="py-3 px-4 text-sm text-gray-700">{part.category}</td>
                                             <td className="py-3 px-4 text-sm text-gray-700 text-right">
@@ -608,6 +651,15 @@ const ClaimDetail = () => {
                             </button>
                             <button
                                 onClick={async () => {
+                                    // Kiểm tra xem có quantity > remainingStock không
+                                    const invalidParts = tempParts.filter(p => p.quantity > (p.remainingStock ?? Infinity));
+                                    if (invalidParts.length > 0) {
+                                        toast.error(
+                                            `Quantity for ${invalidParts.map(p => p.name).join(", ")} exceeds available stock`
+                                        );
+                                        return; // không gửi request nếu có lỗi
+                                    }
+
                                     try {
                                         const payload = tempParts.map(p => ({
                                             id: p.partId,
@@ -636,6 +688,7 @@ const ClaimDetail = () => {
                             >
                                 Save Changes
                             </button>
+
                         </div>
                     </div>
                 </div>

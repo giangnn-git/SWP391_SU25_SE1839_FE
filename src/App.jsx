@@ -2,6 +2,8 @@ import { Outlet } from "react-router-dom";
 import Sidebar from "./components/layout/SideBar";
 import Header from "./components/layout/Header";
 import { Toaster } from "react-hot-toast";
+import ChatWidget from "./components/chat/ChatWidget";
+
 
 const App = () => {
   return (
@@ -20,6 +22,7 @@ const App = () => {
         <main className="flex-1 overflow-y-auto p-6">
           <Outlet />
         </main>
+        <ChatWidget />
       </div>
     </div>
   );
