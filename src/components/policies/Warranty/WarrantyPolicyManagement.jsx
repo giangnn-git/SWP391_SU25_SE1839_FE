@@ -26,6 +26,16 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState("");
 
+  // THÊM STATE formData Ở ĐÂY
+  const [formData, setFormData] = useState({
+    code: "",
+    name: "",
+    type: "NORMAL",
+    durationPeriod: "",
+    mileageLimit: "",
+    description: "",
+  });
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -73,28 +83,51 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
   // Fetch data khi component mount HOẶC khi refreshTrigger thay đổi
   useEffect(() => {
     fetchPolicies();
-  }, [refreshTrigger]); // Thêm refreshTrigger vào dependency
+  }, [refreshTrigger]);
+
+  // HÀM XỬ LÝ KHI MỞ MODAL CREATE - RESET FORM DATA
+  const handleOpenCreateModal = () => {
+    setFormData({
+      code: "",
+      name: "",
+      type: "NORMAL",
+      durationPeriod: "",
+      mileageLimit: "",
+      description: "",
+    });
+    setShowCreateModal(true);
+  };
 
   // CREATE
-  const handleCreatePolicy = async (policyData) => {
+  const handleCreatePolicy = async () => {
     try {
       setActionLoading(true);
       setError(null);
       setSuccess("");
 
       const apiData = {
-        code: policyData.code.trim(),
-        type: policyData.type,
-        name: policyData.name,
-        durationPeriod: parseInt(policyData.durationPeriod),
-        mileageLimit: parseInt(policyData.mileageLimit),
-        description: policyData.description,
+        code: formData.code.trim(),
+        type: formData.type,
+        name: formData.name,
+        durationPeriod: parseInt(formData.durationPeriod),
+        mileageLimit: parseInt(formData.mileageLimit),
+        description: formData.description,
       };
 
       await createWarrantyPolicyApi(apiData);
       await fetchPolicies();
       setSuccess("Policy created successfully!");
       setShowCreateModal(false);
+
+      // Reset form data sau khi tạo thành công
+      setFormData({
+        code: "",
+        name: "",
+        type: "NORMAL",
+        durationPeriod: "",
+        mileageLimit: "",
+        description: "",
+      });
     } catch (error) {
       console.error("Error creating policy:", error);
       const errorMessage =
@@ -235,7 +268,7 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
         <div className="flex items-center gap-3">
           <button
             className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50"
-            onClick={() => setShowCreateModal(true)}
+            onClick={handleOpenCreateModal}
             disabled={actionLoading}
           >
             <PlusCircle size={18} />
@@ -431,19 +464,12 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
       <CreateEditWarrantyPolicyModal
         showModal={showCreateModal}
         editing={false}
-        formData={{
-          name: "",
-          description: "",
-          durationPeriod: "",
-          mileageLimit: "",
-          code: "",
-          type: "NORMAL",
-        }}
+        formData={formData}
         actionLoading={actionLoading}
         onClose={() => setShowCreateModal(false)}
-        onSave={() => handleCreatePolicy(formData)}
-        onFormDataChange={(f, v) =>
-          setFormData((prev) => ({ ...prev, [f]: v }))
+        onSave={handleCreatePolicy}
+        onFormDataChange={(field, value) =>
+          setFormData((prev) => ({ ...prev, [field]: value }))
         }
       />
 

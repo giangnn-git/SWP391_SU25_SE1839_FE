@@ -90,7 +90,7 @@ const CreateEditWarrantyPolicyModal = ({
               />
             </div>
 
-            {/* Policy Type */}
+            {/* Policy Type  */}
             <div>
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                 <Shield size={14} className="text-green-500" />
@@ -98,7 +98,7 @@ const CreateEditWarrantyPolicyModal = ({
               </label>
               <select
                 className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-sm disabled:bg-gray-100 disabled:opacity-50"
-                value={formData.policyType}
+                value={formData.type}
                 onChange={(e) => onFormDataChange("type", e.target.value)}
                 disabled={actionLoading}
                 required
@@ -121,7 +121,10 @@ const CreateEditWarrantyPolicyModal = ({
                 className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-sm disabled:bg-gray-100 disabled:opacity-50"
                 value={formData.durationPeriod}
                 onChange={(e) =>
-                  onFormDataChange("durationPeriod", e.target.value)
+                  onFormDataChange(
+                    "durationPeriod",
+                    parseInt(e.target.value) || 0
+                  )
                 }
                 disabled={actionLoading}
                 min="1"
@@ -129,7 +132,7 @@ const CreateEditWarrantyPolicyModal = ({
               />
             </div>
 
-            {/* Mileage Limit */}
+            {/* Mileage Limit  */}
             <div>
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                 <Gauge size={14} className="text-blue-500" />
@@ -141,7 +144,10 @@ const CreateEditWarrantyPolicyModal = ({
                 className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-sm disabled:bg-gray-100 disabled:opacity-50"
                 value={formData.mileageLimit}
                 onChange={(e) =>
-                  onFormDataChange("mileageLimit", e.target.value)
+                  onFormDataChange(
+                    "mileageLimit",
+                    parseInt(e.target.value) || 0
+                  )
                 }
                 disabled={actionLoading}
                 min="1"

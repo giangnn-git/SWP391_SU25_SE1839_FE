@@ -5,6 +5,7 @@ import {
   Filter,
   AlertTriangle,
   Calendar,
+  CheckCircle2, // 👉 thêm icon cho toast
 } from "lucide-react";
 import CreateCampaignModal from "../components/campaigns/CreateCampaignModal";
 import EditCampaignModal from "../components/campaigns/EditCampaignModal";
@@ -22,6 +23,9 @@ const CampaignManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
 
+  // 👉 state mới: message toast cho toàn trang
+  const [toastMessage, setToastMessage] = useState("");
+
   // Format date (dd/mm/yyyy)
   const formatDate = (dateArray) => {
     if (!dateArray || dateArray.length !== 3) return "N/A";
@@ -29,13 +33,6 @@ const CampaignManagement = () => {
     return `${day.toString().padStart(2, "0")}/${month
       .toString()
       .padStart(2, "0")}/${year}`;
-  };
-
-  // Hàm parse date array sang Date object để sort
-  const parseDateArrayToDate = (dateArray) => {
-    if (!dateArray || dateArray.length !== 3) return new Date(0);
-    const [year, month, day] = dateArray;
-    return new Date(year, month - 1, day);
   };
 
   // Check campaign status với format dd/mm/yyyy
@@ -64,15 +61,8 @@ const CampaignManagement = () => {
       const response = await getAllCampaignsApi();
       const campaignsData = response.data?.data?.campaigns || [];
 
-      // Sắp xếp tăng dần theo start date
-      const sortedCampaigns = [...campaignsData].sort((a, b) => {
-        const dateA = parseDateArrayToDate(a.startDate);
-        const dateB = parseDateArrayToDate(b.startDate);
-        return dateA - dateB; // Tăng dần (cũ -> mới)
-      });
-
-      // Format data với status và dates dd/mm/yyyy
-      const formattedCampaigns = sortedCampaigns.map((campaign) => ({
+      // 🚨 ĐÃ LOẠI BỎ PHẦN SORT - sử dụng dữ liệu trực tiếp từ API
+      const formattedCampaigns = campaignsData.map((campaign) => ({
         ...campaign,
         status: getCampaignStatus(campaign),
         formattedStartDate: formatDate(campaign.startDate),
@@ -98,13 +88,22 @@ const CampaignManagement = () => {
   const handleCampaignCreated = () => {
     fetchCampaigns(); // reload danh sách
     setShowCreateModal(false);
+
+    // 👉 hiện toast tạo thành công
+    setToastMessage("Campaign created successfully!");
+    setTimeout(() => setToastMessage(""), 2000);
   };
 
   // Handle campaign update success
-  const handleCampaignUpdated = () => {
+  const handleCampaignUpdated = (updatedCampaign) => {
+    // updatedCampaign được EditCampaignModal truyền lên, ở đây không dùng cũng được
     fetchCampaigns(); // reload danh sách
     setShowEditModal(false);
     setSelectedCampaign(null);
+
+    // 👉 hiện toast update thành công
+    setToastMessage("Campaign updated successfully!");
+    setTimeout(() => setToastMessage(""), 2000);
   };
 
   // Statistics với real data
@@ -131,6 +130,14 @@ const CampaignManagement = () => {
 
   return (
     <div className="p-6">
+      {/* Toast thông báo toàn trang */}
+      {toastMessage && (
+        <div className="fixed top-4 right-4 z-[9999] bg-green-600 text-white text-sm px-4 py-2 rounded-xl shadow-lg flex items-center gap-2">
+          <CheckCircle2 size={18} />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">

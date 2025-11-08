@@ -27,9 +27,9 @@ const ViewWarrantyPolicyModal = ({ showModal, selectedPolicy, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm max-h-[85vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-green-50">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-green-50 sticky top-0 bg-white z-10">
           <div className="flex items-center gap-2">
             <Shield size={20} className="text-green-600" />
             <div>
@@ -158,7 +158,7 @@ const ViewWarrantyPolicyModal = ({ showModal, selectedPolicy, onClose }) => {
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end p-4 border-t border-gray-200 bg-gray-50">
+        <div className="flex justify-end p-4 border-t border-gray-200 bg-gray-50 sticky bottom-0 bg-white">
           <button
             onClick={onClose}
             className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors font-medium text-sm"
