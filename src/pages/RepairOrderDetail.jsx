@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   Loader,
   AlertCircle,
@@ -11,6 +11,9 @@ import {
   Clock,
   User,
   Briefcase,
+  X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import axios from "../services/axios.customize";
@@ -42,12 +45,32 @@ const RepairOrderDetail = () => {
     acceptedResponsibility: false,
   });
   const [verifying, setVerifying] = useState(false);
+  const [verifyErrors, setVerifyErrors] = useState({
+    signature: "",
+    acceptedResponsibility: "",
+  });
+
+
+  const [attachments, setAttachments] = useState([]);
+
 
   const handleVerifySubmit = async () => {
+    let hasError = false;
+    const errors = { signature: "", acceptedResponsibility: "" };
+
     if (!verifyData.signature?.trim()) {
-      toast.error("Signature is required");
-      return;
+      errors.signature = "Signature is required";
+      hasError = true;
     }
+
+    if (!verifyData.acceptedResponsibility) {
+      errors.acceptedResponsibility = "You must confirm the repair is completed correctly";
+      hasError = true;
+    }
+
+    setVerifyErrors(errors);
+
+    if (hasError) return;
 
     try {
       setVerifying(true);
@@ -62,9 +85,9 @@ const RepairOrderDetail = () => {
         new Blob([JSON.stringify(verifyObj)], { type: "application/json" })
       );
 
-      verifyData.files.forEach((file) => fd.append("files", file));
+      attachments.forEach((file) => fd.append("attachments", file));
 
-      const res = await axios.post(`/api/api/${id}/verify`, fd, {
+      await axios.post(`/api/api/${id}/verify`, fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -79,7 +102,7 @@ const RepairOrderDetail = () => {
     }
   };
 
-  // Fetch both order info and technician list
+
   // Fetch both order info and technician list
   const fetchOrderAndTechs = async () => {
     try {
@@ -102,6 +125,7 @@ const RepairOrderDetail = () => {
         notes: data.notes,
         acceptedResponsibility: data.acceptedResponsibility,
         signature: data.signature,
+        attachmentPaths: data.attachmentPaths || [],
       });
 
       setTechs(data.getTechnicalsResponse?.technicians || []);
@@ -180,6 +204,7 @@ const RepairOrderDetail = () => {
       await axios.put(`/api/api/repair-orders/${id}`, {
         technicalName: selectedTech,
       });
+      console.log("✅ Assigned technician:", selectedTech);
       toast.success("Technician updated successfully!");
       await fetchOrderAndTechs();
       setSelectedTech("");
@@ -244,71 +269,48 @@ const RepairOrderDetail = () => {
 
     return (
       <div className="border border-gray-200 rounded-lg shadow-sm bg-white">
-        <table className="w-full table-fixed border-collapse">
+        <table className="w-full table-auto border-collapse">
           <thead className="bg-gray-100">
             <tr>
-              <th className="w-[4%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">
-                #
-              </th>
-              <th className="w-[14%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">
-                Part Name
-              </th>
-              <th className="w-[22%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">
-                Old Serial Number
-              </th>
-              <th className="w-[6%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">
-                Qty
-              </th>
-              <th className="w-[8%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">
-                Year
-              </th>
-              <th className="w-[10%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">
-                Model
-              </th>
-              <th className="w-[15%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">
-                VIN
-              </th>
-              <th className="w-[11%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">
-                License Plate
-              </th>
-              <th className="w-[10%] px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase">
-                Category
-              </th>
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">#</th>
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">Part</th>
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">Old SN</th>
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">Qty</th>
+              {/* <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">Year</th> */}
+              {/* <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">Model</th> */}
+              {/* <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">VIN</th> */}
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">License</th>
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">Category</th>
+              {/* <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">Technician</th> */}
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">Replacement</th>
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">New SN</th>
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">Install Date</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {data.map((item, index) => (
               <tr key={item.id || index} className="hover:bg-gray-50">
-                <td className="px-3 py-2 text-sm text-gray-700">{index + 1}</td>
-                <td className="px-3 py-2 text-sm text-gray-700 truncate">
-                  {item.partName}
-                </td>
-                <td className="px-3 py-2 text-sm text-gray-700 break-all">
-                  {item.oldSerialNumber}
-                </td>
-                <td className="px-3 py-2 text-sm text-gray-700 text-center">
-                  {item.quantity}
-                </td>
-                <td className="px-3 py-2 text-sm text-gray-700 text-center">
-                  {item.productYear}
-                </td>
-                <td className="px-3 py-2 text-sm text-gray-700">
-                  {item.modelName}
-                </td>
-                <td className="px-3 py-2 text-sm text-gray-700 break-all">
-                  {item.vin}
-                </td>
-                <td className="px-3 py-2 text-sm text-gray-700">
-                  {item.licensePlate}
-                </td>
-                <td className="px-3 py-2 text-sm text-gray-700">
-                  {item.category}
+                <td className="px-2 py-2 text-sm text-gray-700">{index + 1}</td>
+                <td className="px-2 py-2 text-sm text-gray-700">{item.partName}</td>
+                <td className="px-2 py-2 text-sm text-gray-700 break-words">{item.oldSerialNumber}</td>
+                <td className="px-2 py-2 text-sm text-gray-700 text-center">{item.quantity}</td>
+                {/* <td className="px-2 py-2 text-sm text-gray-700 text-center">{item.productYear}</td> */}
+                {/* <td className="px-2 py-2 text-sm text-gray-700">{item.modelName}</td> */}
+                {/* <td className="px-2 py-2 text-sm text-gray-700 break-words">{item.vin}</td> */}
+                <td className="px-2 py-2 text-sm text-gray-700">{item.licensePlate}</td>
+                <td className="px-2 py-2 text-sm text-gray-700">{item.category}</td>
+                {/* <td className="px-2 py-2 text-sm text-gray-700">{item.technicianName}</td> */}
+                <td className="px-2 py-2 text-sm text-gray-700">{item.replacementDescription || "-"}</td>
+                <td className="px-2 py-2 text-sm text-gray-700 break-words">{item.newSerialNumber || "-"}</td>
+                <td className="px-2 py-2 text-sm text-gray-700">
+                  {item.installationDate ? `${item.installationDate[2]}/${item.installationDate[1]}/${item.installationDate[0]}` : "-"}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
     );
   };
 
@@ -340,35 +342,37 @@ const RepairOrderDetail = () => {
           >
             {/* Header */}
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {step.title}
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900">{step.title}</h3>
 
-              {/* Tech */}
+              {/* Dot status buttons */}
               {!isSCStaff &&
                 currentTech &&
                 !["COMPLETED", "CANCELLED"].includes(step.status) && (
-                  <div className="flex items-center gap-2">
-                    <select
-                      className="border border-gray-300 text-sm rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      onChange={(e) =>
-                        handleUpdateStatus(step.stepId, e.target.value)
-                      }
-                      disabled={updatingStepId === step.stepId}
-                      defaultValue=""
-                    >
-                      <option value="" disabled>
-                        Change status...
-                      </option>
-                      {step.nextStatuses.map((status) => (
-                        <option key={status} value={status}>
-                          {status}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="flex items-center gap-3">
+                    {step.nextStatuses.map((status) => {
+                      const isActive = step.status === status;
+                      return (
+                        <div key={status} className="relative group">
+                          <button
+                            onClick={() => handleUpdateStatus(step.stepId, status)}
+                            disabled={updatingStepId === step.stepId}
+                            className={`w-7 h-7 rounded-full flex items-center justify-center transition border-black border-2 ${isActive
+                              ? "bg-blue-600 border-black text-white"
+                              : "bg-white border-gray-300 hover:border-blue-600"
+                              }`}
+                          >
+                            {isActive && <CheckCircle size={20} />}
+                          </button>
+                          {/* Tooltip */}
+                          <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-xs font-medium px-2 py-1 rounded pointer-events-none whitespace-nowrap z-10">
+                            {status}
+                          </div>
+                        </div>
+                      );
+                    })}
 
                     {updatingStepId === step.stepId && (
-                      <Loader className="animate-spin h-4 w-4 text-blue-600" />
+                      <Loader className="animate-spin h-5 w-5 text-blue-600" />
                     )}
                   </div>
                 )}
@@ -377,9 +381,7 @@ const RepairOrderDetail = () => {
             {/* Info */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-2 text-sm text-gray-700">
               <p>
-                <span className="font-medium text-gray-900">
-                  Estimated Hour:
-                </span>{" "}
+                <span className="font-medium text-gray-900">Estimated Hour:</span>{" "}
                 {step.estimatedHour}
               </p>
               <p>
@@ -388,17 +390,16 @@ const RepairOrderDetail = () => {
               </p>
               <div className="ml-auto">
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    step.status === "PENDING"
-                      ? "bg-yellow-100 text-yellow-700"
-                      : step.status === "IN_PROGRESS"
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${step.status === "PENDING"
+                    ? "bg-yellow-100 text-yellow-700"
+                    : step.status === "IN_PROGRESS"
                       ? "bg-blue-100 text-blue-700"
                       : step.status === "WAITING"
-                      ? "bg-purple-100 text-purple-700"
-                      : step.status === "CANCELLED"
-                      ? "bg-red-100 text-red-700"
-                      : "bg-green-100 text-green-700"
-                  }`}
+                        ? "bg-purple-100 text-purple-700"
+                        : step.status === "CANCELLED"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-green-100 text-green-700"
+                    }`}
                 >
                   {step.status}
                 </span>
@@ -409,6 +410,18 @@ const RepairOrderDetail = () => {
       </div>
     );
   };
+
+  const handleFileChange = (e) => {
+    const newFiles = Array.from(e.target.files);
+    setAttachments([...attachments, ...newFiles]);
+  };
+
+  const handleRemoveImage = (index) => {
+    const updated = attachments.filter((_, i) => i !== index);
+    setAttachments(updated);
+  };
+
+
 
   if (loading)
     return (
@@ -422,7 +435,24 @@ const RepairOrderDetail = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen py-6 px-4 sm:px-6 lg:px-8">
+
       <div className="max-w-6xl mx-auto">
+
+        {/* Breadcrumb */}
+        <div className="text-sm text-gray-500 mb-2">
+          <Link to="/" className="hover:underline text-blue-600">
+            Dashboard
+          </Link>
+          <span className="mx-1">/</span>
+          <Link to="/repair-orders" className="hover:underline text-blue-600">
+            Repair Orders
+          </Link>
+          <span className="mx-1">/</span>
+          <Link className="text-gray-700 font-medium">
+            Repair Detail
+          </Link>
+        </div>
+
         {/* Back button */}
         <button
           onClick={() => navigate(-1)}
@@ -506,18 +536,23 @@ const RepairOrderDetail = () => {
                     <p className="text-sm text-gray-700">
                       Confirmer:{" "}
                       <span className="font-semibold">
-                        {order.verifiedBy || "Chưa rõ"}
+                        {order.verifiedBy || "-"}
+                      </span>
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      Signature:{" "}
+                      <span className="font-semibold">
+                        {order.signature || "-"}
                       </span>
                     </p>
                     <p className="text-sm text-gray-700">
                       Confirmation time:{" "}
                       <span className="font-semibold">
                         {order.verifiedAt
-                          ? `${order.verifiedAt[2]}/${order.verifiedAt[1]}/${
-                              order.verifiedAt[0]
-                            } ${order.verifiedAt[3]}:${String(
-                              order.verifiedAt[4]
-                            ).padStart(2, "0")}`
+                          ? `${order.verifiedAt[2]}/${order.verifiedAt[1]}/${order.verifiedAt[0]
+                          } ${order.verifiedAt[3]}:${String(
+                            order.verifiedAt[4]
+                          ).padStart(2, "0")}`
                           : "–"}
                       </span>
                     </p>
@@ -526,15 +561,17 @@ const RepairOrderDetail = () => {
                         Note: “{order.notes}”
                       </p>
                     )}
+                    {order.attachmentPaths && order.attachmentPaths.length > 0 && (
+                      <RepairOrderAttachments attachments={order.attachmentPaths} />
+                    )}
                   </div>
                 ) : (
                   <button
                     onClick={() => setShowVerifyModal(true)}
-                    className={`px-5 py-2 rounded-lg text-white font-medium ${
-                      isSCStaff
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-green-600 hover:bg-green-700"
-                    }`}
+                    className={`px-5 py-2 rounded-lg text-white font-medium ${isSCStaff
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700"
+                      }`}
                   >
                     Confirmation completed
                   </button>
@@ -563,11 +600,10 @@ const RepairOrderDetail = () => {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-6 py-4 font-medium transition ${
-                  activeTab === tab.key
-                    ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
-                    : "text-gray-600 hover:text-blue-500 hover:bg-gray-50"
-                }`}
+                className={`flex items-center gap-2 px-6 py-4 font-medium transition ${activeTab === tab.key
+                  ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
+                  : "text-gray-600 hover:text-blue-500 hover:bg-gray-50"
+                  }`}
               >
                 {tab.icon}
                 {tab.label}
@@ -588,7 +624,14 @@ const RepairOrderDetail = () => {
             ) : activeTab === "details" ? (
               renderTable(details)
             ) : (
-              renderSteps(steps)
+              <>
+                {isSCStaff && (
+                  <div className="mb-4 p-3 rounded-lg bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 text-sm font-medium">
+                    Only technicians can update the repair progress in the steps.
+                  </div>
+                )}
+                {renderSteps(steps)}
+              </>
             )}
           </div>
         </div>
@@ -603,24 +646,27 @@ const RepairOrderDetail = () => {
             </h2>
 
             <div className="space-y-4">
-              {/* Nhập tên (chữ ký xác nhận) */}
+              {/* Chữ ký */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Full name (confirmation signature)
+                  Full name (confirmation signature) <span className="text-red-600">*</span>
                 </label>
                 <input
                   type="text"
                   value={verifyData.signature}
                   onChange={(e) =>
-                    setVerifyData((prev) => ({
-                      ...prev,
-                      signature: e.target.value,
-                    }))
+                    setVerifyData((prev) => ({ ...prev, signature: e.target.value }))
                   }
-                  className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className={`w-full border rounded-lg p-2 focus:ring-2 focus:outline-none
+      ${verifyErrors.signature ? "border-red-600" : "border-gray-300"} 
+      focus:border-blue-500 focus:ring-blue-500`}
                   placeholder="Enter the name of the person confirming..."
                 />
+                {verifyErrors.signature && (
+                  <p className="text-red-600 text-sm mt-1">{verifyErrors.signature}</p>
+                )}
               </div>
+
 
               {/* Ghi chú */}
               <div>
@@ -642,22 +688,48 @@ const RepairOrderDetail = () => {
               </div>
 
               {/* Upload file */}
-              {/* <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Attachments (if any)
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-3">
+                  Attachments
                 </label>
-                <input
-                  type="file"
-                  multiple
-                  onChange={(e) =>
-                    setVerifyData((prev) => ({
-                      ...prev,
-                      files: Array.from(e.target.files),
-                    }))
-                  }
-                  className="w-full border border-gray-300 rounded-lg p-2"
-                />
-              </div> */}
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 hover:bg-blue-50 transition">
+                  <label htmlFor="file-upload" className="cursor-pointer text-blue-600 hover:text-blue-700 font-semibold">
+                    Choose Files
+                  </label>
+                  <p className="text-gray-500 text-sm mt-1">or drag and drop images here</p>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                </div>
+
+                {attachments.length > 0 && (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-3">
+                    {attachments.map((file, index) => (
+                      <div key={index} className="relative group rounded-lg overflow-hidden border border-gray-200">
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={file.name}
+                          className="w-full h-24 object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(index)}
+                          className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center transition"
+                        >
+                          <div className="bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition">
+                            <X size={16} />
+                          </div>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Checkbox xác nhận */}
               <div className="flex items-center gap-2">
@@ -672,10 +744,12 @@ const RepairOrderDetail = () => {
                   }
                 />
                 <span className="text-sm text-gray-700">
-                  I confirm that the entire repair process has been completed
-                  correctly.
+                  I confirm that the entire repair process has been completed correctly <span className="text-red-600">*</span>
                 </span>
               </div>
+              {verifyErrors.acceptedResponsibility && (
+                <p className="text-red-600 text-sm mt-1">{verifyErrors.acceptedResponsibility}</p>
+              )}
             </div>
 
             {/* Buttons */}
@@ -721,9 +795,8 @@ const InfoItem = ({ label, value, mono = false }) => (
       {label}
     </p>
     <p
-      className={`text-base font-semibold text-gray-900 ${
-        mono ? "font-mono bg-gray-100 px-2 py-1 rounded inline-block" : ""
-      }`}
+      className={`text-base font-semibold text-gray-900 ${mono ? "font-mono bg-gray-100 px-2 py-1 rounded inline-block" : ""
+        }`}
     >
       {value || "–"}
     </p>
@@ -806,5 +879,83 @@ const TechnicianTab = ({
     )}
   </div>
 );
+
+const RepairOrderAttachments = ({ attachments }) => {
+  const [lightboxIndex, setLightboxIndex] = useState(null);
+
+  if (!attachments || attachments.length === 0) return null;
+
+  return (
+    <>
+      {/* Ảnh hiển thị duy nhất (ảnh đầu tiên) */}
+      <div className="flex justify-center mt-4">
+        <div
+          className="relative border rounded-lg overflow-hidden shadow hover:shadow-lg transition hover:scale-105 cursor-pointer max-w-sm"
+          onClick={() => setLightboxIndex(0)}
+        >
+          <img
+            src={attachments[0].image}
+            alt="Attachment preview"
+            className="w-full h-40 object-cover"
+          />
+          {attachments.length > 1 && (
+            <div className="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+              +{attachments.length - 1} more
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Lightbox */}
+      {lightboxIndex !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4">
+          <div className="relative max-w-full max-h-full">
+            {/* Close button nằm trên ảnh với nền trắng */}
+            <button
+              onClick={() => setLightboxIndex(null)}
+              className="absolute top-2 right-2 text-black bg-white rounded-full p-2 shadow hover:bg-gray-200 transition z-10"
+            >
+              <X size={24} />
+            </button>
+
+            {/* Prev button */}
+            {attachments.length > 1 && (
+              <button
+                onClick={() =>
+                  setLightboxIndex(
+                    (lightboxIndex - 1 + attachments.length) % attachments.length
+                  )
+                }
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70 transition z-10"
+              >
+                <ChevronLeft size={32} />
+              </button>
+            )}
+
+            {/* Next button */}
+            {attachments.length > 1 && (
+              <button
+                onClick={() =>
+                  setLightboxIndex((lightboxIndex + 1) % attachments.length)
+                }
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70 transition z-10"
+              >
+                <ChevronRight size={32} />
+              </button>
+            )}
+
+            {/* Image */}
+            <img
+              src={attachments[lightboxIndex].image}
+              alt={`Attachment ${lightboxIndex + 1}`}
+              className="max-h-screen max-w-screen rounded-lg shadow-lg"
+            />
+          </div>
+        </div>
+      )}
+
+    </>
+  );
+};
 
 export default RepairOrderDetail;

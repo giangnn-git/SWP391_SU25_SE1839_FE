@@ -80,8 +80,8 @@ const WarrantyClaimsManagement = () => {
   const filteredClaims = claims.filter((c) => {
     const matchSearch = searchTerm
       ? c.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.vin?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.licensePlate?.toLowerCase().includes(searchTerm.toLowerCase())
+      c.vin?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.licensePlate?.toLowerCase().includes(searchTerm.toLowerCase())
       : true;
 
     const matchPriority =
@@ -172,7 +172,7 @@ const WarrantyClaimsManagement = () => {
           onClick={() => setShowCreateModal(true)}
         >
           <PlusCircle size={18} />
-          New Ticket
+          New Claim
         </button>
       </div>
 
