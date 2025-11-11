@@ -114,8 +114,11 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
       setVehicles(list);
       setRecallInfo(null);
     } catch (err) {
-      console.error("Failed to fetch vehicles:", err);
-      toast.error("Failed to fetch vehicles");
+      const errorMessage =
+        err.response?.data?.errorCode ||
+        err.response?.data?.message ||
+        "Failed to fetch vehicles";
+      toast.error(errorMessage);
       setVehicles([]);
     }
   };

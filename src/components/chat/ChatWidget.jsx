@@ -8,6 +8,8 @@ const ChatWidget = () => {
     const [technicians, setTechnicians] = useState([]);
     const [selectedConv, setSelectedConv] = useState(null);
     const [input, setInput] = useState("");
+    const [aiMode, setAiMode] = useState(false);
+    const [aiMessages, setAiMessages] = useState([]);
     const [query, setQuery] = useState("");
     const messagesEndRef = useRef(null);
 
@@ -103,8 +105,8 @@ const ChatWidget = () => {
     };
 
     useEffect(() => {
-        if (selectedConv?.messages?.length) scrollBottom();
-    }, [selectedConv?.messages]);
+        if (selectedConv?.messages?.length || aiMessages.length) scrollBottom();
+    }, [selectedConv?.messages, aiMessages]);
 
     const startConversationWithTech = async (tech) => {
         if (role !== "SC_STAFF" && role !== "STAFF") return;
@@ -156,6 +158,78 @@ const ChatWidget = () => {
         }
     };
 
+    // Send message to chat-bot endpoint (converted from fetch snippet)
+    // Uses project's axios instance and appends both user and bot replies locally
+    const handleSend = async () => {
+        if (!input.trim() || (!selectedConv && !aiMode)) return;
+
+        try {
+            // create a local user message
+            const userMsg = {
+                id: `local_${Date.now()}`,
+                content: input.trim(),
+                timestamp: new Date().toISOString(),
+                senderId: currentUserId,
+                me: true,
+                raw: {},
+            };
+
+            // optimistic update: append user message to either AI messages or selected conversation
+            if (aiMode) {
+                setAiMessages((prev) => [...prev, userMsg]);
+            } else {
+                const updated = {
+                    ...selectedConv,
+                    messages: [...(selectedConv.messages || []), userMsg],
+                };
+                setSelectedConv(updated);
+                setConversations((prev) =>
+                    prev.map((c) =>
+                        c.id === selectedConv.id
+                            ? { ...c, messages: updated.messages, lastMessage: userMsg }
+                            : c
+                    )
+                );
+            }
+
+            setInput("");
+
+            // call bot API using axios (consistent with other calls)
+            const res = await axios.post("/api/api/chat", { message: userMsg.content });
+
+            // try a few likely response shapes
+            const reply = res.data?.reply ?? res.data?.data?.reply ?? res.data?.data ?? res.data ?? "";
+
+            const botMsg = {
+                id: `bot_${Date.now()}`,
+                content: typeof reply === "string" ? reply : JSON.stringify(reply),
+                timestamp: new Date().toISOString(),
+                senderId: null,
+                me: false,
+                raw: res.data,
+            };
+
+            if (aiMode) {
+                setAiMessages((prev) => [...prev, botMsg]);
+            } else {
+                const updated2 = {
+                    ...selectedConv,
+                    messages: [...((selectedConv && selectedConv.messages) || []), botMsg],
+                };
+                setSelectedConv(updated2);
+                setConversations((prev) =>
+                    prev.map((c) =>
+                        c.id === selectedConv.id
+                            ? { ...c, messages: updated2.messages, lastMessage: botMsg }
+                            : c
+                    )
+                );
+            }
+        } catch (err) {
+            console.error("Bot send failed:", err);
+        }
+    };
+
     const getCounterpartName = (c) => {
         if (!c || !currentUserId) return "Unknown";
         if (c.staff?.id === currentUserId) return c.technician?.name || "No name";
@@ -187,137 +261,153 @@ const ChatWidget = () => {
                                     <div className="text-xs text-white/80">Staff ↔ Technician</div>
                                 </div>
                             </div>
-                            <button onClick={() => setOpen(false)} className="p-1">
-                                <X />
-                            </button>
+
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center rounded-md bg-blue-500/20 p-1">
+                                    <button
+                                        onClick={() => setAiMode(false)}
+                                        className={`px-2 py-1 rounded-full text-xs ${!aiMode ? "bg-white text-blue-600 font-semibold" : "text-white/80"}`}
+                                    >
+                                        Internal
+                                    </button>
+                                    <button
+                                        onClick={() => setAiMode(true)}
+                                        className={`ml-1 px-2 py-1 rounded-full text-xs ${aiMode ? "bg-white text-blue-600 font-semibold" : "text-white/80"}`}
+                                    >
+                                        AI
+                                    </button>
+                                </div>
+
+                                <button onClick={() => setOpen(false)} className="p-1">
+                                    <X />
+                                </button>
+                            </div>
                         </div>
 
                         {/* Content */}
                         <div className="flex h-[420px]">
-                            {/* Left list */}
-                            <div className="w-44 border-r border-gray-200 flex flex-col">
-                                <div className="p-2">
-                                    <div className="relative">
-                                        <Search
-                                            size={14}
-                                            className="absolute left-2 top-2 text-gray-400"
-                                        />
-                                        <input
-                                            value={query}
-                                            onChange={(e) => setQuery(e.target.value)}
-                                            placeholder="Tìm cuộc trò chuyện"
-                                            className="w-full pl-8 pr-2 py-1 text-xs rounded-lg border border-gray-200"
-                                        />
+                            {/* Left list (hidden in AI mode) */}
+                            {!aiMode ? (
+                                <div className="w-44 border-r border-gray-200 flex flex-col">
+                                    <div className="p-2">
+                                        <div className="relative">
+                                            <Search
+                                                size={14}
+                                                className="absolute left-2 top-2 text-gray-400"
+                                            />
+                                            <input
+                                                value={query}
+                                                onChange={(e) => setQuery(e.target.value)}
+                                                placeholder="Tìm cuộc trò chuyện"
+                                                className="w-full pl-8 pr-2 py-1 text-xs rounded-lg border border-gray-200"
+                                            />
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div className="overflow-auto flex-1">
-                                    <ul className="p-1">
-                                        {filteredConversations.map((c) => {
-                                            const name = getCounterpartName(c);
-                                            const last = c.lastMessage;
-                                            return (
-                                                <li
-                                                    key={c.id}
-                                                    onClick={() => openConversation(c)}
-                                                    className="p-2 flex items-start gap-2 cursor-pointer hover:bg-gray-50"
-                                                >
-                                                    <div className="h-9 w-9 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm">
-                                                        {name?.[0] ?? "?"}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0 text-xs">
-                                                        <div className="flex justify-between">
-                                                            <div className="font-medium truncate">{name}</div>
-                                                            <div className="text-[11px] text-gray-400">
-                                                                {last
-                                                                    ? new Date(
-                                                                        last.timestamp
-                                                                    ).toLocaleTimeString([], {
-                                                                        hour: "2-digit",
-                                                                        minute: "2-digit",
-                                                                    })
-                                                                    : ""}
-                                                            </div>
-                                                        </div>
-                                                        <div className="text-gray-400 text-[11px] truncate">
-                                                            {last?.content ?? "Nhấn để mở"}
-                                                        </div>
-                                                    </div>
-                                                </li>
-                                            );
-                                        })}
-                                    </ul>
-
-                                    {isStaff && (
-                                        <>
-                                            <div className="p-2 border-t text-xs text-gray-500">
-                                                Bắt đầu cuộc trò chuyện mới
-                                            </div>
-                                            <ul className="p-1">
-                                                {filteredTechs.map((t) => (
+                                    <div className="overflow-auto flex-1">
+                                        <ul className="p-1">
+                                            {filteredConversations.map((c) => {
+                                                const name = getCounterpartName(c);
+                                                const last = c.lastMessage;
+                                                return (
                                                     <li
-                                                        key={t.id}
-                                                        onClick={() => startConversationWithTech(t)}
+                                                        key={c.id}
+                                                        onClick={() => openConversation(c)}
                                                         className="p-2 flex items-start gap-2 cursor-pointer hover:bg-gray-50"
                                                     >
                                                         <div className="h-9 w-9 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm">
-                                                            {t.name?.[0] ?? "?"}
+                                                            {name?.[0] ?? "?"}
                                                         </div>
                                                         <div className="flex-1 min-w-0 text-xs">
-                                                            <div className="font-medium truncate">{t.name}</div>
+                                                            <div className="flex justify-between">
+                                                                <div className="font-medium truncate">{name}</div>
+                                                                <div className="text-[11px] text-gray-400">
+                                                                    {last
+                                                                        ? new Date(
+                                                                            last.timestamp
+                                                                        ).toLocaleTimeString([], {
+                                                                            hour: "2-digit",
+                                                                            minute: "2-digit",
+                                                                        })
+                                                                        : ""}
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-gray-400 text-[11px] truncate">
+                                                                {last?.content ?? "Nhấn để mở"}
+                                                            </div>
                                                         </div>
                                                     </li>
-                                                ))}
-                                            </ul>
-                                        </>
-                                    )}
+                                                );
+                                            })}
+                                        </ul>
+
+                                        {isStaff && (
+                                            <>
+                                                <div className="p-2 border-t text-xs text-gray-500">
+                                                    Bắt đầu cuộc trò chuyện mới
+                                                </div>
+                                                <ul className="p-1">
+                                                    {filteredTechs.map((t) => (
+                                                        <li
+                                                            key={t.id}
+                                                            onClick={() => startConversationWithTech(t)}
+                                                            className="p-2 flex items-start gap-2 cursor-pointer hover:bg-gray-50"
+                                                        >
+                                                            <div className="h-9 w-9 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm">
+                                                                {t.name?.[0] ?? "?"}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0 text-xs">
+                                                                <div className="font-medium truncate">{t.name}</div>
+                                                            </div>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="w-0" />
+                            )}
 
                             {/* Right chat window */}
                             <div className="flex-1 flex flex-col bg-gray-50">
                                 <div className="py-2 px-3 border-b text-sm font-medium">
-                                    {selectedConv
-                                        ? getCounterpartName(selectedConv)
-                                        : "Chọn cuộc trò chuyện"}
+                                    {aiMode ? "AI Assistant" : selectedConv ? getCounterpartName(selectedConv) : "Chọn cuộc trò chuyện"}
                                 </div>
 
                                 {/* Messages */}
                                 <div className="flex-1 overflow-auto p-3 space-y-3">
-                                    {selectedConv &&
-                                        selectedConv.messages?.map((m) => {
-                                            const content =
-                                                m.content ?? m.message ?? m.text ?? "";
-                                            const ts =
-                                                m.timestamp ?? m.createdAt ?? m.time ?? null;
-                                            const senderId = m.senderId;
-                                            const isMine =
-                                                String(senderId) === String(currentUserId);
+                                    {(aiMode ? aiMessages : selectedConv?.messages ?? [])?.map((m) => {
+                                        const content = m.content ?? m.message ?? m.text ?? "";
+                                        const ts = m.timestamp ?? m.createdAt ?? m.time ?? null;
+                                        const senderId = m.senderId;
+                                        const isMine = aiMode ? !!m.me : String(senderId) === String(currentUserId);
 
-                                            return (
+                                        return (
+                                            <div
+                                                key={m.id || Math.random()}
+                                                className={`flex flex-col ${isMine ? "items-end" : "items-start"} w-full`}
+                                            >
                                                 <div
-                                                    key={m.id || Math.random()}
-                                                    className={`flex flex-col ${isMine ? "items-end" : "items-start"} w-full`}
+                                                    className={`px-3 py-2 rounded-2xl max-w-[80%] text-sm break-words shadow ${isMine
+                                                        ? "bg-blue-600 text-white rounded-br-none"
+                                                        : "bg-white text-gray-800 rounded-bl-none"
+                                                        }`}
                                                 >
-                                                    <div
-                                                        className={`px-3 py-2 rounded-2xl max-w-[80%] text-sm break-words shadow ${isMine
-                                                            ? "bg-blue-600 text-white rounded-br-none"
-                                                            : "bg-white text-gray-800 rounded-bl-none"
-                                                            }`}
-                                                    >
-                                                        {content}
-                                                    </div>
-                                                    <div className="text-[11px] mt-1 text-gray-400">
-                                                        {ts
-                                                            ? new Date(ts).toLocaleTimeString([], {
-                                                                hour: "2-digit",
-                                                                minute: "2-digit",
-                                                            })
-                                                            : ""}
-                                                    </div>
+                                                    {content}
                                                 </div>
-                                            );
-                                        })}
+                                                <div className="text-[11px] mt-1 text-gray-400">
+                                                    {ts
+                                                        ? new Date(ts).toLocaleTimeString([], {
+                                                            hour: "2-digit",
+                                                            minute: "2-digit",
+                                                        })
+                                                        : ""}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                     <div ref={messagesEndRef} />
                                 </div>
 
@@ -327,14 +417,28 @@ const ChatWidget = () => {
                                         <input
                                             value={input}
                                             onChange={(e) => setInput(e.target.value)}
-                                            disabled={!selectedConv}
-                                            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                                            placeholder="Nhập tin nhắn..."
+                                            disabled={!selectedConv && !aiMode}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter") {
+                                                    if (aiMode) handleSend();
+                                                    else sendMessage();
+                                                }
+                                            }}
+                                            placeholder={aiMode ? "Nhập câu hỏi cho AI..." : "Nhập tin nhắn..."}
                                             className="flex-1 px-3 py-2 rounded-full border"
                                         />
                                         <button
-                                            onClick={sendMessage}
-                                            disabled={!selectedConv || !input.trim()}
+                                            onClick={handleSend}
+                                            disabled={!input.trim()}
+                                            title="Send to bot"
+                                            className="p-2 mr-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200"
+                                        >
+                                            🤖
+                                        </button>
+
+                                        <button
+                                            onClick={() => (aiMode ? handleSend() : sendMessage())}
+                                            disabled={!input.trim() || (!selectedConv && !aiMode)}
                                             className="p-2 bg-blue-600 text-white rounded-full"
                                         >
                                             <Send size={16} />

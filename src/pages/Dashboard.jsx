@@ -48,7 +48,7 @@ const Dashboard = () => {
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
           <p className="text-sm font-semibold text-gray-900">{payload[0].payload.month}</p>
           <p className="text-sm text-gray-600">
-            Performance: <span className="font-bold text-blue-600">{payload[0].value}</span>
+            Performance: <span className="font-bold text-blue-600">{payload[0].value}%</span>
           </p>
           {payload[0].payload.totalCostFormatted && (
             <p className="text-sm text-gray-600">

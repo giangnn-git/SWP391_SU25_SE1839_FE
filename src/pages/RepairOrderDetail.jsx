@@ -184,6 +184,7 @@ const RepairOrderDetail = () => {
         status: newStatus,
       });
       toast.success("Status update successful");
+      // fetchDetails();
       await Promise.all([fetchSteps(), fetchOrderAndTechs()]);
       const channel = new BroadcastChannel("repair_order_updates");
       channel.postMessage({ type: "ORDER_UPDATED", id });
@@ -259,10 +260,10 @@ const RepairOrderDetail = () => {
         <div className="text-center py-12">
           <AlertCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500 font-medium">
-            No repair details available
+            No technician assigned yet!
           </p>
           <p className="text-gray-400 text-sm mt-1">
-            There are no items to display
+            No details available
           </p>
         </div>
       );
@@ -326,9 +327,10 @@ const RepairOrderDetail = () => {
       return (
         <div className="text-center py-12">
           <AlertCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">No steps available</p>
+          <p className="text-gray-500 font-medium">No technician assigned yet!
+          </p>
           <p className="text-gray-400 text-sm mt-1">
-            There are no repair steps to display
+            No steps available
           </p>
         </div>
       );
@@ -743,8 +745,8 @@ const RepairOrderDetail = () => {
                     }))
                   }
                 />
-                <span className="text-sm text-gray-700">
-                  I confirm that the entire repair process has been completed correctly <span className="text-red-600">*</span>
+                <span className="text-sm text-gray-700 font-bold">
+                  I confirm that the repair process has been completed correctly <span className="text-red-600">*</span>
                 </span>
               </div>
               {verifyErrors.acceptedResponsibility && (

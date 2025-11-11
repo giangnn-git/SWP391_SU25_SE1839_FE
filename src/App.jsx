@@ -5,6 +5,7 @@ import { Toaster } from "react-hot-toast";
 import ChatWidget from "./components/chat/ChatWidget";
 
 
+
 const App = () => {
   return (
     <div className="flex h-screen bg-gray-50">
