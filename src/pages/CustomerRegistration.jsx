@@ -64,7 +64,6 @@ const CustomerRegistration = () => {
   // Hàm xử lý tìm kiếm THÔNG MINH (SEARCH API + BASIC FILTER)
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
-      // Nếu search rỗng, reset về data gốc
       setSearchResults([]);
       setFilteredCustomers(customersSummary);
       return;
@@ -72,13 +71,9 @@ const CustomerRegistration = () => {
 
     try {
       setIsSearching(true);
-
-      // SIMPLIFIED: Luôn dùng API search cho mọi từ khóa
       const res = await searchCustomerApi(searchTerm.trim());
 
       const data = res?.data?.data || [];
-
-      // Format data để phù hợp với cấu trúc hiện tại
       const formattedResults = data.map((item) => ({
         id: item.id,
         name: item.name,
@@ -92,15 +87,24 @@ const CustomerRegistration = () => {
       setSearchResults(formattedResults);
       setFilteredCustomers(formattedResults);
     } catch (err) {
-      // Fallback: nếu API fail thì dùng basic search
-      const filtered = customersSummary.filter((customer) =>
-        Object.values(customer).some((value) =>
-          String(value).toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      );
-      setSearchResults([]);
-      setFilteredCustomers(filtered);
-      showMessage("Search API failed, using local search", "warning");
+      console.error("Search error:", err);
+
+      //  Xử lý khi không tìm thấy khách hàng
+      if (err.response?.data?.status === "404 NOT_FOUND") {
+        setSearchResults([]);
+        setFilteredCustomers([]);
+        // Hiển thị thông báo từ BE
+        showMessage(err.response.data.errorCode, "warning");
+      } else {
+        // Fallback cho các lỗi khác
+        const filtered = customersSummary.filter((customer) =>
+          Object.values(customer).some((value) =>
+            String(value).toLowerCase().includes(searchTerm.toLowerCase())
+          )
+        );
+        setSearchResults([]);
+        setFilteredCustomers(filtered);
+      }
     } finally {
       setIsSearching(false);
     }
@@ -161,6 +165,7 @@ const CustomerRegistration = () => {
     try {
       setLoadingCampaign(true);
       const response = await getCampaignByVinApi(vin);
+      // Response mới có data là array chứa campaign details
       setCampaignData(response.data.data);
     } catch (err) {
       if (err.response?.status === 500) {

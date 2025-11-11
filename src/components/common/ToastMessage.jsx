@@ -46,7 +46,7 @@ const ToastMessage = ({ type, message, onClose, duration = 5000 }) => {
 
   return (
     <div
-      className={`fixed top-6 right-6 ${bg} border ${text} rounded-xl shadow-lg p-4 min-w-80 max-w-md animate-slideInRight z-[1000]`}
+      className={`fixed top-16 right-6 ${bg} border ${text} rounded-xl shadow-lg p-4 min-w-80 max-w-md animate-slideInRight z-[1000]`}
     >
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0 mt-0.5">{icon}</div>

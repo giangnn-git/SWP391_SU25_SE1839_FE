@@ -23,7 +23,25 @@ const SupplyChain = () => {
 
   // Lấy thông tin user từ hook và storage
   const userRole = currentUser?.role?.toUpperCase();
-  const userServiceCenterId = parseInt(storage.get("serviceCenterId")) || null;
+
+  // Xác định role và serviceCenterId
+  const isEVMStaff = userRole === "EVM_STAFF";
+  const isSCStaff = userRole === "SC_STAFF";
+  const isAdmin = userRole === "ADMIN";
+  const isAuthorized = isAdmin || isEVMStaff || isSCStaff;
+
+  // Xác định userServiceCenterId dựa trên role
+  const getServiceCenterId = () => {
+    try {
+      if (isEVMStaff) return null;
+      const scid = localStorage.getItem("serviceCenterId");
+      return scid && !isNaN(scid) ? parseInt(scid) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const userServiceCenterId = getServiceCenterId();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterWarehouse, setFilterWarehouse] = useState("");
@@ -37,14 +55,6 @@ const SupplyChain = () => {
   const [viewMode, setViewMode] = useState("table");
   const [activeTab, setActiveTab] = useState("main");
   const itemsPerPage = 6;
-
-  // =========================
-  //  ROLE & PERMISSION CHECK
-  // =========================
-  const isEVMStaff = userRole === "EVM_STAFF";
-  const isSCStaff = userRole === "SC_STAFF";
-  const isAdmin = userRole === "ADMIN";
-  const isAuthorized = isAdmin || isEVMStaff || isSCStaff;
 
   // =========================
   //  FETCH ALL DATA
@@ -103,12 +113,14 @@ const SupplyChain = () => {
       );
     } else if (isEVMStaff) {
       if (activeTab === "main") {
+        // Kho tổng có serviceCenterId = null
         filteredData = filteredData.filter(
-          (item) => item.serviceCenterId === 1
+          (item) => item.serviceCenterId === null
         );
       } else if (activeTab === "branches") {
+        // Các chi nhánh có serviceCenterId khác null
         filteredData = filteredData.filter(
-          (item) => item.serviceCenterId !== 1
+          (item) => item.serviceCenterId !== null
         );
       }
     }
@@ -164,7 +176,7 @@ const SupplyChain = () => {
             </p>
             <p>
               <strong>Your Service Center ID:</strong>{" "}
-              {userServiceCenterId || "Unknown"}
+              {userServiceCenterId || "null (Main Warehouse)"}
             </p>
             <p>
               <strong>Required Roles:</strong> ADMIN, EVM_STAFF, SC_STAFF
@@ -392,7 +404,7 @@ const SupplyChain = () => {
           <p className="text-sm text-gray-500 mt-1">
             {isEVMStaff &&
               activeTab === "main" &&
-              "Manage central warehouse inventory"}
+              "Manage central warehouse inventory (Main Warehouse)"}
             {isEVMStaff &&
               activeTab === "branches" &&
               "Manage service center inventories"}

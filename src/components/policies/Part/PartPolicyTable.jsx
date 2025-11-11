@@ -7,6 +7,7 @@ import {
   ToggleLeft,
   CheckCircle,
   XCircle,
+  ChevronDown,
 } from "lucide-react";
 
 const formatDate = (dateString) => {
@@ -34,8 +35,32 @@ const PartPolicyTable = ({
   currentPage,
   itemsPerPage,
   totalItems,
+  sortConfig,
+  onSort,
 }) => {
   const [statusLoading, setStatusLoading] = useState({});
+  const [dropdownOpen, setDropdownOpen] = useState({
+    startDate: false,
+    endDate: false,
+  });
+
+  // Toggle dropdown
+  const toggleDropdown = (column) => {
+    setDropdownOpen((prev) => ({
+      startDate: false,
+      endDate: false,
+      [column]: !prev[column],
+    }));
+  };
+
+  // Handle sort selection
+  const handleSortSelect = (column, direction) => {
+    onSort(column, direction);
+    setDropdownOpen((prev) => ({
+      ...prev,
+      [column]: false,
+    }));
+  };
 
   if (loading) {
     return (
@@ -94,18 +119,85 @@ const PartPolicyTable = ({
                 Policy Code
               </div>
             </th>
+
+            {/* Start Date Column with Dropdown */}
             <th className="py-4 px-6 text-left text-xs uppercase tracking-wider">
-              <div className="flex items-center gap-2">
-                <Calendar size={16} className="text-gray-500" />
-                Start Date
+              <div className="relative">
+                <div className="flex items-center gap-2">
+                  <Calendar size={16} className="text-gray-500" />
+                  <span>Start Date</span>
+                  <button
+                    onClick={() => toggleDropdown("startDate")}
+                    className="p-1 hover:bg-gray-200 rounded transition-colors"
+                  >
+                    <ChevronDown
+                      size={14}
+                      className={`transition-transform ${
+                        dropdownOpen.startDate ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Dropdown Menu */}
+                {dropdownOpen.startDate && (
+                  <div className="absolute top-full left-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                    <button
+                      onClick={() => handleSortSelect("startDate", "asc")}
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
+                    >
+                      Ascending
+                    </button>
+                    <button
+                      onClick={() => handleSortSelect("startDate", "desc")}
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
+                    >
+                      Descending
+                    </button>
+                  </div>
+                )}
               </div>
             </th>
+
+            {/* End Date Column with Dropdown */}
             <th className="py-4 px-6 text-left text-xs uppercase tracking-wider">
-              <div className="flex items-center gap-2">
-                <Calendar size={16} className="text-gray-500" />
-                End Date
+              <div className="relative">
+                <div className="flex items-center gap-2">
+                  <Calendar size={16} className="text-gray-500" />
+                  <span>End Date</span>
+                  <button
+                    onClick={() => toggleDropdown("endDate")}
+                    className="p-1 hover:bg-gray-200 rounded transition-colors"
+                  >
+                    <ChevronDown
+                      size={14}
+                      className={`transition-transform ${
+                        dropdownOpen.endDate ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Dropdown Menu */}
+                {dropdownOpen.endDate && (
+                  <div className="absolute top-full left-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                    <button
+                      onClick={() => handleSortSelect("endDate", "asc")}
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
+                    >
+                      Ascending
+                    </button>
+                    <button
+                      onClick={() => handleSortSelect("endDate", "desc")}
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
+                    >
+                      Descending
+                    </button>
+                  </div>
+                )}
               </div>
             </th>
+
             <th className="py-4 px-6 text-left text-xs uppercase tracking-wider">
               <div className="flex items-center gap-2">
                 <Clock size={16} className="text-gray-500" />
@@ -125,10 +217,7 @@ const PartPolicyTable = ({
         </thead>
         <tbody className="divide-y divide-gray-100">
           {policies.map((policy) => {
-            // Coverage status dựa trên endDate
             const isCoverageActive = new Date(policy.endDate) >= new Date();
-
-            // Policy status từ BE field "status"
             const isPolicyActive = policy.status === "ACTIVE";
 
             return (
@@ -251,7 +340,6 @@ const PartPolicyTable = ({
                 {/* Actions Column */}
                 <td className="py-4 px-6">
                   <div className="flex items-center justify-center gap-2">
-                    {/* View Button */}
                     <button
                       onClick={() => onView(policy)}
                       className="group relative flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-all duration-200 shadow-sm hover:shadow-md border border-blue-200"
