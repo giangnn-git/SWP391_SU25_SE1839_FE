@@ -19,14 +19,13 @@ import toast from "react-hot-toast";
 import axios from "../services/axios.customize";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 
+
 const RepairOrderDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const { currentUser } = useCurrentUser();
   const isSCStaff = currentUser?.role === "SC_STAFF";
-  const isTechnician = currentUser?.role === "TECHNICIAN";
-
 
   const [order, setOrder] = useState(null);
   const [techs, setTechs] = useState([]);
@@ -711,7 +710,7 @@ const RepairOrderDetail = () => {
         </div>
 
         {/* Start Repair Card: only show if progress is 0% */}
-        {isTechnician && !repairStarted && order.percentInProcess === 0 && (
+        {!repairStarted && order.percentInProcess === 0 && (
           <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border-2 border-dashed border-green-300 p-8 mb-6 text-center">
             <div className="flex flex-col items-center gap-4">
               <div className="p-3 bg-green-100 rounded-full">
@@ -785,39 +784,15 @@ const RepairOrderDetail = () => {
                 updating={updating}
               />
             ) : activeTab === "details" ? (
-              order.percentInProcess === 0 && !repairStarted ? (
-                isTechnician ? (
-                  <div className="text-center py-12">
-                    <AlertCircle className="h-12 w-12 text-yellow-300 mx-auto mb-3" />
-                    <p className="text-gray-600 font-medium">
-                      Click the "Start" button to begin the repair process
-                    </p>
-                    <button
-                      onClick={handleStartRepair}
-                      disabled={startingRepair}
-                      className="mt-4 flex items-center gap-2 px-8 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition shadow-lg mx-auto"
-                    >
-                      {startingRepair ? (
-                        <>
-                          <Loader size={20} className="animate-spin" />
-                          Starting...
-                        </>
-                      ) : (
-                        <>
-                          <span>▶</span>
-                          Start Repair Process
-                        </>
-                      )}
-                    </button>
-                  </div>
-                ) : isSCStaff ? (
-                  <div className="text-center py-12">
-                    <AlertCircle className="h-12 w-12 text-yellow-300 mx-auto mb-3" />
-                    <p className="text-gray-600 font-medium">
-                      Waiting for technician to accept and start the repair process.
-                    </p>
-                  </div>
-                ) : null
+              order.percentInProcess >= 50 ? (
+                renderTable(details)
+              ) : order.percentInProcess === 0 && !repairStarted ? (
+                <div className="text-center py-12">
+                  <AlertCircle className="h-12 w-12 text-yellow-300 mx-auto mb-3" />
+                  <p className="text-gray-600 font-medium">
+                    Click the "Start" button to begin the repair process
+                  </p>
+                </div>
               ) : !inspectionCompleted ? (
                 <div className="text-center py-12">
                   <AlertCircle className="h-12 w-12 text-yellow-300 mx-auto mb-3" />
@@ -832,34 +807,27 @@ const RepairOrderDetail = () => {
               <>
                 {order.percentInProcess === 0 && !repairStarted && (
                   <div className="mb-4 p-3 rounded-lg bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 text-sm font-medium">
-                    {isTechnician
-                      ? `Click the "Start" button to begin the repair process and see repair steps.`
-                      : `Waiting for technician to start the repair process.`}
+                    Click the "Start" button to begin the repair process and see repair steps.
                   </div>
                 )}
-
                 {isSCStaff && repairStarted && (
                   <div className="mb-4 p-3 rounded-lg bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 text-sm font-medium">
                     Only technicians can update the repair progress in the steps.
                   </div>
                 )}
-
                 {order.percentInProcess > 0 || repairStarted ? (
                   renderSteps(steps)
                 ) : (
                   <div className="text-center py-12">
                     <AlertCircle className="h-12 w-12 text-yellow-300 mx-auto mb-3" />
                     <p className="text-gray-600 font-medium">
-                      {isTechnician
-                        ? `Click the "Start" button to begin the repair process`
-                        : `Waiting for technician to start the repair`}
+                      Click the "Start" button to begin the repair process
                     </p>
                   </div>
                 )}
               </>
             )}
           </div>
-
         </div>
       </div>
 

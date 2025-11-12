@@ -18,6 +18,7 @@ const ClaimTable = ({ claims = [], loading, error }) => {
   const startIndex = (currentPage - 1) * claimsPerPage;
   const currentClaims = claims.slice(startIndex, startIndex + claimsPerPage);
 
+
   const getStatusBadge = (status) => {
     const statusMap = {
       draft: { bg: "bg-gray-100", text: "text-yellow-800", label: "Draft" },
@@ -69,6 +70,8 @@ const ClaimTable = ({ claims = [], loading, error }) => {
       </span>
     );
   };
+
+
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
