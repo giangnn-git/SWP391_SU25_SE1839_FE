@@ -407,7 +407,7 @@ const ClaimDetail = () => {
                                 ))}
                             </select>
 
-                            {fcr?.currentStatus === "PENDING" && (
+                            {/* {fcr?.currentStatus === "PENDING" && (
                                 <button
                                     onClick={handleUpdate}
                                     disabled={updating}
@@ -418,7 +418,7 @@ const ClaimDetail = () => {
                                 >
                                     {updating ? "Updating..." : "Update Status"}
                                 </button>
-                            )}
+                            )} */}
 
                             {isEditingParts && fcr?.currentStatus === "DRAFT" && (
                                 <button

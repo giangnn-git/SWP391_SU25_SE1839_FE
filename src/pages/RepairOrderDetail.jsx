@@ -25,6 +25,8 @@ const RepairOrderDetail = () => {
 
   const { currentUser } = useCurrentUser();
   const isSCStaff = currentUser?.role === "SC_STAFF";
+  const isTechnician = currentUser?.role === "TECHNICIAN";
+
 
   const [order, setOrder] = useState(null);
   const [techs, setTechs] = useState([]);
@@ -59,9 +61,10 @@ const RepairOrderDetail = () => {
 
   // Allow changing selected old serial number per detail row
   const handleOldSNChange = (idx, value) => {
+    // Store selection in a temporary field so UI doesn't lock until Update is clicked
     setDetails((prev) => {
       const arr = Array.isArray(prev) ? [...prev] : [];
-      arr[idx] = { ...(arr[idx] || {}), oldSerialNumber: value };
+      arr[idx] = { ...(arr[idx] || {}), pendingOldSerialNumber: value };
       return arr;
     });
   };
@@ -69,7 +72,8 @@ const RepairOrderDetail = () => {
   // Persist selected old serial number for a specific repair detail
   const handleUpdateOldSNSubmit = async (detailId, idx) => {
     try {
-      const value = details?.[idx]?.oldSerialNumber || "";
+      // Use the pending selection (made by user) — do not rely on oldSerialNumber which may be the saved value
+      const value = details?.[idx]?.pendingOldSerialNumber || "";
       if (!value) return toast.error("Please select a serial number before updating.");
 
       setUpdatingDetailId(detailId);
@@ -80,11 +84,15 @@ const RepairOrderDetail = () => {
 
       toast.success("Old serial number updated successfully");
 
-      // Mark this detail as "saved" by clearing its listOldSerialNumber
-      // This will cause the UI to show plain text instead of select+button
+      // Mark this detail as saved: set the real oldSerialNumber, clear list and pending selection
       setDetails((prev) => {
         const arr = Array.isArray(prev) ? [...prev] : [];
-        arr[idx] = { ...(arr[idx] || {}), listOldSerialNumber: [] };
+        arr[idx] = {
+          ...(arr[idx] || {}),
+          oldSerialNumber: value,
+          listOldSerialNumber: [],
+          pendingOldSerialNumber: undefined,
+        };
         return arr;
       });
     } catch (err) {
@@ -365,7 +373,7 @@ const RepairOrderDetail = () => {
                   {Array.isArray(item.listOldSerialNumber) && item.listOldSerialNumber.length > 0 && (!item.oldSerialNumber || item.oldSerialNumber === "N/A") ? (
                     <div className="flex items-center gap-2">
                       <select
-                        value={item.oldSerialNumber || ""}
+                        value={item.pendingOldSerialNumber || ""}
                         onChange={(e) => handleOldSNChange(index, e.target.value)}
                         className="flex-1 px-2 py-1 border border-gray-300 rounded-md bg-white text-sm"
                       >
@@ -446,37 +454,57 @@ const RepairOrderDetail = () => {
               <h3 className="text-lg font-semibold text-gray-900">{step.title}</h3>
 
               {/* Dot status buttons */}
-              {!isSCStaff &&
-                currentTech &&
-                !["COMPLETED", "CANCELLED"].includes(step.status) && (
-                  <div className="flex items-center gap-3">
-                    {step.nextStatuses.map((status) => {
-                      const isActive = step.status === status;
-                      return (
-                        <div key={status} className="relative group">
-                          <button
-                            onClick={() => handleUpdateStatus(step.stepId, status)}
-                            disabled={updatingStepId === step.stepId}
-                            className={`w-7 h-7 rounded-full flex items-center justify-center transition border-black border-2 ${isActive
-                              ? "bg-blue-600 border-black text-white"
-                              : "bg-white border-gray-300 hover:border-blue-600"
-                              }`}
-                          >
-                            {isActive && <CheckCircle size={20} />}
-                          </button>
-                          {/* Tooltip */}
-                          <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-xs font-medium px-2 py-1 rounded pointer-events-none whitespace-nowrap z-10">
-                            {status}
-                          </div>
-                        </div>
-                      );
-                    })}
+              {!isSCStaff && currentTech && !["COMPLETED", "CANCELLED"].includes(step.status) && (
+                (() => {
+                  // Detect the special step (Repair/Replace Part) — require old serial numbers set before allowing COMPLETED
+                  const title = (step.title || "").toLowerCase();
+                  const isRepairReplaceStep = title.includes("repair") && title.includes("replace") && title.includes("part");
+                  const missingOldSN = Array.isArray(details) ? details.some(d => !d.oldSerialNumber || d.oldSerialNumber === "N/A") : true;
 
-                    {updatingStepId === step.stepId && (
-                      <Loader className="animate-spin h-5 w-5 text-blue-600" />
-                    )}
-                  </div>
-                )}
+                  return (
+                    <div className="flex items-center gap-3">
+                      {/* If this is the Repair/Replace Part step and there are missing old SNs, show an instruction banner */}
+                      {isRepairReplaceStep && missingOldSN && (
+                        <div className="w-full p-3 rounded-md bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 text-sm font-medium">
+                          Please select the Old SN for all parts in Repair Details and click "Update" before marking this step as Completed.
+                        </div>
+                      )}
+
+                      {step.nextStatuses.map((status) => {
+                        const isActive = step.status === status;
+                        const isCompleteAction = status === "COMPLETED";
+                        const disableComplete = isRepairReplaceStep && missingOldSN && isCompleteAction;
+                        const disabled = updatingStepId === step.stepId || disableComplete;
+
+                        return (
+                          <div key={status} className="relative group">
+                            <button
+                              onClick={() => !disabled && handleUpdateStatus(step.stepId, status)}
+                              disabled={disabled}
+                              className={`w-7 h-7 rounded-full flex items-center justify-center transition border-black border-2 ${isActive
+                                ? "bg-blue-600 border-black text-white"
+                                : disabled
+                                  ? "bg-gray-200 border-gray-300 text-gray-500 cursor-not-allowed"
+                                  : "bg-white border-gray-300 hover:border-blue-600"
+                                }`}
+                            >
+                              {isActive && <CheckCircle size={20} />}
+                            </button>
+                            {/* Tooltip */}
+                            <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-xs font-medium px-2 py-1 rounded pointer-events-none whitespace-nowrap z-10">
+                              {disableComplete ? `${status} (disabled until Old SN updated)` : status}
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {updatingStepId === step.stepId && (
+                        <Loader className="animate-spin h-5 w-5 text-blue-600" />
+                      )}
+                    </div>
+                  );
+                })()
+              )}
             </div>
 
             {/* Info */}
@@ -683,7 +711,7 @@ const RepairOrderDetail = () => {
         </div>
 
         {/* Start Repair Card: only show if progress is 0% */}
-        {!repairStarted && order.percentInProcess === 0 && (
+        {isTechnician && !repairStarted && order.percentInProcess === 0 && (
           <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border-2 border-dashed border-green-300 p-8 mb-6 text-center">
             <div className="flex flex-col items-center gap-4">
               <div className="p-3 bg-green-100 rounded-full">
@@ -758,12 +786,38 @@ const RepairOrderDetail = () => {
               />
             ) : activeTab === "details" ? (
               order.percentInProcess === 0 && !repairStarted ? (
-                <div className="text-center py-12">
-                  <AlertCircle className="h-12 w-12 text-yellow-300 mx-auto mb-3" />
-                  <p className="text-gray-600 font-medium">
-                    Click the "Start" button to begin the repair process
-                  </p>
-                </div>
+                isTechnician ? (
+                  <div className="text-center py-12">
+                    <AlertCircle className="h-12 w-12 text-yellow-300 mx-auto mb-3" />
+                    <p className="text-gray-600 font-medium">
+                      Click the "Start" button to begin the repair process
+                    </p>
+                    <button
+                      onClick={handleStartRepair}
+                      disabled={startingRepair}
+                      className="mt-4 flex items-center gap-2 px-8 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition shadow-lg mx-auto"
+                    >
+                      {startingRepair ? (
+                        <>
+                          <Loader size={20} className="animate-spin" />
+                          Starting...
+                        </>
+                      ) : (
+                        <>
+                          <span>▶</span>
+                          Start Repair Process
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ) : isSCStaff ? (
+                  <div className="text-center py-12">
+                    <AlertCircle className="h-12 w-12 text-yellow-300 mx-auto mb-3" />
+                    <p className="text-gray-600 font-medium">
+                      Waiting for technician to accept and start the repair process.
+                    </p>
+                  </div>
+                ) : null
               ) : !inspectionCompleted ? (
                 <div className="text-center py-12">
                   <AlertCircle className="h-12 w-12 text-yellow-300 mx-auto mb-3" />
@@ -778,27 +832,34 @@ const RepairOrderDetail = () => {
               <>
                 {order.percentInProcess === 0 && !repairStarted && (
                   <div className="mb-4 p-3 rounded-lg bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 text-sm font-medium">
-                    Click the "Start" button to begin the repair process and see repair steps.
+                    {isTechnician
+                      ? `Click the "Start" button to begin the repair process and see repair steps.`
+                      : `Waiting for technician to start the repair process.`}
                   </div>
                 )}
+
                 {isSCStaff && repairStarted && (
                   <div className="mb-4 p-3 rounded-lg bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 text-sm font-medium">
                     Only technicians can update the repair progress in the steps.
                   </div>
                 )}
+
                 {order.percentInProcess > 0 || repairStarted ? (
                   renderSteps(steps)
                 ) : (
                   <div className="text-center py-12">
                     <AlertCircle className="h-12 w-12 text-yellow-300 mx-auto mb-3" />
                     <p className="text-gray-600 font-medium">
-                      Click the "Start" button to begin the repair process
+                      {isTechnician
+                        ? `Click the "Start" button to begin the repair process`
+                        : `Waiting for technician to start the repair`}
                     </p>
                   </div>
                 )}
               </>
             )}
           </div>
+
         </div>
       </div>
 
