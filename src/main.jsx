@@ -25,6 +25,7 @@ import ClaimApprove from "./pages/ClaimApprove.jsx";
 import PartRequestPage from "./pages/PartRequest.jsx";
 import PartRequestReview from "./pages/PartRequestReview.jsx";
 import ScCampaignVehicles from "./pages/ScCampaignVehicles.jsx";
+import NotFoundPage from "./pages/NotFoundPage.jsx";
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -246,6 +247,12 @@ const router = createBrowserRouter([
   {
     path: "/profile",
     element: <Profiles />,
+  },
+
+  //Not Found Page (Wrong URL)
+  {
+    path: "*",
+    element: <NotFoundPage />,
   },
 ]);
 

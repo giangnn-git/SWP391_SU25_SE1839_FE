@@ -6,6 +6,8 @@ import ClaimTable from "../components/warranty/ClaimTable";
 import ClaimSummary from "../components/warranty/ClaimSummary";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
+import { useCurrentUser } from "../hooks/useCurrentUser";
+
 
 const WarrantyClaimsManagement = () => {
   const [claims, setClaims] = useState([]);
@@ -17,6 +19,9 @@ const WarrantyClaimsManagement = () => {
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1); // pagination state
+
+  const { currentUser, loading: userLoading } = useCurrentUser();
+  const isSCStaff = currentUser?.role === "SC_STAFF";
 
   const fetchClaims = async () => {
     try {
@@ -167,13 +172,15 @@ const WarrantyClaimsManagement = () => {
         </div>
 
         {/* New Claim Button */}
-        <button
-          className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg transition duration-200 font-medium"
-          onClick={() => setShowCreateModal(true)}
-        >
-          <PlusCircle size={18} />
-          New Claim
-        </button>
+        {!userLoading && !isSCStaff && (
+          <button
+            className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg transition duration-200 font-medium"
+            onClick={() => setShowCreateModal(true)}
+          >
+            <PlusCircle size={18} />
+            New Claim
+          </button>
+        )}
       </div>
 
       {/* Table */}

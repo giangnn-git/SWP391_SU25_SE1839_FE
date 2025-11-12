@@ -284,6 +284,7 @@ const RepairOrderDetail = () => {
         status: newStatus,
       });
       toast.success("Status update successful");
+      // fetchDetails();
       await Promise.all([fetchSteps(), fetchOrderAndTechs()]);
       const channel = new BroadcastChannel("repair_order_updates");
       channel.postMessage({ type: "ORDER_UPDATED", id });
@@ -365,56 +366,6 @@ const RepairOrderDetail = () => {
     if (scannedCount === 0) return null;
 
     return null;
-    // return (
-    //   <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-    //     <div className="flex items-center justify-between">
-    //       <div>
-    //         <h4 className="font-semibold text-blue-900">
-    //           Scanned Parts ({scannedCount})
-    //         </h4>
-    //         <p className="text-sm text-blue-700">
-    //           Scan all parts then click "Save All" to confirm
-    //         </p>
-    //       </div>
-    //       <button
-    //         onClick={handleSaveAllScannedParts}
-    //         disabled={savingAll}
-    //         className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition"
-    //       >
-    //         {savingAll ? (
-    //           <Loader className="animate-spin" size={16} />
-    //         ) : (
-    //           <Save size={16} />
-    //         )}
-    //         {savingAll ? "Saving..." : `Save All (${scannedCount})`}
-    //       </button>
-    //     </div>
-
-    //     <div className="mt-3 space-y-2">
-    //       {Object.entries(scannedParts).map(([partId, data]) => (
-    //         <div
-    //           key={partId}
-    //           className="flex items-center justify-between p-2 bg-white rounded border"
-    //         >
-    //           <div>
-    //             <span className="font-medium text-gray-900">
-    //               {data.partName}
-    //             </span>
-    //             <span className="ml-3 text-sm font-mono text-green-700 bg-green-50 px-2 py-1 rounded">
-    //               {data.newSerialNumber}
-    //             </span>
-    //           </div>
-    //           <button
-    //             onClick={() => handleRemoveScannedPart(partId)}
-    //             className="text-red-600 hover:text-red-800 p-1"
-    //           >
-    //             <X size={16} />
-    //           </button>
-    //         </div>
-    //       ))}
-    //     </div>
-    //   </div>
-    // );
   };
 
   // Render table with scan button only for new serial
@@ -431,11 +382,9 @@ const RepairOrderDetail = () => {
         <div className="text-center py-12">
           <AlertCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500 font-medium">
-            No repair details available
+            No technician assigned yet!
           </p>
-          <p className="text-gray-400 text-sm mt-1">
-            There are no items to display
-          </p>
+          <p className="text-gray-400 text-sm mt-1">No details available</p>
         </div>
       );
 
@@ -601,6 +550,7 @@ const RepairOrderDetail = () => {
           <p className="text-gray-500 font-medium">
             No technician assigned yet!
           </p>
+          <p className="text-gray-400 text-sm mt-1">No steps available</p>
           <p className="text-gray-400 text-sm mt-1">No steps available</p>
         </div>
       );
@@ -1088,9 +1038,9 @@ const RepairOrderDetail = () => {
                     }))
                   }
                 />
-                <span className="text-sm text-gray-700">
-                  I confirm that the entire repair process has been completed
-                  correctly <span className="text-red-600">*</span>
+                <span className="text-sm text-gray-700 font-bold">
+                  I confirm that the repair process has been completed correctly{" "}
+                  <span className="text-red-600">*</span>
                 </span>
               </div>
               {verifyErrors.acceptedResponsibility && (

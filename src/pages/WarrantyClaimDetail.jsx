@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
-import { ArrowLeft, Image as ImageIcon, Loader, AlertCircle, Car, RefreshCcw, Eye, X } from "lucide-react";
+import { ArrowLeft, Image as ImageIcon, Loader, AlertCircle, Car, RefreshCcw, Eye, X, PlusCircle } from "lucide-react";
 import ViewVehicleModal from "../components/vehicles/ViewVehicleModal";
+import CreatePartRequestModal from "../components/part/CreatePartRequestModal";
 import axios from "../services/axios.customize";
+
 
 const ClaimDetail = () => {
     const { id } = useParams();
@@ -16,6 +18,8 @@ const ClaimDetail = () => {
     const [updating, setUpdating] = useState(false);
     const [reason, setReason] = useState("");
     const [selectedVehicle, setSelectedVehicle] = useState(null);
+
+    const [showModal, setShowModal] = useState(false);
 
 
     // View Policy modal control
@@ -342,38 +346,45 @@ const ClaimDetail = () => {
                 )}
 
                 {/* Images */}
+                {/* Images */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
                     <div className="flex items-center gap-2 mb-4">
                         <ImageIcon size={20} className="text-blue-600" />
                         <h2 className="text-lg font-bold text-gray-900">Claim Images</h2>
                     </div>
+
                     {Array.isArray(images) && images.length > 0 ? (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                            {images.map((img, i) => {
-                                const base64 = typeof img === "string" ? img : img?.image;
-                                if (!base64) return null;
-                                const imageSrc = base64.startsWith("data:image")
-                                    ? base64
-                                    : `data:image/jpeg;base64,${base64}`;
+                            {images.map((imgObj, i) => {
+                                if (!imgObj?.image) return null;
+
                                 return (
                                     <div
                                         key={i}
-                                        className="relative group cursor-pointer overflow-hidden rounded-lg border border-gray-200"
-                                        onClick={() => setPreviewImg(imageSrc)}
+                                        className="relative group cursor-pointer overflow-hidden rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition"
+                                        onClick={() => setPreviewImg(imgObj.image)}
                                     >
                                         <img
-                                            src={imageSrc}
-                                            alt={`Claim image ${i + 1}`}
-                                            className="w-full h-40 object-cover group-hover:scale-110 transition-transform duration-300"
+                                            src={imgObj.image}
+                                            alt={`Claim image ${i + 1} of ${images.length}`}
+                                            className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300"
                                         />
+                                        <div className="absolute inset-0 bg-black bg-opacity-20 opacity-0 group-hover:opacity-100 transition"></div>
                                     </div>
                                 );
                             })}
                         </div>
                     ) : (
-                        <p className="text-gray-500">No images available.</p>
+                        <div className="flex flex-col items-center justify-center py-10 text-gray-400">
+                            <ImageIcon size={40} />
+                            <p className="mt-2 text-sm">No images available</p>
+                        </div>
                     )}
                 </div>
+
+
+
+
 
                 {/* Claim Status & Parts */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
@@ -382,18 +393,52 @@ const ClaimDetail = () => {
                             <RefreshCcw size={20} className="text-blue-600" />
                             <h2 className="text-lg font-bold text-gray-900">Claim Status & Parts</h2>
                         </div>
-                        {fcr?.currentStatus === "DRAFT" && !editedParts.some(p => p.remainingStock === 0) && (
-                            <button
-                                onClick={() => {
-                                    setTempParts(editedParts.map(p => ({ ...p }))); // clone để chỉnh tạm
-                                    setShowUpdateAllModal(true);
-                                }}
-                                className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-                            >
-                                Update All Parts
-                            </button>
-                        )}
+
+                        <div className="flex items-center gap-3">
+                            {/* Nút Update All Parts */}
+                            {fcr?.currentStatus === "DRAFT" && !editedParts.some(p => p.remainingStock === 0) && (
+                                <button
+                                    onClick={() => {
+                                        setTempParts(editedParts.map(p => ({ ...p })));
+                                        setShowUpdateAllModal(true);
+                                    }}
+                                    className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                                >
+                                    Update All Parts
+                                </button>
+                            )}
+
+                            {/* Nút Create Part Request */}
+                            {fcr?.currentStatus === "DRAFT" &&
+                                editedParts.some(
+                                    p =>
+                                        p.remainingStock === 0 ||
+                                        (p.remainingStock > 0 && p.remainingStock <= 10) ||
+                                        (p.recommendedQuantity && p.recommendedQuantity > p.remainingStock)
+                                ) && (() => {
+                                    const hasNoStock = editedParts.some(p => p.remainingStock === 0);
+                                    const hasLowStock = editedParts.some(p => p.remainingStock > 0 && p.remainingStock <= 10);
+
+                                    const bgColor = hasNoStock
+                                        ? "bg-red-600 hover:bg-red-700"
+                                        : hasLowStock
+                                            ? "bg-amber-500 hover:bg-amber-600"
+                                            : "bg-green-600 hover:bg-green-700";
+
+                                    return (
+                                        <button
+                                            onClick={() => setShowModal(true)}
+                                            className={`flex items-center gap-2 px-3 py-2 text-white rounded-md transition text-sm ${bgColor}`}
+                                        >
+                                            <PlusCircle size={16} />
+                                            Create Part Request
+                                        </button>
+                                    );
+                                })()}
+                        </div>
                     </div>
+
+
 
                     {/* Status + Reason + Update */}
                     <div className="mb-6">
@@ -509,6 +554,16 @@ const ClaimDetail = () => {
 
                     {/* Parts Table */}
                     <div className="overflow-x-auto">
+                        {editedParts.some(p => p.quantity === 0) && (
+                            <div className="mt-3 text-sm text-yellow-800 font-medium border border-yellow-300 bg-yellow-50 rounded-lg p-3">
+                                Note: Please enter the quantity for the following parts:{" "}
+                                {editedParts
+                                    .filter(p => p.quantity === 0)
+                                    .map(p => p.name)
+                                    .join(", ")}
+                                .
+                            </div>
+                        )}
                         <table className="w-full border-collapse">
                             {editedParts.some(p => p.remainingStock === 0) && (
                                 <div className="mt-3 text-sm text-red-600 font-medium border border-red-300 bg-red-50 rounded-lg p-3">
@@ -517,14 +572,14 @@ const ClaimDetail = () => {
                                         .filter(p => p.remainingStock === 0)
                                         .map(p => p.name)
                                         .join(", ")}.
-                                    Please request additional stock before updating parts.
+                                    Please request stock before updating parts.
                                 </div>
                             )}
-                            {editedParts.some(p => p.remainingStock > 0 && p.remainingStock < 10) && (
+                            {editedParts.some(p => p.remainingStock > 0 && p.remainingStock <= 10) && (
                                 <div className="mt-3 text-sm text-amber-700 font-medium border border-amber-300 bg-amber-50 rounded-lg p-3">
                                     Low stock warning for:{" "}
                                     {editedParts
-                                        .filter(p => p.remainingStock > 0 && p.remainingStock < 10)
+                                        .filter(p => p.remainingStock > 0 && p.remainingStock <= 10)
                                         .map(p => p.name)
                                         .join(", ")}.
                                     Please restock soon.
@@ -596,6 +651,17 @@ const ClaimDetail = () => {
                 </div>
             )}
 
+            {/* Create Part Request Modal */}
+            {showModal && (
+                <CreatePartRequestModal
+                    onClose={() => setShowModal(false)}
+                    onCreated={() => {
+                        toast.success("Part supply request created successfully");
+                        setShowModal(false);
+                    }}
+                />
+            )}
+
             {/* Update Part Modal */}
             {showUpdateAllModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
@@ -626,12 +692,15 @@ const ClaimDetail = () => {
                                             <td className="py-2 px-3 text-center">
                                                 <input
                                                     type="number"
-                                                    min="0"
+                                                    max={part.recommendedQuantity ?? Infinity}
+                                                    min={0}
                                                     value={part.quantity}
                                                     onChange={(e) => {
+
                                                         const newParts = [...tempParts];
                                                         newParts[i].quantity = Number(e.target.value);
                                                         setTempParts(newParts);
+
                                                     }}
                                                     className="border border-gray-300 rounded-md px-2 py-1 w-20 text-right"
                                                 />
@@ -658,6 +727,16 @@ const ClaimDetail = () => {
                                             `Quantity for ${invalidParts.map(p => p.name).join(", ")} exceeds available stock`
                                         );
                                         return; // không gửi request nếu có lỗi
+                                    }
+
+                                    const invalidRecommend = tempParts.filter(
+                                        p => p.recommendedQuantity && p.quantity > p.recommendedQuantity
+                                    );
+                                    if (invalidRecommend.length > 0) {
+                                        toast.error(
+                                            `Quantity for ${invalidRecommend.map(p => p.name).join(", ")} is below recommended level`
+                                        );
+                                        return;
                                     }
 
                                     try {

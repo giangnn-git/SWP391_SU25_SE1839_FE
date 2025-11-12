@@ -24,6 +24,10 @@ const ClaimDetail = () => {
     // Parts
     const [editedParts, setEditedParts] = useState([]);
     const [isEditingParts, setIsEditingParts] = useState(false);
+    const [partNotes, setPartNotes] = useState({});
+    const [partStatuses, setPartStatuses] = useState({});
+
+
 
     // Categories & Parts
     const [categories, setCategories] = useState([]);
@@ -97,6 +101,46 @@ const ClaimDetail = () => {
         setSelectedPart(null);
         setPartQuantity(1);
     };
+
+    //Update part claim
+    const handlePartClaimStatusUpdate = async (partClaimId, status, note = "") => {
+        if (status === "REJECTED" && !note.trim()) {
+            toast.error("Please provide a reason for rejection");
+            return;
+        }
+
+        try {
+            setUpdating(true);
+            const payload = { status, note };
+            const res = await axios.put(`/api/api/claimId/part-claims/${partClaimId}/status`, payload);
+            toast.success("Status updated successfully");
+
+            // Refresh part claims
+            const updatedClaim = await axios.get(`/api/api/claims/${id}`);
+            setClaimDetail(updatedClaim.data.data);
+
+            // Clear local state for this part
+            setPartStatuses(prev => ({ ...prev, [partClaimId]: updatedClaim.data.data.partClaimsAndCampaigns.find(p => p.partClaimId === partClaimId)?.status || "" }));
+            setPartNotes(prev => ({ ...prev, [partClaimId]: "" }));
+        } catch (err) {
+            console.error("Failed to update part claim status:", err);
+            toast.error("Failed to update part claim status");
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+
+
+    const handleStatusChange = (part) => {
+        const status = partStatuses[part.partClaimId];
+        if (status === "REJECTED" && !partNotes[part.partClaimId]?.trim()) {
+            toast.error("Please provide a reason for rejection");
+            return;
+        }
+        handlePartClaimStatusUpdate(part.partClaimId, status, partNotes[part.partClaimId] || "");
+    };
+
 
     // Updated handleUpdate with "reason"
     const handleUpdate = async () => {
@@ -173,10 +217,12 @@ const ClaimDetail = () => {
 
 
     const formatDateTime = (dateArray) => {
-        if (!Array.isArray(dateArray) || dateArray.length < 3) return "–";
+        if (!Array.isArray(dateArray)) return "–";
         const [year, month, day] = dateArray;
-        return `${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}/${year}`;
+        if (year && month && day) return `${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}/${year}`;
+        return "–";
     };
+
 
     if (loading)
         return (
@@ -290,38 +336,42 @@ const ClaimDetail = () => {
                 )}
 
                 {/* Images */}
+                {/* Images */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
                     <div className="flex items-center gap-2 mb-4">
                         <ImageIcon size={20} className="text-blue-600" />
                         <h2 className="text-lg font-bold text-gray-900">Claim Images</h2>
                     </div>
+
                     {Array.isArray(images) && images.length > 0 ? (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                            {images.map((img, i) => {
-                                const base64 = typeof img === "string" ? img : img?.image;
-                                if (!base64) return null;
-                                const imageSrc = base64.startsWith("data:image")
-                                    ? base64
-                                    : `data:image/jpeg;base64,${base64}`;
+                            {images.map((imgObj, i) => {
+                                if (!imgObj?.image) return null;
+
                                 return (
                                     <div
                                         key={i}
-                                        className="relative group cursor-pointer overflow-hidden rounded-lg border border-gray-200"
-                                        onClick={() => setPreviewImg(imageSrc)}
+                                        className="relative group cursor-pointer overflow-hidden rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition"
+                                        onClick={() => setPreviewImg(imgObj.image)}
                                     >
                                         <img
-                                            src={imageSrc}
-                                            alt={`Claim image ${i + 1}`}
-                                            className="w-full h-40 object-cover group-hover:scale-110 transition-transform duration-300"
+                                            src={imgObj.image}
+                                            alt={`Claim image ${i + 1} of ${images.length}`}
+                                            className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300"
                                         />
+                                        <div className="absolute inset-0 bg-black bg-opacity-20 opacity-0 group-hover:opacity-100 transition"></div>
                                     </div>
                                 );
                             })}
                         </div>
                     ) : (
-                        <p className="text-gray-500">No images available.</p>
+                        <div className="flex flex-col items-center justify-center py-10 text-gray-400">
+                            <ImageIcon size={40} />
+                            <p className="mt-2 text-sm">No images available</p>
+                        </div>
                     )}
                 </div>
+
 
                 {/* Claim Status & Parts */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
@@ -391,7 +441,7 @@ const ClaimDetail = () => {
                                         name: fcr?.modelName,
                                         releaseYear: fcr?.productYear,
                                         isInProduction: true,
-                                        description: "Vehicle description placeholder",
+                                        description: "Policy",
                                     };
                                     setSelectedVehicle(ModelVehicle);
                                     setShowPolicyModal(true);
@@ -490,35 +540,74 @@ const ClaimDetail = () => {
                                             <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Estimated Cost</th>
                                             <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Effect</th>
                                             <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Policy</th>
-                                            <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Coverage</th>
+                                            {/* <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Coverage</th> */}
                                             <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Conditional</th>
+                                            <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
-                                        {claimDetail.partClaimsAndCampaigns.map((part) => (
-                                            <tr key={part.partClaimId} className="hover:bg-gray-50">
-                                                <td className="py-3 px-4 text-sm font-medium text-gray-900">{part.partClaimName}</td>
-                                                <td className="py-3 px-4 text-sm text-gray-700">{part.category}</td>
-                                                <td className="py-3 px-4 text-sm text-gray-700">{part.quantity}</td>
-                                                <td className="py-3 px-4 text-sm text-gray-700">${part.estimatedCost?.toFixed(2) || 0}</td>
-                                                <td className="py-3 px-4 text-sm text-gray-700">
-                                                    {Array.isArray(part.effect)
-                                                        ? formatDateTime(part.effect)
-                                                        : "Không có thời gian hiệu lực"}
-                                                </td>
-                                                <td className="py-3 px-4 text-sm text-gray-700">
-                                                    {part.policyName
-                                                        ? `${part.policyName} (${part.policyName === "N/A"
-                                                            ? "EXPIRED"
-                                                            : "ACTIVE"
-                                                        })`
-                                                        : "N/A"}
-                                                </td>
-                                                <td className="py-3 px-4 text-sm text-gray-700">{part.coverage}</td>
-                                                <td className="py-3 px-4 text-sm text-gray-700">{part.conditional}</td>
-                                            </tr>
-                                        ))}
+                                        {claimDetail.partClaimsAndCampaigns.map((part) => {
+                                            const isLocked = part.status === "APPROVED" || part.status === "REJECTED";
+                                            const selectedPartStatus = partStatuses[part.partClaimId] || part.status || "";
+                                            const showNoteInput = selectedPartStatus === "REJECTED";
+
+                                            return (
+                                                <tr key={part.partClaimId} className="hover:bg-gray-50">
+                                                    <td className="py-3 px-4 text-sm font-medium text-gray-900">{part.partClaimName}</td>
+                                                    <td className="py-3 px-4 text-sm text-gray-700">{part.category}</td>
+                                                    <td className="py-3 px-4 text-sm text-gray-700">{part.quantity}</td>
+                                                    <td className="py-3 px-4 text-sm text-gray-700">${part.estimatedCost?.toFixed(2) || 0}</td>
+                                                    <td className="py-3 px-4 text-sm text-gray-700">{Array.isArray(part.effect) ? formatDateTime(part.effect) : "-"}</td>
+                                                    <td className="py-3 px-4 text-sm text-gray-700">{part.policyName || "-"}</td>
+                                                    <td className="py-3 px-4 text-sm text-gray-700">{part.conditional}</td>
+                                                    <td className="py-3 px-4 text-sm text-gray-700 flex flex-col gap-2">
+                                                        {/* Select status */}
+                                                        <select
+                                                            value={selectedPartStatus}
+                                                            disabled={isLocked}
+                                                            onChange={(e) =>
+                                                                setPartStatuses(prev => ({ ...prev, [part.partClaimId]: e.target.value }))
+                                                            }
+                                                            className="border border-gray-300 rounded px-2 py-1 w-full"
+                                                        >
+                                                            <option value="">Select Status</option>
+                                                            <option value="APPROVED">APPROVED</option>
+                                                            <option value="REJECTED">REJECTED</option>
+                                                        </select>
+
+                                                        {/* Note input for REJECTED */}
+                                                        {showNoteInput && !isLocked && (
+                                                            <textarea
+                                                                rows={2}
+                                                                value={partNotes[part.partClaimId] || ""}
+                                                                onChange={(e) =>
+                                                                    setPartNotes(prev => ({ ...prev, [part.partClaimId]: e.target.value }))
+                                                                }
+                                                                placeholder="Enter reason for rejection..."
+                                                                className="border border-gray-300 rounded px-2 py-1 mt-1 w-full"
+                                                            />
+                                                        )}
+
+                                                        {/* Update button */}
+                                                        {!isLocked && (
+                                                            <button
+                                                                onClick={() => handlePartClaimStatusUpdate(
+                                                                    part.partClaimId,
+                                                                    selectedPartStatus,
+                                                                    partNotes[part.partClaimId] || ""
+                                                                )}
+                                                                disabled={updating || (selectedPartStatus === "REJECTED" && !partNotes[part.partClaimId]?.trim())}
+                                                                className={`px-3 py-1 rounded-lg text-white font-medium ${updating ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700 transition"}`}
+                                                            >
+                                                                {updating ? "Updating..." : "Update"}
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
+
 
                                 </table>
                             </div>
