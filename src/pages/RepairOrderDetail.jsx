@@ -52,6 +52,45 @@ const RepairOrderDetail = () => {
 
 
   const [attachments, setAttachments] = useState([]);
+  const [updatingDetailId, setUpdatingDetailId] = useState(null);
+
+  // Allow changing selected old serial number per detail row
+  const handleOldSNChange = (idx, value) => {
+    setDetails((prev) => {
+      const arr = Array.isArray(prev) ? [...prev] : [];
+      arr[idx] = { ...(arr[idx] || {}), oldSerialNumber: value };
+      return arr;
+    });
+  };
+
+  // Persist selected old serial number for a specific repair detail
+  const handleUpdateOldSNSubmit = async (detailId, idx) => {
+    try {
+      const value = details?.[idx]?.oldSerialNumber || "";
+      if (!value) return toast.error("Please select a serial number before updating.");
+
+      setUpdatingDetailId(detailId);
+      // Send PUT to update the repair detail's oldSerialNumber (send as JSON)
+      await axios.put(`/api/api/repair-details/${detailId}`, {
+        oldSerialNumber: value,
+      });
+
+      toast.success("Old serial number updated successfully");
+
+      // Mark this detail as "saved" by clearing its listOldSerialNumber
+      // This will cause the UI to show plain text instead of select+button
+      setDetails((prev) => {
+        const arr = Array.isArray(prev) ? [...prev] : [];
+        arr[idx] = { ...(arr[idx] || {}), listOldSerialNumber: [] };
+        return arr;
+      });
+    } catch (err) {
+      console.error("Failed to update old serial number:", err);
+      toast.error("Failed to update old serial number. Please try again.");
+    } finally {
+      setUpdatingDetailId(null);
+    }
+  };
 
 
   const handleVerifySubmit = async () => {
@@ -293,7 +332,38 @@ const RepairOrderDetail = () => {
               <tr key={item.id || index} className="hover:bg-gray-50">
                 <td className="px-2 py-2 text-sm text-gray-700">{index + 1}</td>
                 <td className="px-2 py-2 text-sm text-gray-700">{item.partName}</td>
-                <td className="px-2 py-2 text-sm text-gray-700 break-words">{item.oldSerialNumber}</td>
+                <td className="px-2 py-2 text-sm text-gray-700 break-words">
+                  {Array.isArray(item.listOldSerialNumber) && item.listOldSerialNumber.length > 0 ? (
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={item.oldSerialNumber || ""}
+                        onChange={(e) => handleOldSNChange(index, e.target.value)}
+                        className="flex-1 px-2 py-1 border border-gray-300 rounded-md bg-white text-sm"
+                      >
+                        <option value="">Select SN</option>
+                        {item.listOldSerialNumber.map((sn) => (
+                          <option key={sn} value={sn}>
+                            {sn}
+                          </option>
+                        ))}
+                      </select>
+
+                      <button
+                        onClick={() => handleUpdateOldSNSubmit(item.id, index)}
+                        disabled={updatingDetailId === item.id}
+                        className={`px-3 py-1 text-sm rounded-md font-medium ${updatingDetailId === item.id ? "bg-gray-300 text-gray-700 cursor-not-allowed" : "bg-blue-600 text-white hover:bg-blue-700"}`}
+                      >
+                        {updatingDetailId === item.id ? (
+                          <Loader className="animate-spin h-4 w-4" />
+                        ) : (
+                          "Update"
+                        )}
+                      </button>
+                    </div>
+                  ) : (
+                    <span>{item.oldSerialNumber}</span>
+                  )}
+                </td>
                 <td className="px-2 py-2 text-sm text-gray-700 text-center">{item.quantity}</td>
                 {/* <td className="px-2 py-2 text-sm text-gray-700 text-center">{item.productYear}</td> */}
                 {/* <td className="px-2 py-2 text-sm text-gray-700">{item.modelName}</td> */}

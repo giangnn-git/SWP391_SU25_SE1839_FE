@@ -162,7 +162,7 @@ const ClaimTable = ({ claims = [], loading, error }) => {
                                                 className="bg-blue-600 text-white px-4 py-1.5 rounded hover:bg-blue-700 text-sm font-medium"
                                                 onClick={() => navigate(`/warranty-claim-approval-detail/${claim.id}`)}
                                             >
-                                                View Details
+                                                View Detail
                                             </button>
                                         </td>
                                     </tr>
