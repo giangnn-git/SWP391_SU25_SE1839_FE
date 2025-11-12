@@ -108,22 +108,22 @@ const RepairOrderDetail = () => {
       setSavingAll(true);
 
       // Prepare data for NEW API format
-      // Sử dụng repairOrderId từ order data làm repairDetailId
-      const details = Object.entries(scannedParts).map(
+      // Sử dụng id từ repair details làm repairDetailId
+      const assemblyData = Object.entries(scannedParts).map(
         ([partId, scannedData]) => ({
-          repairDetailId: order.repairOrderId, // Sử dụng repairOrderId từ order
+          repairDetailId: parseInt(partId), // partId chính là id từ repair details
           barcode: scannedData.newSerialNumber,
         })
       );
 
-      console.log("Sending assembly data:", { details });
+      console.log("Sending assembly data:", { details: assemblyData });
 
       // Call NEW API endpoint
       await axios.put(`/api/api/${id}/assembly`, {
-        details: details,
+        details: assemblyData,
       });
 
-      toast.success(`Successfully saved ${details.length} part(s)`);
+      toast.success(`Successfully saved ${assemblyData.length} part(s)`);
 
       // Clear scanned parts after successful save
       setScannedParts({});
