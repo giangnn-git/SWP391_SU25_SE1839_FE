@@ -8,6 +8,7 @@ import { updatePartPolicyStatusApi } from "../../../services/api.service";
 
 const PartPolicyManagement = ({ refreshTrigger = 0 }) => {
   const [policies, setPolicies] = useState([]);
+  const [originalPolicies, setOriginalPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -25,6 +26,12 @@ const PartPolicyManagement = ({ refreshTrigger = 0 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // Sorting state
+  const [sortConfig, setSortConfig] = useState({
+    key: "startDate", // 'startDate' hoặc 'endDate'
+    direction: "asc", // 'asc', 'desc'
+  });
+
   // Fetch policies from API
   const fetchPolicies = async () => {
     try {
@@ -32,16 +39,11 @@ const PartPolicyManagement = ({ refreshTrigger = 0 }) => {
       setError("");
       const response = await getAllPartPoliciesApi();
 
-      // Lấy data đúng từ response
       const partPolicies = response.data?.data?.partPolicies || [];
+      setOriginalPolicies(partPolicies);
 
-      // Sắp xếp tăng dần theo startDate
-      const sortedPolicies = [...partPolicies].sort((a, b) => {
-        const dateA = new Date(a.startDate);
-        const dateB = new Date(b.startDate);
-        return dateA - dateB;
-      });
-
+      // Sắp xếp theo cấu hình hiện tại
+      const sortedPolicies = sortPolicies(partPolicies, sortConfig);
       setPolicies(sortedPolicies);
     } catch (err) {
       console.error("Error fetching part policies:", err);
@@ -54,6 +56,34 @@ const PartPolicyManagement = ({ refreshTrigger = 0 }) => {
   useEffect(() => {
     fetchPolicies();
   }, [refreshTrigger]);
+
+  // Hàm sắp xếp policies
+  const sortPolicies = (policiesToSort, config) => {
+    if (!config.key) return policiesToSort;
+
+    const sorted = [...policiesToSort].sort((a, b) => {
+      const dateA = new Date(a[config.key]);
+      const dateB = new Date(b[config.key]);
+
+      if (config.direction === "asc") {
+        return dateA - dateB;
+      } else {
+        return dateB - dateA;
+      }
+    });
+
+    return sorted;
+  };
+
+  // Hàm xử lý sắp xếp
+  const handleSort = (key, direction) => {
+    const newSortConfig = { key, direction };
+    setSortConfig(newSortConfig);
+
+    const sortedPolicies = sortPolicies(originalPolicies, newSortConfig);
+    setPolicies(sortedPolicies);
+    setCurrentPage(1);
+  };
 
   // Filter and Search logic
   const filteredPolicies = policies.filter((policy) => {
@@ -381,6 +411,8 @@ const PartPolicyManagement = ({ refreshTrigger = 0 }) => {
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}
         totalItems={filteredPolicies.length}
+        sortConfig={sortConfig}
+        onSort={handleSort}
       />
 
       {/* Pagination */}

@@ -257,8 +257,8 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
                             type="submit"
                             disabled={loading}
                             className={`px-8 py-3 rounded-xl text-sm font-medium text-white ${loading
-                                    ? "bg-gray-400 cursor-not-allowed"
-                                    : "bg-blue-600 hover:bg-blue-700"
+                                ? "bg-gray-400 cursor-not-allowed"
+                                : "bg-blue-600 hover:bg-blue-700"
                                 }`}
                         >
                             {loading ? "Creating..." : "Create Request"}

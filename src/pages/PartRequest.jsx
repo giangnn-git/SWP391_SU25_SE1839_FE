@@ -6,6 +6,7 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
@@ -18,6 +19,13 @@ import {
 /* ================== Helpers ================== */
 const REMARK_IN = "In stock";
 const REMARK_OUT = "Out of stock";
+
+// Helper function để chuyển đổi date array thành timestamp để so sánh
+const getTimestampFromDateArray = (arr) => {
+  if (!Array.isArray(arr)) return 0;
+  const [y, m, d, hh, mm] = arr;
+  return new Date(y, m - 1, d, hh, mm).getTime();
+};
 
 const formatDate = (arr) => {
   if (!Array.isArray(arr)) return "-";
@@ -115,6 +123,8 @@ const PartRequestTable = ({
   totalItems,
   onPageChange,
   itemsPerPage,
+  sortBy,
+  onSortChange,
 }) => {
   if (loading)
     return (
@@ -147,7 +157,36 @@ const PartRequestTable = ({
               Service Center
             </th>
             <th className="py-3 px-4 text-left font-semibold">Created By</th>
-            <th className="py-3 px-4 text-left font-semibold">Created Date</th>
+            <th className="py-3 px-4 text-left font-semibold">
+              <div className="flex items-center gap-1 cursor-pointer group">
+                <span>Created Date</span>
+                <div className="relative">
+                  <button className="flex items-center justify-center w-6 h-6 hover:bg-blue-100 rounded transition">
+                    <ChevronDown size={14} className="text-gray-500" />
+                  </button>
+
+                  {/* Dropdown menu */}
+                  <div className="absolute left-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                    <button
+                      onClick={() => onSortChange("date_asc")}
+                      className={`w-full text-left px-3 py-2 text-xs hover:bg-blue-50 first:rounded-t-lg last:rounded-b-lg ${
+                        sortBy === "date_asc" ? "bg-blue-50 text-blue-600" : ""
+                      }`}
+                    >
+                      ↑ Date Ascending
+                    </button>
+                    <button
+                      onClick={() => onSortChange("date_desc")}
+                      className={`w-full text-left px-3 py-2 text-xs hover:bg-blue-50 first:rounded-t-lg last:rounded-b-lg ${
+                        sortBy === "date_desc" ? "bg-blue-50 text-blue-600" : ""
+                      }`}
+                    >
+                      ↓ Date Descending
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </th>
             <th className="py-3 px-4 text-left font-semibold">Status</th>
             <th className="py-3 px-4 text-left font-semibold">Note</th>
             <th className="py-3 px-4 text-center font-semibold">Actions</th>
@@ -741,6 +780,7 @@ const PartRequestManagement = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [sortBy, setSortBy] = useState("date_desc"); // Mặc định sắp xếp mới nhất trước
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -791,33 +831,53 @@ const PartRequestManagement = () => {
     }
   };
 
-  const filteredRequests = requests.filter((r) => {
-    const matchSearch = searchTerm
-      ? r.note?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.serviceCenterName?.toLowerCase().includes(searchTerm.toLowerCase())
-      : true;
+  // Hàm sắp xếp requests
+  const getSortedRequests = (requests) => {
+    const filtered = requests.filter((r) => {
+      const matchSearch = searchTerm
+        ? r.note?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          r.serviceCenterName?.toLowerCase().includes(searchTerm.toLowerCase())
+        : true;
 
-    const matchStatus =
-      statusFilter === "all"
-        ? true
-        : r.status?.toLowerCase() === statusFilter.toLowerCase();
+      const matchStatus =
+        statusFilter === "all"
+          ? true
+          : r.status?.toLowerCase() === statusFilter.toLowerCase();
 
-    return matchSearch && matchStatus;
-  });
+      return matchSearch && matchStatus;
+    });
 
-  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
+    // Sắp xếp theo ngày
+    return filtered.sort((a, b) => {
+      const aTimestamp = getTimestampFromDateArray(a.createdDate);
+      const bTimestamp = getTimestampFromDateArray(b.createdDate);
+
+      if (sortBy === "date_asc") {
+        return aTimestamp - bTimestamp; // Cũ đến mới
+      } else {
+        return bTimestamp - aTimestamp; // Mới đến cũ (mặc định)
+      }
+    });
+  };
+
+  const sortedRequests = getSortedRequests(requests);
+  const totalPages = Math.ceil(sortedRequests.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentRequests = filteredRequests.slice(
+  const currentRequests = sortedRequests.slice(
     startIndex,
     startIndex + itemsPerPage
   );
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilter, searchTerm]);
+  }, [statusFilter, searchTerm, sortBy]);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
+  };
+
+  const handleSortChange = (newSort) => {
+    setSortBy(newSort);
   };
 
   const summaryStats = {
@@ -894,9 +954,11 @@ const PartRequestManagement = () => {
         onView={handleViewRequest}
         currentPage={currentPage}
         totalPages={totalPages}
-        totalItems={filteredRequests.length}
+        totalItems={sortedRequests.length}
         onPageChange={handlePageChange}
         itemsPerPage={itemsPerPage}
+        sortBy={sortBy}
+        onSortChange={handleSortChange}
       />
 
       {selectedRequest && (

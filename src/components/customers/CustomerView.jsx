@@ -217,14 +217,14 @@ const CustomerView = ({
     <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4">
       {/* Toast Message */}
       {actionMessage && (
-        <ToastMessage
+        <ToastMessagá
           type={messageType}
           message={actionMessage}
           onClose={() => setActionMessage("")}
         />
       )}
 
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
@@ -405,20 +405,24 @@ const CustomerView = ({
                 <div className="space-y-4">
                   {campaignData.map((campaign, index) => (
                     <div
-                      key={campaign.id || index}
+                      key={campaign.campaignId || index}
                       className="bg-orange-50 rounded-xl p-4 border border-orange-200"
                     >
                       {/* Campaign Header */}
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
                           <div className="font-semibold text-gray-900 text-lg mb-1">
-                            {campaign.name}
+                            {campaign.campaignName}{" "}
                           </div>
-                          {campaign.code && (
+                          {campaign.campaignCode && (
                             <div className="text-sm text-gray-600">
-                              Code: {campaign.code}
+                              Code: {campaign.campaignCode}{" "}
                             </div>
                           )}
+                          {/* Hiển thị campaign status */}
+                          <div className="text-sm text-gray-600 mt-1">
+                            Status: {campaign.status || "NOTIFIED"}
+                          </div>
                         </div>
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
                           <CheckCircle size={12} className="mr-1" />
@@ -593,8 +597,8 @@ const CustomerView = ({
                           )}
                         </div>
 
-                        {/* Repair Dates & Approval */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mt-4 pt-4 border-t border-purple-200">
+                        {/* Repair Dates - ĐÃ LOẠI BỎ SUPERVISOR APPROVED */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-4 pt-4 border-t border-purple-200">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
                               <Calendar size={14} className="text-gray-400" />
@@ -623,29 +627,6 @@ const CustomerView = ({
                                 {repair.endDate
                                   ? formatDate(repair.endDate)
                                   : "Not completed"}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle
-                                size={14}
-                                className="text-gray-400"
-                              />
-                              <span className="text-gray-600 font-medium">
-                                Supervisor Approved:
-                              </span>
-                            </div>
-                            <div className="ml-6">
-                              <span
-                                className={`font-medium ${
-                                  repair.supervisorApproved
-                                    ? "text-green-600"
-                                    : "text-red-600"
-                                }`}
-                              >
-                                {repair.supervisorApproved ? "Yes" : "No"}
                               </span>
                             </div>
                           </div>

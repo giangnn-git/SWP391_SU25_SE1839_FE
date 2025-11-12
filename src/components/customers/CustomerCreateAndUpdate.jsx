@@ -13,6 +13,7 @@ import {
   Lock,
   Search,
   Car,
+  AlertCircle,
 } from "lucide-react";
 import {
   createCustomerApi,
@@ -39,10 +40,28 @@ const CustomerCreate = ({
     address: "",
     vin: "",
   });
+
+  const [fieldErrors, setFieldErrors] = useState({
+    name: "",
+    phoneNumber: "",
+    licensePlate: "",
+    email: "",
+    address: "",
+    vin: "",
+  });
+
+  const [touchedFields, setTouchedFields] = useState({
+    name: false,
+    phoneNumber: false,
+    licensePlate: false,
+    email: false,
+    address: false,
+    vin: false,
+  });
+
   const [vinSearch, setVinSearch] = useState("");
   const [showVinDropdown, setShowVinDropdown] = useState(false);
   const [selectedVin, setSelectedVin] = useState("");
-  const [error, setError] = useState(""); // XÓA state error này
   const [loading, setLoading] = useState(false);
   const vinDropdownRef = useRef(null);
 
@@ -50,6 +69,150 @@ const CustomerCreate = ({
   const showMessage = (message, type = "info") => {
     setActionMessage(message);
     setMessageType(type);
+  };
+
+  // Hàm validate từng field
+  const validateField = (name, value) => {
+    let error = "";
+
+    // Regex patterns để kiểm tra ký tự đặc biệt
+    const specialCharRegex = /[<>{}[\]\\^`~|]/; // Các ký tự đặc biệt nguy hiểm
+    const sqlInjectionRegex =
+      /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|EXEC|ALTER|CREATE)\b)|('|--|;)/i;
+
+    switch (name) {
+      case "name":
+        if (!value || value.trim() === "") {
+          error = "Customer name cannot be empty";
+        } else if (
+          specialCharRegex.test(value) ||
+          sqlInjectionRegex.test(value)
+        ) {
+          error = "Name contains invalid special characters";
+        } else if (value.length > 100) {
+          error = "Name cannot exceed 100 characters";
+        }
+        break;
+
+      case "phoneNumber":
+        if (!value || value.trim() === "") {
+          error = "Phone number cannot be empty";
+        } else {
+          const cleanPhone = value.replace(/\D/g, "");
+          if (!/^[0-9]{10,11}$/.test(cleanPhone)) {
+            error = "Phone number must be 10-11 digits";
+          }
+        }
+        break;
+
+      case "licensePlate":
+        if (value && value.trim() !== "") {
+          const licensePlateRegex = /^[0-9]{2}[A-Z]{1}-[0-9]{3}\.[0-9]{2}$/;
+          if (!licensePlateRegex.test(value.trim())) {
+            error = "Wrong license plate format (e.g., 63A-003.33)";
+          }
+        } else if (value && value.trim() === "") {
+          // Không hiển thị lỗi nếu người dùng xóa hết và tab qua
+          error = "";
+        }
+        break;
+
+      case "email":
+        if (value && value.trim() !== "") {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(value)) {
+            error = "Please enter a valid email address";
+          } else if (
+            specialCharRegex.test(value) ||
+            sqlInjectionRegex.test(value)
+          ) {
+            error = "Email contains invalid characters";
+          }
+        } else if (value && value.trim() === "") {
+          // Không hiển thị lỗi nếu người dùng xóa hết và tab qua
+          error = "";
+        }
+        break;
+
+      case "address":
+        if (
+          value &&
+          (specialCharRegex.test(value) || sqlInjectionRegex.test(value))
+        ) {
+          error = "Address contains invalid special characters";
+        } else if (value && value.length > 200) {
+          error = "Address cannot exceed 200 characters";
+        } else if (value && value.trim() === "") {
+          // Không hiển thị lỗi nếu người dùng xóa hết và tab qua
+          error = "";
+        }
+        break;
+
+      case "vin":
+        if (!value || value.trim() === "") {
+          error = "VIN cannot be empty";
+        } else if (
+          specialCharRegex.test(value) ||
+          sqlInjectionRegex.test(value)
+        ) {
+          error = "VIN contains invalid special characters";
+        } else if (value.length < 5) {
+          error = "VIN must be at least 5 characters long";
+        } else if (value.length > 50) {
+          error = "VIN cannot exceed 50 characters";
+        }
+        break;
+
+      default:
+        break;
+    }
+
+    return error;
+  };
+
+  // Hàm xử lý khi field bị blur (mất focus)
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+
+    // Đánh dấu field đã được chạm vào
+    setTouchedFields((prev) => ({ ...prev, [name]: true }));
+
+    // Validate field khi blur
+    const error = validateField(name, value);
+    setFieldErrors((prev) => ({ ...prev, [name]: error }));
+  };
+
+  // Hàm xử lý thay đổi input với real-time validation
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Real-time validation chỉ khi field đã được touched
+    if (touchedFields[name]) {
+      const error = validateField(name, value);
+      setFieldErrors((prev) => ({ ...prev, [name]: error }));
+    }
+  };
+
+  // khi nhập tay VIN, chỉ ghi thẳng vào formData.vin, không bật dropdown
+  const handleVinInputChange = (value) => {
+    setVinSearch(value);
+    setSelectedVin(value);
+    setFormData((prev) => ({ ...prev, vin: value }));
+    setShowVinDropdown(false);
+
+    // Validate VIN real-time chỉ khi field đã được touched
+    if (touchedFields.vin) {
+      const error = validateField("vin", value);
+      setFieldErrors((prev) => ({ ...prev, vin: error }));
+    }
+  };
+
+  // Hàm xử lý blur cho VIN input
+  const handleVinBlur = () => {
+    setTouchedFields((prev) => ({ ...prev, vin: true }));
+    const error = validateField("vin", formData.vin);
+    setFieldErrors((prev) => ({ ...prev, vin: error }));
   };
 
   // NẠP DỮ LIỆU KHI EDIT
@@ -65,26 +228,50 @@ const CustomerCreate = ({
       });
       setSelectedVin(editCustomer.vin || "");
       setVinSearch(editCustomer.vin || "");
+
+      // Clear errors và touched fields khi edit
+      setFieldErrors({
+        name: "",
+        phoneNumber: "",
+        licensePlate: "",
+        email: "",
+        address: "",
+        vin: "",
+      });
+      setTouchedFields({
+        name: false,
+        phoneNumber: false,
+        licensePlate: false,
+        email: false,
+        address: false,
+        vin: false,
+      });
     }
   }, [editCustomer]);
 
   const isEditMode = Boolean(editCustomer);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // khi nhập tay VIN, chỉ ghi thẳng vào formData.vin, không bật dropdown
-  const handleVinInputChange = (value) => {
-    setVinSearch(value);
-    setSelectedVin(value);
-    setFormData((prev) => ({ ...prev, vin: value }));
-    setShowVinDropdown(false);
-  };
-
   const validateForm = () => {
-    // yêu cầu VIN dựa trên formData.vin
+    // Đánh dấu tất cả các field đã được touched khi submit
+    const allTouched = Object.keys(touchedFields).reduce((acc, key) => {
+      acc[key] = true;
+      return acc;
+    }, {});
+    setTouchedFields(allTouched);
+
+    // Validate tất cả các field
+    const newErrors = {
+      name: validateField("name", formData.name),
+      phoneNumber: validateField("phoneNumber", formData.phoneNumber),
+      licensePlate: validateField("licensePlate", formData.licensePlate),
+      email: validateField("email", formData.email),
+      address: validateField("address", formData.address),
+      vin: validateField("vin", formData.vin),
+    };
+
+    setFieldErrors(newErrors);
+
+    // Kiểm tra required fields
     const requiredFields = {
       "Customer Name": formData.name,
       "Phone Number": formData.phoneNumber,
@@ -103,35 +290,13 @@ const CustomerCreate = ({
       return false;
     }
 
-    // Validate phone number
-    const phoneRegex = /^[0-9]{10,11}$/;
-    const cleanPhone = formData.phoneNumber.replace(/\D/g, "");
-    if (!phoneRegex.test(cleanPhone)) {
-      showMessage("Phone number must be 10 digits", "error");
-      return false;
-    }
-
-    // Validate license plate format
-    if (formData.licensePlate && formData.licensePlate.trim() !== "") {
-      const licensePlateRegex = /^[0-9]{2}[A-Z]{1}-[0-9]{3}\.[0-9]{2}$/;
-      if (!licensePlateRegex.test(formData.licensePlate.trim())) {
-        showMessage("Wrong License plate format", "error");
-        return false;
-      }
-    }
-
-    // Validate email format
-    if (formData.email && formData.email.trim() !== "") {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email)) {
-        showMessage("Please enter a valid email address", "error");
-        return false;
-      }
-    }
-
-    // Validate VIN format
-    if (formData.vin && formData.vin.length < 5) {
-      showMessage("VIN must be at least 5 characters long", "error");
+    // Kiểm tra xem có lỗi validation nào không
+    const hasErrors = Object.values(newErrors).some((error) => error !== "");
+    if (hasErrors) {
+      showMessage(
+        "Please fix the validation errors before submitting",
+        "error"
+      );
       return false;
     }
 
@@ -189,6 +354,22 @@ const CustomerCreate = ({
         });
         setSelectedVin("");
         setVinSearch("");
+        setFieldErrors({
+          name: "",
+          phoneNumber: "",
+          licensePlate: "",
+          email: "",
+          address: "",
+          vin: "",
+        });
+        setTouchedFields({
+          name: false,
+          phoneNumber: false,
+          licensePlate: false,
+          email: false,
+          address: false,
+          vin: false,
+        });
       }
     } catch (err) {
       console.error("Customer operation error:", err);
@@ -239,9 +420,21 @@ const CustomerCreate = ({
     };
   }, []);
 
+  // Component hiển thị lỗi
+  const ErrorMessage = ({ message }) => {
+    if (!message) return null;
+
+    return (
+      <div className="flex items-center gap-1 mt-1 text-red-600 text-xs">
+        <AlertCircle size={12} />
+        <span>{message}</span>
+      </div>
+    );
+  };
+
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4">
-      {/* Toast Message - CHỈ GIỮ LẠI PHẦN NÀY */}
+      {/* Toast Message */}
       {actionMessage && (
         <ToastMessage
           type={messageType}
@@ -269,9 +462,8 @@ const CustomerCreate = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* XÓA HẲN PHẦN ERROR MESSAGE INLINE CŨ */}
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Customer Name */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 Customer Name *
@@ -286,13 +478,18 @@ const CustomerCreate = ({
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  onBlur={handleBlur}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                    fieldErrors.name ? "border-red-500" : "border-gray-200"
+                  }`}
                   placeholder="Enter full name"
                   required
                 />
               </div>
+              <ErrorMessage message={fieldErrors.name} />
             </div>
 
+            {/* Phone Number */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 Phone Number *
@@ -307,13 +504,20 @@ const CustomerCreate = ({
                   name="phoneNumber"
                   value={formData.phoneNumber}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  onBlur={handleBlur}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                    fieldErrors.phoneNumber
+                      ? "border-red-500"
+                      : "border-gray-200"
+                  }`}
                   placeholder="e.g. 0901234567"
                   required
                 />
               </div>
+              <ErrorMessage message={fieldErrors.phoneNumber} />
             </div>
 
+            {/* License Plate */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 License Plate
@@ -328,16 +532,23 @@ const CustomerCreate = ({
                   name="licensePlate"
                   value={formData.licensePlate}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  onBlur={handleBlur}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                    fieldErrors.licensePlate
+                      ? "border-red-500"
+                      : "border-gray-200"
+                  }`}
                   placeholder="e.g. 63A-003.33"
                 />
               </div>
+              <ErrorMessage message={fieldErrors.licensePlate} />
               <p className="text-xs text-gray-500">
                 Format: 63A-003.33 (2 digits, 1 letter, dash, 3 digits, dot, 2
                 digits)
               </p>
             </div>
 
+            {/* Email Address */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 Email Address
@@ -352,12 +563,17 @@ const CustomerCreate = ({
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  onBlur={handleBlur}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                    fieldErrors.email ? "border-red-500" : "border-gray-200"
+                  }`}
                   placeholder="example@email.com"
                 />
               </div>
+              <ErrorMessage message={fieldErrors.email} />
             </div>
 
+            {/* Address */}
             <div className="md:col-span-2 space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 Address
@@ -371,11 +587,15 @@ const CustomerCreate = ({
                   name="address"
                   value={formData.address}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   rows={3}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none ${
+                    fieldErrors.address ? "border-red-500" : "border-gray-200"
+                  }`}
                   placeholder="e.g. Hanoi, Vietnam"
                 />
               </div>
+              <ErrorMessage message={fieldErrors.address} />
             </div>
           </div>
 
@@ -407,7 +627,10 @@ const CustomerCreate = ({
                       name="vin"
                       value={formData.vin}
                       onChange={(e) => handleVinInputChange(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      onBlur={handleVinBlur}
+                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                        fieldErrors.vin ? "border-red-500" : "border-gray-200"
+                      }`}
                       placeholder="Enter VIN (e.g. VF8A1234567890001)"
                       required
                     />
@@ -415,6 +638,7 @@ const CustomerCreate = ({
                 </>
               )}
             </div>
+            <ErrorMessage message={fieldErrors.vin} />
             <p className="text-xs text-gray-500">
               {isEditMode
                 ? "VIN cannot be changed after registration"

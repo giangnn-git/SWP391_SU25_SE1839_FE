@@ -27,10 +27,12 @@ const VehicleManagement = () => {
           try {
             const detailResponse = await getVehicleDetailApi(vehicle.id);
             const partPolicies = detailResponse.data?.data?.partPolicies || [];
+            const modelPolicyName =
+              detailResponse.data?.data?.modelPolicyName || "No Policy";
 
             return {
               ...vehicle,
-              // warrantyYears,
+              modelPolicyName,
               partPoliciesCount: partPolicies.length,
             };
           } catch (err) {
@@ -40,7 +42,7 @@ const VehicleManagement = () => {
             );
             return {
               ...vehicle,
-              // warrantyYears: 0,
+              modelPolicyName: "No Policy",
               partPoliciesCount: 0,
             };
           }
@@ -146,7 +148,6 @@ const VehicleManagement = () => {
                   <th className="py-3 px-4 text-left">Model Name</th>
                   <th className="py-3 px-4 text-left">Release Year</th>
                   <th className="py-3 px-4 text-left">Description</th>
-                  {/* <th className="py-3 px-4 text-left">Warranty</th> */}
                   <th className="py-3 px-4 text-left">Status</th>
                   <th className="py-3 px-4 text-center">Action</th>
                 </tr>
@@ -160,23 +161,6 @@ const VehicleManagement = () => {
                     <td className="py-3 px-4 font-medium">{v.name}</td>
                     <td className="py-3 px-4">{v.releaseYear}</td>
                     <td className="py-3 px-4">{v.description}</td>
-
-                    {/* WARRANTY COLUMN - NEW */}
-                    {/* <td className="py-3 px-4">
-                      {v.warrantyYears > 0 ? (
-                        <div className="flex items-center gap-1">
-                          <Shield size={14} className="text-green-600" />
-                          <span className="bg-green-100 text-green-800 px-2 py-1 rounded-md text-xs font-semibold">
-                            {v.warrantyYears}{" "}
-                            {v.warrantyYears === 1 ? "year" : "years"}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400 text-xs">
-                          No warranty
-                        </span>
-                      )}
-                    </td> */}
 
                     <td className="py-3 px-4">
                       <span
@@ -211,7 +195,7 @@ const VehicleManagement = () => {
                 {filteredVehicles.length === 0 && (
                   <tr>
                     <td
-                      colSpan="6"
+                      colSpan="5"
                       className="text-center py-6 text-gray-500 italic"
                     >
                       No vehicles found.

@@ -53,6 +53,9 @@ const RepairOrderDetail = () => {
 
   const [attachments, setAttachments] = useState([]);
   const [updatingDetailId, setUpdatingDetailId] = useState(null);
+  const [repairStarted, setRepairStarted] = useState(false);
+  const [startingRepair, setStartingRepair] = useState(false);
+  const [inspectionCompleted, setInspectionCompleted] = useState(false);
 
   // Allow changing selected old serial number per detail row
   const handleOldSNChange = (idx, value) => {
@@ -207,7 +210,16 @@ const RepairOrderDetail = () => {
     try {
       setLoadingTab(true);
       const res = await axios.get(`/api/api/repair-steps/${id}`);
-      setSteps(res.data?.data || []);
+      const stepsData = res.data?.data || [];
+      setSteps(stepsData);
+
+      // Check if any step with title "Inspection" is COMPLETED
+      const inspectionStep = stepsData.find((s) => s.title && s.title.toLowerCase().includes("inspection"));
+      if (inspectionStep && inspectionStep.status === "COMPLETED") {
+        setInspectionCompleted(true);
+      } else {
+        setInspectionCompleted(false);
+      }
     } catch (err) {
       console.error("Failed to fetch repair steps:", err);
     } finally {
@@ -233,6 +245,23 @@ const RepairOrderDetail = () => {
       toast.error("Update status failed");
     } finally {
       setUpdatingStepId(null);
+    }
+  };
+
+  // Start repair order
+  const handleStartRepair = async () => {
+    try {
+      setStartingRepair(true);
+      const res = await axios.post(`/api/api/repair-steps/${id}/start`);
+      toast.success(res.data?.data || "Repair order started successfully!");
+      setRepairStarted(true);
+      // Fetch steps to show them
+      await fetchSteps();
+    } catch (err) {
+      console.error("Failed to start repair order:", err);
+      toast.error(err.response?.data?.message || "Failed to start repair order.");
+    } finally {
+      setStartingRepair(false);
     }
   };
 
@@ -333,7 +362,7 @@ const RepairOrderDetail = () => {
                 <td className="px-2 py-2 text-sm text-gray-700">{index + 1}</td>
                 <td className="px-2 py-2 text-sm text-gray-700">{item.partName}</td>
                 <td className="px-2 py-2 text-sm text-gray-700 break-words">
-                  {Array.isArray(item.listOldSerialNumber) && item.listOldSerialNumber.length > 0 ? (
+                  {Array.isArray(item.listOldSerialNumber) && item.listOldSerialNumber.length > 0 && (!item.oldSerialNumber || item.oldSerialNumber === "N/A") ? (
                     <div className="flex items-center gap-2">
                       <select
                         value={item.oldSerialNumber || ""}
@@ -361,7 +390,7 @@ const RepairOrderDetail = () => {
                       </button>
                     </div>
                   ) : (
-                    <span>{item.oldSerialNumber}</span>
+                    <span className={item.oldSerialNumber && item.oldSerialNumber !== "N/A" ? "font-semibold text-green-700" : "text-gray-500"}>{item.oldSerialNumber || "—"}</span>
                   )}
                 </td>
                 <td className="px-2 py-2 text-sm text-gray-700 text-center">{item.quantity}</td>
@@ -653,6 +682,40 @@ const RepairOrderDetail = () => {
           </div>
         </div>
 
+        {/* Start Repair Card: only show if progress is 0% */}
+        {!repairStarted && order.percentInProcess === 0 && (
+          <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border-2 border-dashed border-green-300 p-8 mb-6 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="p-3 bg-green-100 rounded-full">
+                <CheckCircle className="text-green-600" size={32} />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Ready to Start Repair</h3>
+                <p className="text-gray-600 mb-4">
+                  Click the button below to begin the repair process and access all repair steps.
+                </p>
+              </div>
+              <button
+                onClick={handleStartRepair}
+                disabled={startingRepair}
+                className="flex items-center gap-2 px-8 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition shadow-lg"
+              >
+                {startingRepair ? (
+                  <>
+                    <Loader size={20} className="animate-spin" />
+                    Starting...
+                  </>
+                ) : (
+                  <>
+                    <span>▶</span>
+                    Start Repair Process
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Tabs */}
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <div className="flex border-b border-gray-200">
@@ -694,15 +757,45 @@ const RepairOrderDetail = () => {
                 updating={updating}
               />
             ) : activeTab === "details" ? (
-              renderTable(details)
+              order.percentInProcess === 0 && !repairStarted ? (
+                <div className="text-center py-12">
+                  <AlertCircle className="h-12 w-12 text-yellow-300 mx-auto mb-3" />
+                  <p className="text-gray-600 font-medium">
+                    Click the "Start" button to begin the repair process
+                  </p>
+                </div>
+              ) : !inspectionCompleted ? (
+                <div className="text-center py-12">
+                  <AlertCircle className="h-12 w-12 text-yellow-300 mx-auto mb-3" />
+                  <p className="text-gray-600 font-medium">
+                    Complete the "Inspection" step to view repair details
+                  </p>
+                </div>
+              ) : (
+                renderTable(details)
+              )
             ) : (
               <>
-                {isSCStaff && (
+                {order.percentInProcess === 0 && !repairStarted && (
+                  <div className="mb-4 p-3 rounded-lg bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 text-sm font-medium">
+                    Click the "Start" button to begin the repair process and see repair steps.
+                  </div>
+                )}
+                {isSCStaff && repairStarted && (
                   <div className="mb-4 p-3 rounded-lg bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 text-sm font-medium">
                     Only technicians can update the repair progress in the steps.
                   </div>
                 )}
-                {renderSteps(steps)}
+                {order.percentInProcess > 0 || repairStarted ? (
+                  renderSteps(steps)
+                ) : (
+                  <div className="text-center py-12">
+                    <AlertCircle className="h-12 w-12 text-yellow-300 mx-auto mb-3" />
+                    <p className="text-gray-600 font-medium">
+                      Click the "Start" button to begin the repair process
+                    </p>
+                  </div>
+                )}
               </>
             )}
           </div>

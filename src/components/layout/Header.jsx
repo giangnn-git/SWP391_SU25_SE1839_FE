@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { storage } from "../../utils/storage";
 import { useNavigate } from "react-router-dom";
 import { useCurrentUser } from "../../hooks/useCurrentUser";
-import { getServiceCentersApi } from "../../services/api.service"; // Import API
+import { getServiceCentersApi } from "../../services/api.service";
 
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -13,28 +13,51 @@ const Header = () => {
   const userName = storage.get("userName") || "User";
   const { currentUser } = useCurrentUser();
 
-  // Chuẩn hóa role: "SC_STAFF" → "Sc_staff"
-  const roleRaw = currentUser?.role || "";
-  const roleLabel =
-    roleRaw.charAt(0).toUpperCase() + roleRaw.slice(1).toLowerCase();
+  // Chuẩn hóa role
+  const roleLabel = currentUser?.role || "";
+
+  // Xác định serviceCenterId dựa trên role
+  const userRole = currentUser?.role?.toUpperCase();
+  const isEVMStaff = userRole === "EVM_STAFF" || userRole === "ADMIN";
+
+  const getServiceCenterId = () => {
+    try {
+      if (isEVMStaff) return null;
+      const scid = localStorage.getItem("serviceCenterId");
+      return scid && !isNaN(scid) ? parseInt(scid) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const userServiceCenterId = getServiceCenterId();
 
   // Lấy service center name
   useEffect(() => {
     const fetchServiceCenterName = async () => {
       try {
-        const serviceCenterId = storage.get("serviceCenterId");
+        // EVM_STAFF luôn là Main Warehouse
+        if (isEVMStaff) {
+          setServiceCenterName("Main Warehouse");
+          return;
+        }
 
-        if (serviceCenterId) {
+        // Nếu có serviceCenterId hợp lệ cho SC_STAFF
+        if (userServiceCenterId) {
           const response = await getServiceCentersApi();
           const serviceCenters = response.data.data;
 
           const foundServiceCenter = serviceCenters.find(
-            (sc) => sc.id === parseInt(serviceCenterId)
+            (sc) => sc.id === userServiceCenterId
           );
 
           if (foundServiceCenter) {
             setServiceCenterName(foundServiceCenter.name);
+          } else {
+            setServiceCenterName("Unknown Service Center");
           }
+        } else {
+          setServiceCenterName("");
         }
       } catch (error) {
         console.error("Error fetching service center:", error);
@@ -43,7 +66,7 @@ const Header = () => {
     };
 
     fetchServiceCenterName();
-  }, []);
+  }, [isEVMStaff, userServiceCenterId]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -64,7 +87,7 @@ const Header = () => {
     storage.remove("userName");
     storage.remove("isLoggedIn");
     storage.remove("id");
-    storage.remove("serviceCenterId"); // Xóa cả serviceCenterId khi logout
+    storage.remove("serviceCenterId");
     navigate("/login");
   };
 
@@ -81,7 +104,7 @@ const Header = () => {
           <h1 className="text-xl font-bold text-gray-900">
             EV Warranty Management System
           </h1>
-          {/* Hiển thị tên service center - NỔI BẬT HƠN */}
+          {/* Hiển thị tên service center */}
           {serviceCenterName && (
             <div className="flex items-center mt-1">
               <svg

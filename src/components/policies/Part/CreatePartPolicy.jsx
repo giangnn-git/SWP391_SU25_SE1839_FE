@@ -22,8 +22,8 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [availableCodes, setAvailableCodes] = useState({
-    partCode: [],
-    policyCode: [],
+    partMap: {}, // { partCode: partName }
+    policyMap: {}, // { policyCode: policyName }
   });
   const [codesLoading, setCodesLoading] = useState(true);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -37,8 +37,8 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
         const response = await getPartPolicyCodesApi();
         const data = response.data?.data || {};
         setAvailableCodes({
-          partCode: data.partCode || [],
-          policyCode: data.policyCode || [],
+          partMap: data.partMap || {},
+          policyMap: data.policyMap || {},
         });
       } catch (err) {
         console.error("Error fetching available codes:", err);
@@ -100,11 +100,9 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
 
     // Get display names for confirmation
     const partCodeDisplay =
-      availableCodes.partCode.find((code) => code === formData.partCode) ||
-      formData.partCode;
+      availableCodes.partMap[formData.partCode] || formData.partCode;
     const policyCodeDisplay =
-      availableCodes.policyCode.find((code) => code === formData.policyCode) ||
-      formData.policyCode;
+      availableCodes.policyMap[formData.policyCode] || formData.policyCode;
 
     setSubmissionData({
       ...policyData,
@@ -183,21 +181,31 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
               </p>
 
               <div className="bg-gray-50 rounded-lg p-4 space-y-3 border border-gray-200">
-                <div className="flex items-center justify-between">
+                <div className="flex items-start justify-between">
                   <span className="font-medium text-gray-700 text-sm">
-                    Part Code:
+                    Part:
                   </span>
-                  <span className="font-mono text-blue-600 font-semibold">
-                    {submissionData.partCodeDisplay}
-                  </span>
+                  <div className="text-right">
+                    <span className="font-mono text-blue-600 font-semibold block">
+                      {submissionData.partCode}
+                    </span>
+                    <span className="text-xs text-gray-500 block mt-1">
+                      {submissionData.partCodeDisplay}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-start justify-between">
                   <span className="font-medium text-gray-700 text-sm">
-                    Policy Code:
+                    Policy:
                   </span>
-                  <span className="font-mono text-green-600 font-semibold">
-                    {submissionData.policyCodeDisplay}
-                  </span>
+                  <div className="text-right">
+                    <span className="font-mono text-green-600 font-semibold block">
+                      {submissionData.policyCode}
+                    </span>
+                    <span className="text-xs text-gray-500 block mt-1">
+                      {submissionData.policyCodeDisplay}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-gray-700 text-sm">
@@ -253,6 +261,22 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
     );
   }
 
+  // Convert partMap object to array for dropdown options
+  const partOptions = Object.entries(availableCodes.partMap).map(
+    ([code, name]) => ({
+      code,
+      name,
+    })
+  );
+
+  // Convert policyMap object to array for dropdown options
+  const policyOptions = Object.entries(availableCodes.policyMap).map(
+    ([code, name]) => ({
+      code,
+      name,
+    })
+  );
+
   // Main Form Modal
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
@@ -286,11 +310,11 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
             <div>
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                 <FileText size={14} className="text-blue-500" />
-                Part Code *
+                Part *
               </label>
               {codesLoading ? (
                 <div className="w-full px-3 py-3 border border-gray-300 rounded-lg bg-gray-100 animate-pulse text-gray-500">
-                  Loading part codes...
+                  Loading parts...
                 </div>
               ) : (
                 <select
@@ -301,10 +325,10 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
                   disabled={loading}
                   className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:bg-gray-100 disabled:opacity-50"
                 >
-                  <option value="">Select Part Code</option>
-                  {availableCodes.partCode.map((code) => (
-                    <option key={code} value={code}>
-                      {code}
+                  <option value="">Select Part</option>
+                  {partOptions.map((part) => (
+                    <option key={part.code} value={part.code}>
+                      {part.code} - {part.name}
                     </option>
                   ))}
                 </select>
@@ -315,11 +339,11 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
             <div>
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                 <FileText size={14} className="text-green-500" />
-                Policy Code *
+                Policy *
               </label>
               {codesLoading ? (
                 <div className="w-full px-3 py-3 border border-gray-300 rounded-lg bg-gray-100 animate-pulse text-gray-500">
-                  Loading policy codes...
+                  Loading policies...
                 </div>
               ) : (
                 <select
@@ -330,10 +354,10 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
                   disabled={loading}
                   className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:bg-gray-100 disabled:opacity-50"
                 >
-                  <option value="">Select Policy Code</option>
-                  {availableCodes.policyCode.map((code) => (
-                    <option key={code} value={code}>
-                      {code}
+                  <option value="">Select Policy</option>
+                  {policyOptions.map((policy) => (
+                    <option key={policy.code} value={policy.code}>
+                      {policy.code} - {policy.name}
                     </option>
                   ))}
                 </select>

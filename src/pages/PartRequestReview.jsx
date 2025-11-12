@@ -13,6 +13,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import {
   getAllPartRequestsApi,
@@ -23,6 +24,13 @@ import {
 // === Remark constants & helpers ===
 const REMARK_IN = "In stock";
 const REMARK_OUT = "Out of stock";
+
+// Helper function để chuyển đổi date array thành timestamp để so sánh
+const getTimestampFromDateArray = (arr) => {
+  if (!Array.isArray(arr)) return 0;
+  const [y, m, d, hh, mm] = arr;
+  return new Date(y, m - 1, d, hh, mm).getTime();
+};
 
 const normalizeReviewDetail = (detail, requestStatus) => {
   const requestedQty = Number(detail?.requestedQuantity ?? 0);
@@ -142,6 +150,7 @@ const PartRequestReview = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmAction, setConfirmAction] = useState("");
   const [confirmId, setConfirmId] = useState(null);
+  const [sortBy, setSortBy] = useState("date_desc"); // Thêm state cho sắp xếp
 
   // ✅ THÊM PAGINATION STATE
   const [currentPage, setCurrentPage] = useState(1);
@@ -176,6 +185,7 @@ const PartRequestReview = () => {
           requester: item.serviceCenterName || "Unknown",
           createdBy: item.createdBy,
           originalData: item,
+          createdDate: item.createdDate, // Thêm createdDate để sắp xếp
         }));
 
         setRequests(requestsData);
@@ -306,6 +316,7 @@ const PartRequestReview = () => {
             requester: responseData.serviceCenterName || "Unknown",
             createdBy: responseData.createdBy,
             originalData: responseData,
+            createdDate: responseData.createdDate,
           };
 
           const filteredPrev = prev.filter((r) => r.id !== selectedRequest.id);
@@ -349,18 +360,35 @@ const PartRequestReview = () => {
     );
   };
 
-  const filteredRequests = requests.filter((req) => {
-    const matchesSearch =
-      req.partName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      req.reason?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filter === "All" ? true : req.status === filter;
-    return matchesSearch && matchesFilter;
-  });
+  // Hàm sắp xếp requests
+  const getSortedRequests = (requests) => {
+    const filtered = requests.filter((req) => {
+      const matchesSearch =
+        req.partName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        req.reason?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesFilter = filter === "All" ? true : req.status === filter;
+      return matchesSearch && matchesFilter;
+    });
+
+    // Sắp xếp theo ngày
+    return filtered.sort((a, b) => {
+      const aTimestamp = getTimestampFromDateArray(a.createdDate);
+      const bTimestamp = getTimestampFromDateArray(b.createdDate);
+
+      if (sortBy === "date_asc") {
+        return aTimestamp - bTimestamp; // Cũ đến mới
+      } else {
+        return bTimestamp - aTimestamp; // Mới đến cũ (mặc định)
+      }
+    });
+  };
+
+  const sortedRequests = getSortedRequests(requests);
 
   // PAGINATION LOGIC
-  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
+  const totalPages = Math.ceil(sortedRequests.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentRequests = filteredRequests.slice(
+  const currentRequests = sortedRequests.slice(
     startIndex,
     startIndex + itemsPerPage
   );
@@ -368,7 +396,11 @@ const PartRequestReview = () => {
   // RESET PAGE KHI FILTER/SEARCH THAY ĐỔI
   useEffect(() => {
     setCurrentPage(1);
-  }, [filter, searchTerm]);
+  }, [filter, searchTerm, sortBy]);
+
+  const handleSortChange = (newSort) => {
+    setSortBy(newSort);
+  };
 
   const getStatusBadge = (status) => {
     const base =
@@ -409,6 +441,63 @@ const PartRequestReview = () => {
   const totalApproved = requests.filter((r) => r.status === "Approved").length;
   const totalPending = requests.filter((r) => r.status === "Pending").length;
   const totalRejected = requests.filter((r) => r.status === "Rejected").length;
+
+  // Component Sort Dropdown cho PartRequestReview
+  const SortDropdown = () => {
+    const [isSortOpen, setIsSortOpen] = useState(false);
+
+    return (
+      <div className="flex items-center gap-1 cursor-pointer group relative">
+        <span>Date</span>
+        <div className="relative">
+          <button
+            className="flex items-center justify-center w-6 h-6 hover:bg-emerald-100 rounded transition"
+            onClick={() => setIsSortOpen(!isSortOpen)}
+          >
+            <ChevronDown size={14} className="text-gray-500" />
+          </button>
+
+          {/* Dropdown menu */}
+          {isSortOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setIsSortOpen(false)}
+              />
+              <div className="absolute left-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                <button
+                  onClick={() => {
+                    handleSortChange("date_asc");
+                    setIsSortOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 text-xs hover:bg-emerald-50 first:rounded-t-lg last:rounded-b-lg ${
+                    sortBy === "date_asc"
+                      ? "bg-emerald-50 text-emerald-600"
+                      : ""
+                  }`}
+                >
+                  ↑ Date Ascending
+                </button>
+                <button
+                  onClick={() => {
+                    handleSortChange("date_desc");
+                    setIsSortOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 text-xs hover:bg-emerald-50 first:rounded-t-lg last:rounded-b-lg ${
+                    sortBy === "date_desc"
+                      ? "bg-emerald-50 text-emerald-600"
+                      : ""
+                  }`}
+                >
+                  ↓ Date Descending
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="p-8 animate-fadeIn bg-gradient-to-br from-gray-50 to-white min-h-screen">
@@ -538,7 +627,9 @@ const PartRequestReview = () => {
                     Service Center
                   </th>
                   <th className="py-3 px-4 text-left font-semibold">Reason</th>
-                  <th className="py-3 px-4 text-left font-semibold">Date</th>
+                  <th className="py-3 px-4 text-left font-semibold">
+                    <SortDropdown />
+                  </th>
                   <th className="py-3 px-4 text-center font-semibold">
                     Status
                   </th>
@@ -581,15 +672,10 @@ const PartRequestReview = () => {
                   Showing{" "}
                   <span className="font-semibold">{startIndex + 1}</span>-
                   <span className="font-semibold">
-                    {Math.min(
-                      startIndex + itemsPerPage,
-                      filteredRequests.length
-                    )}
+                    {Math.min(startIndex + itemsPerPage, sortedRequests.length)}
                   </span>{" "}
                   of{" "}
-                  <span className="font-semibold">
-                    {filteredRequests.length}
-                  </span>{" "}
+                  <span className="font-semibold">{sortedRequests.length}</span>{" "}
                   requests
                 </div>
                 <div className="flex items-center gap-2">
