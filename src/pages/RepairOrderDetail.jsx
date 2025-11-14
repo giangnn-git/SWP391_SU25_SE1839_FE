@@ -57,6 +57,15 @@ const RepairOrderDetail = () => {
   const [repairStarted, setRepairStarted] = useState(false);
   const [startingRepair, setStartingRepair] = useState(false);
   const [inspectionCompleted, setInspectionCompleted] = useState(false);
+  // Track which step indices are expanded (showing details)
+  const [expandedSteps, setExpandedSteps] = useState([1, 2]);
+
+  const toggleExpanded = (idx) => {
+    setExpandedSteps((prev) => {
+      if (prev.includes(idx)) return prev.filter((i) => i !== idx);
+      return [...prev, idx];
+    });
+  };
 
   // Allow changing selected old serial number per detail row
   const handleOldSNChange = (idx, value) => {
@@ -311,8 +320,11 @@ const RepairOrderDetail = () => {
 
   // Load detail/step tabs on demand
   useEffect(() => {
-    if (activeTab === "details" && details.length === 0) fetchDetails();
-    if (activeTab === "steps" && steps.length === 0) fetchSteps();
+    if (activeTab === "steps" && steps.length === 0) {
+      fetchSteps();
+      // Also fetch details when viewing steps
+      if (details.length === 0) fetchDetails();
+    }
   }, [activeTab]);
 
   const getProgressColor = (progress) => {
@@ -320,6 +332,109 @@ const RepairOrderDetail = () => {
     if (progress >= 50) return "bg-blue-500";
     if (progress >= 25) return "bg-yellow-500";
     return "bg-gray-400";
+  };
+
+  // Step 2 table - compact version
+  const renderStep2Table = (data) => {
+    if (!data || data.length === 0) return null;
+
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs border-collapse">
+          <thead className="bg-gray-100 border-b border-gray-300">
+            <tr>
+              <th className="px-1 py-1 text-left font-semibold text-gray-700">#</th>
+              <th className="px-1 py-1 text-left font-semibold text-gray-700">Part</th>
+              <th className="px-1 py-1 text-left font-semibold text-gray-700">Old SN</th>
+              <th className="px-1 py-1 text-center font-semibold text-gray-700">Qty</th>
+              <th className="px-1 py-1 text-left font-semibold text-gray-700">License</th>
+              <th className="px-1 py-1 text-left font-semibold text-gray-700">Category</th>
+              <th className="px-1 py-1 text-left font-semibold text-gray-700">Replacement</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {data.map((item, index) => (
+              <tr key={item.id || index} className="hover:bg-gray-50">
+                <td className="px-1 py-1 text-gray-700">{index + 1}</td>
+                <td className="px-1 py-1 text-gray-700">{item.partName}</td>
+                <td className="px-1 py-1 text-gray-700 break-words">
+                  {Array.isArray(item.listOldSerialNumber) && item.listOldSerialNumber.length > 0 && (!item.oldSerialNumber || item.oldSerialNumber === "N/A") ? (
+                    <div className="flex items-center gap-1">
+                      <select
+                        value={item.pendingOldSerialNumber || ""}
+                        onChange={(e) => handleOldSNChange(index, e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex-1 px-1 py-0.5 border border-gray-300 rounded text-xs bg-white"
+                      >
+                        <option value="">Select</option>
+                        {(() => {
+                          // Exclude serials that are already chosen in other detail rows
+                          const used = (Array.isArray(details) ? details : [])
+                            .map((d) => d?.pendingOldSerialNumber || d?.oldSerialNumber)
+                            .filter(Boolean);
+                          return item.listOldSerialNumber
+                            .filter((sn) => {
+                              // keep this item's own pending/saved value even if in used
+                              const own = (item.pendingOldSerialNumber || item.oldSerialNumber) || null;
+                              return sn === own || !used.includes(sn);
+                            })
+                            .map((sn) => (
+                              <option key={sn} value={sn}>{sn}</option>
+                            ));
+                        })()}
+                      </select>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleUpdateOldSNSubmit(item.id, index); }}
+                        disabled={updatingDetailId === item.id}
+                        className={`px-1.5 py-0.5 text-xs rounded font-medium whitespace-nowrap ${updatingDetailId === item.id ? "bg-gray-300 text-gray-700 cursor-not-allowed" : "bg-blue-600 text-white hover:bg-blue-700"}`}
+                      >
+                        {updatingDetailId === item.id ? <Loader className="h-3 w-3 animate-spin" /> : "✓"}
+                      </button>
+                    </div>
+                  ) : (
+                    <span className={item.oldSerialNumber && item.oldSerialNumber !== "N/A" ? "font-semibold text-green-700 text-xs" : "text-gray-500"}>{item.oldSerialNumber || "—"}</span>
+                  )}
+                </td>
+                <td className="px-1 py-1 text-center text-gray-700">{item.quantity}</td>
+                <td className="px-1 py-1 text-gray-700 text-xs">{item.licensePlate}</td>
+                <td className="px-1 py-1 text-gray-700 text-xs">{item.category}</td>
+                <td className="px-1 py-1 text-gray-700 text-xs">{item.replacementDescription || "-"}</td>
+                {/* Removed License and Replacement columns */}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  // Step 3 table - simplified
+  const renderStep3Table = (data) => {
+    if (!data || data.length === 0) return null;
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs border-collapse">
+          <thead className="bg-gray-100 border-b border-gray-300">
+            <tr>
+              <th className="px-1 py-1 text-left font-semibold text-gray-700">Part</th>
+              <th className="px-1 py-1 text-left font-semibold text-gray-700">Old SN</th>
+              <th className="px-1 py-1 text-left font-semibold text-gray-700">New SN</th>
+              <th className="px-1 py-1 text-left font-semibold text-gray-700">Date</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {data.map((item, index) => (
+              <tr key={item.id || index} className="hover:bg-gray-50">
+                <td className="px-1 py-1 text-gray-700 font-medium">{item.partName}</td>
+                <td className="px-1 py-1 text-gray-700 text-xs break-words">{(item.pendingOldSerialNumber || (Array.isArray(item.listOldSerialNumber) && item.listOldSerialNumber[0]) || item.oldSerialNumber) || "—"}</td>
+                <td className="px-1 py-1 text-gray-700 text-xs break-words">{item.newSerialNumber || "—"}</td>
+                <td className="px-1 py-1 text-gray-700 text-xs">{item.installationDate ? `${item.installationDate[2]}/${item.installationDate[1]}` : "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
   };
 
   const renderTable = (data) => {
@@ -374,18 +489,27 @@ const RepairOrderDetail = () => {
                       <select
                         value={item.pendingOldSerialNumber || ""}
                         onChange={(e) => handleOldSNChange(index, e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
                         className="flex-1 px-2 py-1 border border-gray-300 rounded-md bg-white text-sm"
                       >
                         <option value="">Select SN</option>
-                        {item.listOldSerialNumber.map((sn) => (
-                          <option key={sn} value={sn}>
-                            {sn}
-                          </option>
-                        ))}
+                        {(() => {
+                          const used = (Array.isArray(details) ? details : [])
+                            .map((d) => d?.pendingOldSerialNumber || d?.oldSerialNumber)
+                            .filter(Boolean);
+                          const own = (item.pendingOldSerialNumber || item.oldSerialNumber) || null;
+                          return item.listOldSerialNumber
+                            .filter((sn) => sn === own || !used.includes(sn))
+                            .map((sn) => (
+                              <option key={sn} value={sn}>
+                                {sn}
+                              </option>
+                            ));
+                        })()}
                       </select>
 
                       <button
-                        onClick={() => handleUpdateOldSNSubmit(item.id, index)}
+                        onClick={(e) => { e.stopPropagation(); handleUpdateOldSNSubmit(item.id, index); }}
                         disabled={updatingDetailId === item.id}
                         className={`px-3 py-1 text-sm rounded-md font-medium ${updatingDetailId === item.id ? "bg-gray-300 text-gray-700 cursor-not-allowed" : "bg-blue-600 text-white hover:bg-blue-700"}`}
                       >
@@ -421,7 +545,7 @@ const RepairOrderDetail = () => {
     );
   };
 
-  const renderSteps = (data) => {
+  const renderSteps = (data, repairDetails = []) => {
     if (loadingTab)
       return (
         <div className="flex justify-center py-12">
@@ -433,106 +557,111 @@ const RepairOrderDetail = () => {
       return (
         <div className="text-center py-12">
           <AlertCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">No technician assigned yet!
-          </p>
-          <p className="text-gray-400 text-sm mt-1">
-            No steps available
-          </p>
+          <p className="text-gray-500 font-medium">No steps available</p>
         </div>
       );
 
     return (
-      <div className="space-y-6">
-        {data.map((step) => (
-          <div
-            key={step.stepId}
-            className="relative border border-gray-200 bg-white shadow-sm rounded-2xl p-5 hover:shadow-md transition duration-200"
-          >
-            {/* Header */}
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-semibold text-gray-900">{step.title}</h3>
+      <div className="space-y-2">
+        {data.map((step, stepIndex) => (
+          <div key={step.stepId}>
+            {/* Compact Step Card (click to toggle details) */}
+            <div onClick={() => toggleExpanded(stepIndex)} className="border border-gray-200 bg-white rounded-lg p-2 hover:shadow-sm transition" style={{ cursor: "pointer" }}>
+              <div className="flex justify-between items-start gap-3">
+                {/* Left: Step Title + Info */}
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold text-gray-900 text-sm">{step.title}</h3>
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${step.status === "PENDING" ? "bg-yellow-100 text-yellow-700"
+                      : step.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-700"
+                        : step.status === "WAITING" ? "bg-purple-100 text-purple-700"
+                          : step.status === "CANCELLED" ? "bg-red-100 text-red-700"
+                            : "bg-green-100 text-green-700"
+                      }`}>
+                      {step.status}
+                    </span>
+                  </div>
 
-              {/* Dot status buttons */}
-              {!isSCStaff && currentTech && !["COMPLETED", "CANCELLED"].includes(step.status) && (
-                (() => {
-                  // Detect the special step (Repair/Replace Part) — require old serial numbers set before allowing COMPLETED
-                  const title = (step.title || "").toLowerCase();
-                  const isRepairReplaceStep = title.includes("repair") && title.includes("replace") && title.includes("part");
-                  const missingOldSN = Array.isArray(details) ? details.some(d => !d.oldSerialNumber || d.oldSerialNumber === "N/A") : true;
-
-                  return (
-                    <div className="flex items-center gap-3">
-                      {/* If this is the Repair/Replace Part step and there are missing old SNs, show an instruction banner */}
-                      {isRepairReplaceStep && missingOldSN && (
-                        <div className="w-full p-3 rounded-md bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 text-sm font-medium">
-                          Please select the Old SN for all parts in Repair Details and click "Update" before marking this step as Completed.
-                        </div>
-                      )}
-
-                      {step.nextStatuses.map((status) => {
-                        const isActive = step.status === status;
-                        const isCompleteAction = status === "COMPLETED";
-                        const disableComplete = isRepairReplaceStep && missingOldSN && isCompleteAction;
-                        const disabled = updatingStepId === step.stepId || disableComplete;
-
-                        return (
-                          <div key={status} className="relative group">
-                            <button
-                              onClick={() => !disabled && handleUpdateStatus(step.stepId, status)}
-                              disabled={disabled}
-                              className={`w-7 h-7 rounded-full flex items-center justify-center transition border-black border-2 ${isActive
-                                ? "bg-blue-600 border-black text-white"
-                                : disabled
-                                  ? "bg-gray-200 border-gray-300 text-gray-500 cursor-not-allowed"
-                                  : "bg-white border-gray-300 hover:border-blue-600"
-                                }`}
-                            >
-                              {isActive && <CheckCircle size={20} />}
-                            </button>
-                            {/* Tooltip */}
-                            <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-xs font-medium px-2 py-1 rounded pointer-events-none whitespace-nowrap z-10">
-                              {disableComplete ? `${status} (disabled until Old SN updated)` : status}
-                            </div>
-                          </div>
-                        );
-                      })}
-
-                      {updatingStepId === step.stepId && (
-                        <Loader className="animate-spin h-5 w-5 text-blue-600" />
-                      )}
+                  {/* Estimated / Actual hours (display under title) */}
+                  <div className="flex items-center gap-4 text-xs text-gray-600">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-gray-500">Estimated:</span>
+                      <span className="font-medium text-gray-900">{step.estimatedHour ?? '-'}h</span>
                     </div>
-                  );
-                })()
-              )}
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-gray-500">Actual:</span>
+                      <span className="font-medium text-gray-900">{step.actualHour ?? '-'}h</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Status Buttons */}
+                {!isSCStaff && currentTech && !["COMPLETED", "CANCELLED"].includes(step.status) && (
+                  (() => {
+                    const title = (step.title || "").toLowerCase();
+                    const isRepairReplaceStep = title.includes("repair") && title.includes("replace") && title.includes("part");
+                    const missingOldSN = Array.isArray(repairDetails) ? repairDetails.some(d => !d.oldSerialNumber || d.oldSerialNumber === "N/A") : true;
+
+                    return (
+                      <div className="flex items-center gap-2">
+                        {step.nextStatuses.map((status) => {
+                          const isActive = step.status === status;
+                          const isCompleteAction = status === "COMPLETED";
+                          const disableComplete = isRepairReplaceStep && missingOldSN && isCompleteAction;
+                          const disabled = updatingStepId === step.stepId || disableComplete;
+
+                          return (
+                            <div key={status} className="relative group">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); if (!disabled) handleUpdateStatus(step.stepId, status); }}
+                                disabled={disabled}
+                                className={`w-6 h-6 rounded-full flex items-center justify-center transition border-2 text-xs ${isActive
+                                  ? "bg-blue-600 border-blue-600 text-white"
+                                  : disabled
+                                    ? "bg-gray-200 border-gray-300 text-gray-500 cursor-not-allowed"
+                                    : "bg-white border-gray-300 hover:border-blue-600"
+                                  }`}
+                              >
+                                {isActive && <CheckCircle size={16} />}
+                              </button>
+                              <div className="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-xs px-2 py-1 rounded pointer-events-none whitespace-nowrap z-10">
+                                {disableComplete ? `${status} (update Old SN first)` : status}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {updatingStepId === step.stepId && <Loader className="animate-spin h-4 w-4 text-blue-600" />}
+                      </div>
+                    );
+                  })()
+                )}
+              </div>
+
+              {/* Warning banner for Repair/Replace step */}
+              {(() => {
+                const title = (step.title || "").toLowerCase();
+                const isRepairReplaceStep = title.includes("repair") && title.includes("replace") && title.includes("part");
+                const missingOldSN = Array.isArray(repairDetails) ? repairDetails.some(d => !d.oldSerialNumber || d.oldSerialNumber === "N/A") : false;
+                return isRepairReplaceStep && missingOldSN ? (
+                  <div className="mt-2 p-2 text-xs bg-yellow-50 border border-yellow-300 rounded text-yellow-800">
+                    Please select Old SN for all parts before marking as Completed.
+                  </div>
+                ) : null;
+              })()}
             </div>
 
-            {/* Info */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-2 text-sm text-gray-700">
-              <p>
-                <span className="font-medium text-gray-900">Estimated Hour:</span>{" "}
-                {step.estimatedHour}
-              </p>
-              <p>
-                <span className="font-medium text-gray-900">Actual Hour:</span>{" "}
-                {step.actualHour}
-              </p>
-              <div className="ml-auto">
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${step.status === "PENDING"
-                    ? "bg-yellow-100 text-yellow-700"
-                    : step.status === "IN_PROGRESS"
-                      ? "bg-blue-100 text-blue-700"
-                      : step.status === "WAITING"
-                        ? "bg-purple-100 text-purple-700"
-                        : step.status === "CANCELLED"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-green-100 text-green-700"
-                    }`}
-                >
-                  {step.status}
-                </span>
+            {/* Compact Repair Details */}
+            {/* Show Step 2 details even before the step is completed so technicians can select Old SN */}
+            {stepIndex === 1 && repairDetails.length > 0 && expandedSteps.includes(stepIndex) && (
+              <div className="mt-2 p-2 bg-gray-50 border border-gray-300 rounded-lg">
+                {renderStep2Table(repairDetails)}
               </div>
-            </div>
+            )}
+            {step.status === "COMPLETED" && stepIndex === 2 && repairDetails.length > 0 && expandedSteps.includes(stepIndex) && (
+              <div className="mt-2 p-2 bg-gray-50 border border-gray-300 rounded-lg">
+                {renderStep3Table(repairDetails)}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -752,11 +881,6 @@ const RepairOrderDetail = () => {
                 label: "Technicians",
                 icon: <UserCog size={18} />,
               },
-              {
-                key: "details",
-                label: "Repair Details",
-                icon: <Layers size={18} />,
-              },
               { key: "steps", label: "Repair Steps", icon: <List size={18} /> },
             ].map((tab) => (
               <button
@@ -783,26 +907,6 @@ const RepairOrderDetail = () => {
                 handleAssignTech={handleAssignTech}
                 updating={updating}
               />
-            ) : activeTab === "details" ? (
-              order.percentInProcess >= 50 ? (
-                renderTable(details)
-              ) : order.percentInProcess === 0 && !repairStarted ? (
-                <div className="text-center py-12">
-                  <AlertCircle className="h-12 w-12 text-yellow-300 mx-auto mb-3" />
-                  <p className="text-gray-600 font-medium">
-                    Click the "Start" button to begin the repair process
-                  </p>
-                </div>
-              ) : !inspectionCompleted ? (
-                <div className="text-center py-12">
-                  <AlertCircle className="h-12 w-12 text-yellow-300 mx-auto mb-3" />
-                  <p className="text-gray-600 font-medium">
-                    Complete the "Inspection" step to view repair details
-                  </p>
-                </div>
-              ) : (
-                renderTable(details)
-              )
             ) : (
               <>
                 {order.percentInProcess === 0 && !repairStarted && (
@@ -816,7 +920,7 @@ const RepairOrderDetail = () => {
                   </div>
                 )}
                 {order.percentInProcess > 0 || repairStarted ? (
-                  renderSteps(steps)
+                  renderSteps(steps, details)
                 ) : (
                   <div className="text-center py-12">
                     <AlertCircle className="h-12 w-12 text-yellow-300 mx-auto mb-3" />
@@ -1153,3 +1257,4 @@ const RepairOrderAttachments = ({ attachments }) => {
 };
 
 export default RepairOrderDetail;
+

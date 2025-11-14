@@ -62,6 +62,26 @@ const Dashboard = () => {
     return null;
   };
 
+  const CustomTooltip1 = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+          <p className="text-sm font-semibold text-gray-900">{payload[0].payload.month}</p>
+          <p className="text-sm text-gray-600">
+            Total: <span className="font-bold text-blue-600">{payload[0].value}</span>
+          </p>
+          {payload[0].payload.totalCostFormatted && (
+            <p className="text-sm text-gray-600">
+              Cost: <span className="font-bold text-green-600">{payload[0].payload.totalCostFormatted}$</span>
+
+            </p>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen bg-gray-50">
@@ -267,7 +287,7 @@ const Dashboard = () => {
                     tick={{ fill: '#6b7280', fontSize: 12 }}
                   />
                   <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} />
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip content={<CustomTooltip1 />} />
                   <Line
                     type="monotone"
                     dataKey="totalClaims"

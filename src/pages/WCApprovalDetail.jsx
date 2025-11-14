@@ -395,7 +395,7 @@ const ClaimDetail = () => {
                     {/* Status + Reason + Update */}
                     <div className="mb-6">
                         <div className="flex items-center gap-4 mb-3">
-                            <select
+                            {/* <select
                                 className="border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:ring-2 focus:ring-blue-500"
                                 value={selectedStatus || ""}
                                 onChange={(e) => setSelectedStatus(e.target.value)}
@@ -405,7 +405,7 @@ const ClaimDetail = () => {
                                         {status}
                                     </option>
                                 ))}
-                            </select>
+                            </select> */}
 
                             {/* {fcr?.currentStatus === "PENDING" && (
                                 <button
@@ -419,6 +419,16 @@ const ClaimDetail = () => {
                                     {updating ? "Updating..." : "Update Status"}
                                 </button>
                             )} */}
+
+                            <InfoItem
+                                label={<span className="text-lg font-semibold">Status</span>}
+                                value={
+                                    fcr?.currentStatus === "REJECTED" && fcr?.rejectReason
+                                        ? `${fcr.currentStatus} (Reason: ${fcr.rejectReason})`
+                                        : fcr?.currentStatus
+                                }
+                            />
+
 
                             {isEditingParts && fcr?.currentStatus === "DRAFT" && (
                                 <button
