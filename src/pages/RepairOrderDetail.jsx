@@ -14,13 +14,9 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Barcode,
-  Scan,
-  Save,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import axios from "../services/axios.customize";
-import RealBarcodeScanner from "../components/common/RealBarcodeScanner";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 
 const RepairOrderDetail = () => {
@@ -30,7 +26,6 @@ const RepairOrderDetail = () => {
   const { currentUser } = useCurrentUser();
   const isSCStaff = currentUser?.role === "SC_STAFF";
 
-  // States
   const [order, setOrder] = useState(null);
   const [techs, setTechs] = useState([]);
   const [details, setDetails] = useState([]);
@@ -54,110 +49,56 @@ const RepairOrderDetail = () => {
     signature: "",
     acceptedResponsibility: "",
   });
+
   const [attachments, setAttachments] = useState([]);
+  const [updatingDetailId, setUpdatingDetailId] = useState(null);
+  const [repairStarted, setRepairStarted] = useState(false);
+  const [startingRepair, setStartingRepair] = useState(false);
+  const [inspectionCompleted, setInspectionCompleted] = useState(false);
 
-  // Barcode scanning states - UPDATED FOR BATCH SAVE
-  const [showBarcodeModal, setShowBarcodeModal] = useState(false);
-  const [currentScanningPart, setCurrentScanningPart] = useState(null);
-  const [scannedParts, setScannedParts] = useState({}); // { partId: { serialNumber, installationDate } }
-  const [savingAll, setSavingAll] = useState(false);
-
-  // Handle real scan - ONLY UPDATE LOCAL STATE
-  const handleRealScanSubmit = async (scannedCode) => {
-    if (!scannedCode.trim() || !currentScanningPart) {
-      toast.error("Invalid barcode");
-      return;
-    }
-
-    try {
-      // Update scanned parts state (local only)
-      setScannedParts((prev) => ({
-        ...prev,
-        [currentScanningPart.id]: {
-          newSerialNumber: scannedCode,
-          installationDate: [
-            new Date().getFullYear(),
-            new Date().getMonth() + 1,
-            new Date().getDate(),
-          ],
-          partName: currentScanningPart.partName,
-        },
-      }));
-
-      toast.success(`Serial number scanned: ${scannedCode}`);
-
-      // Auto-close modal after 1 second
-      setTimeout(() => {
-        setShowBarcodeModal(false);
-        setCurrentScanningPart(null);
-      }, 1000);
-    } catch (err) {
-      console.error("Failed to process barcode:", err);
-      toast.error("Failed to process barcode");
-    }
+  // Allow changing selected old serial number per detail row
+  const handleOldSNChange = (idx, value) => {
+    // Store selection in a temporary field so UI doesn't lock until Update is clicked
+    setDetails((prev) => {
+      const arr = Array.isArray(prev) ? [...prev] : [];
+      arr[idx] = { ...(arr[idx] || {}), pendingOldSerialNumber: value };
+      return arr;
+    });
   };
 
-  // Save all scanned parts to API
-  const handleSaveAllScannedParts = async () => {
-    if (Object.keys(scannedParts).length === 0) {
-      toast.error("No scanned parts to save");
-      return;
-    }
-
+  // Persist selected old serial number for a specific repair detail
+  const handleUpdateOldSNSubmit = async (detailId, idx) => {
     try {
-      setSavingAll(true);
+      // Use the pending selection (made by user) — do not rely on oldSerialNumber which may be the saved value
+      const value = details?.[idx]?.pendingOldSerialNumber || "";
+      if (!value)
+        return toast.error("Please select a serial number before updating.");
 
-      // Prepare data for NEW API format
-      // Sử dụng id từ repair details làm repairDetailId
-      const assemblyData = Object.entries(scannedParts).map(
-        ([partId, scannedData]) => ({
-          repairDetailId: parseInt(partId), // partId chính là id từ repair details
-          barcode: scannedData.newSerialNumber,
-        })
-      );
-
-      console.log("Sending assembly data:", { details: assemblyData });
-
-      // Call NEW API endpoint
-      await axios.put(`/api/api/${id}/assembly`, {
-        details: assemblyData,
+      setUpdatingDetailId(detailId);
+      // Send PUT to update the repair detail's oldSerialNumber (send as JSON)
+      await axios.put(`/api/api/repair-details/${detailId}`, {
+        oldSerialNumber: value,
       });
 
-      toast.success(`Successfully saved ${assemblyData.length} part(s)`);
+      toast.success("Old serial number updated successfully");
 
-      // Clear scanned parts after successful save
-      setScannedParts({});
-
-      // Refresh data
-      await fetchDetails();
+      // Mark this detail as saved: set the real oldSerialNumber, clear list and pending selection
+      setDetails((prev) => {
+        const arr = Array.isArray(prev) ? [...prev] : [];
+        arr[idx] = {
+          ...(arr[idx] || {}),
+          oldSerialNumber: value,
+          listOldSerialNumber: [],
+          pendingOldSerialNumber: undefined,
+        };
+        return arr;
+      });
     } catch (err) {
-      console.error("Failed to save scanned parts:", err);
-
-      // Hiển thị thông báo lỗi chi tiết hơn
-      if (err.response?.data?.message) {
-        toast.error(`Failed to save parts: ${err.response.data.message}`);
-      } else {
-        toast.error("Failed to save parts");
-      }
+      console.error("Failed to update old serial number:", err);
+      toast.error("Failed to update old serial number. Please try again.");
     } finally {
-      setSavingAll(false);
+      setUpdatingDetailId(null);
     }
-  };
-
-  // Remove a scanned part
-  const handleRemoveScannedPart = (partId) => {
-    setScannedParts((prev) => {
-      const newScannedParts = { ...prev };
-      delete newScannedParts[partId];
-      return newScannedParts;
-    });
-    toast.success("Scanned part removed");
-  };
-
-  // Open barcode scanner modal
-  const openBarcodeScanner = (part) => {
-    setCurrentScanningPart(part);
-    setShowBarcodeModal(true);
   };
 
   const handleVerifySubmit = async () => {
@@ -176,6 +117,7 @@ const RepairOrderDetail = () => {
     }
 
     setVerifyErrors(errors);
+
     if (hasError) return;
 
     try {
@@ -217,7 +159,9 @@ const RepairOrderDetail = () => {
       // Nếu không có dữ liệu hoặc trả về null → hiển thị thông báo
       if (!data || !data.filterOrderResponse) {
         setOrder(null);
-        toast.error("Repair Order not found. Please check the ID.");
+        toast.error(
+          "Không tìm thấy Repair Order này. Vui lòng kiểm tra lại ID."
+        );
         return;
       }
 
@@ -234,15 +178,18 @@ const RepairOrderDetail = () => {
       setTechs(data.getTechnicalsResponse?.technicians || []);
     } catch (err) {
       console.error("Failed to fetch data:", err);
+
       if (
         err.response?.status === 404 ||
         err.response?.data?.errorCode === "Repair order not found"
       ) {
         setOrder(null);
-        toast.error("Repair Order not found. Please check the ID.");
+        toast.error(
+          "Không tìm thấy Repair Order này. Vui lòng kiểm tra lại ID."
+        );
       } else {
         toast.error(
-          "Failed to load Repair Order data. Please try again later."
+          "Không thể tải dữ liệu Repair Order. Vui lòng thử lại sau."
         );
       }
     } finally {
@@ -268,7 +215,18 @@ const RepairOrderDetail = () => {
     try {
       setLoadingTab(true);
       const res = await axios.get(`/api/api/repair-steps/${id}`);
-      setSteps(res.data?.data || []);
+      const stepsData = res.data?.data || [];
+      setSteps(stepsData);
+
+      // Check if any step with title "Inspection" is COMPLETED
+      const inspectionStep = stepsData.find(
+        (s) => s.title && s.title.toLowerCase().includes("inspection")
+      );
+      if (inspectionStep && inspectionStep.status === "COMPLETED") {
+        setInspectionCompleted(true);
+      } else {
+        setInspectionCompleted(false);
+      }
     } catch (err) {
       console.error("Failed to fetch repair steps:", err);
     } finally {
@@ -294,6 +252,25 @@ const RepairOrderDetail = () => {
       toast.error("Update status failed");
     } finally {
       setUpdatingStepId(null);
+    }
+  };
+
+  // Start repair order
+  const handleStartRepair = async () => {
+    try {
+      setStartingRepair(true);
+      const res = await axios.post(`/api/api/repair-steps/${id}/start`);
+      toast.success(res.data?.data || "Repair order started successfully!");
+      setRepairStarted(true);
+      // Fetch steps to show them
+      await fetchSteps();
+    } catch (err) {
+      console.error("Failed to start repair order:", err);
+      toast.error(
+        err.response?.data?.message || "Failed to start repair order."
+      );
+    } finally {
+      setStartingRepair(false);
     }
   };
 
@@ -347,28 +324,6 @@ const RepairOrderDetail = () => {
     return "bg-gray-400";
   };
 
-  // Get display data for a part (combine original data with scanned data)
-  const getPartDisplayData = (part) => {
-    const scannedData = scannedParts[part.id];
-    if (scannedData) {
-      return {
-        ...part,
-        newSerialNumber: scannedData.newSerialNumber,
-        installationDate: scannedData.installationDate,
-      };
-    }
-    return part;
-  };
-
-  // Render scanned parts summary
-  const renderScannedPartsSummary = () => {
-    const scannedCount = Object.keys(scannedParts).length;
-    if (scannedCount === 0) return null;
-
-    return null;
-  };
-
-  // Render table with scan button only for new serial
   const renderTable = (data) => {
     if (loadingTab)
       return (
@@ -388,149 +343,127 @@ const RepairOrderDetail = () => {
         </div>
       );
 
-    const scannedCount = Object.keys(scannedParts).length;
-
     return (
-      <div>
-        {/* ĐÃ ẨN Scanned Parts Summary */}
+      <div className="border border-gray-200 rounded-lg shadow-sm bg-white">
+        <table className="w-full table-auto border-collapse">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">
+                #
+              </th>
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">
+                Part
+              </th>
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">
+                Old SN
+              </th>
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">
+                Qty
+              </th>
+              {/* <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">Year</th> */}
+              {/* <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">Model</th> */}
+              {/* <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">VIN</th> */}
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">
+                License
+              </th>
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">
+                Category
+              </th>
+              {/* <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">Technician</th> */}
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">
+                Replacement
+              </th>
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">
+                New SN
+              </th>
+              <th className="px-2 py-2 text-left text-xs font-bold text-gray-700">
+                Install Date
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {data.map((item, index) => (
+              <tr key={item.id || index} className="hover:bg-gray-50">
+                <td className="px-2 py-2 text-sm text-gray-700">{index + 1}</td>
+                <td className="px-2 py-2 text-sm text-gray-700">
+                  {item.partName}
+                </td>
+                <td className="px-2 py-2 text-sm text-gray-700 break-words">
+                  {Array.isArray(item.listOldSerialNumber) &&
+                  item.listOldSerialNumber.length > 0 &&
+                  (!item.oldSerialNumber || item.oldSerialNumber === "N/A") ? (
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={item.pendingOldSerialNumber || ""}
+                        onChange={(e) =>
+                          handleOldSNChange(index, e.target.value)
+                        }
+                        className="flex-1 px-2 py-1 border border-gray-300 rounded-md bg-white text-sm"
+                      >
+                        <option value="">Select SN</option>
+                        {item.listOldSerialNumber.map((sn) => (
+                          <option key={sn} value={sn}>
+                            {sn}
+                          </option>
+                        ))}
+                      </select>
 
-        <div className="border border-gray-200 rounded-lg shadow-sm bg-white overflow-hidden">
-          <table className="w-full table-auto border-collapse">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700">
-                  #
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700">
-                  Part
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700">
-                  Old SN
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700">
-                  Qty
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700">
-                  License
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700">
-                  Category
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700">
-                  New SN
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700">
-                  Install Date
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700">
-                  Action
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {data.map((item, index) => {
-                const displayData = getPartDisplayData(item);
-                const isScanned = scannedParts[item.id];
-
-                return (
-                  <tr key={item.id || index} className="hover:bg-gray-50">
-                    <td className="px-3 py-3 text-sm text-gray-700">
-                      {index + 1}
-                    </td>
-                    <td className="px-3 py-3 text-sm text-gray-700 font-medium">
-                      {displayData.partName}
-                    </td>
-                    <td className="px-3 py-3 text-sm text-gray-700 break-words font-mono bg-gray-100 px-2 py-1 rounded">
-                      {displayData.oldSerialNumber || "-"}
-                    </td>
-                    <td className="px-3 py-3 text-sm text-gray-700 text-center">
-                      {displayData.quantity}
-                    </td>
-                    <td className="px-3 py-3 text-sm text-gray-700">
-                      {displayData.licensePlate}
-                    </td>
-                    <td className="px-3 py-3 text-sm text-gray-700">
-                      {displayData.category}
-                    </td>
-                    <td className="px-3 py-3">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-sm flex-1 font-mono ${
-                            displayData.newSerialNumber
-                              ? isScanned
-                                ? "text-blue-700 bg-blue-50 px-2 py-1 rounded border border-blue-200"
-                                : "text-green-700 bg-green-50 px-2 py-1 rounded"
-                              : "text-gray-500"
-                          }`}
-                        >
-                          {displayData.newSerialNumber || "Not scanned"}
-                          {isScanned && " (Pending)"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-3 text-sm text-gray-700">
-                      {displayData.installationDate
-                        ? `${displayData.installationDate[2]}/${displayData.installationDate[1]}/${displayData.installationDate[0]}`
-                        : "-"}
-                    </td>
-                    <td className="px-3 py-3">
-                      {isScanned ? (
-                        <button
-                          onClick={() => handleRemoveScannedPart(item.id)}
-                          className="px-3 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition flex items-center gap-2"
-                        >
-                          <X size={12} />
-                          {/* Remove */}
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => openBarcodeScanner(item)}
-                          className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition flex items-center gap-2"
-                        >
-                          <Scan size={12} />
-                          {/* Scan */}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-
-          {/* SAVE ALL */}
-          {scannedCount > 0 && (
-            <div className="bg-blue-50 border-t border-blue-200 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-semibold text-blue-900">
-                    Ready to Save Scanned Parts
-                  </h4>
-                  <p className="text-sm text-blue-700">
-                    {scannedCount} part(s) scanned and ready to save
-                  </p>
-                </div>
-                <button
-                  onClick={handleSaveAllScannedParts}
-                  disabled={savingAll}
-                  className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition font-medium"
-                >
-                  {savingAll ? (
-                    <>
-                      <Loader className="animate-spin" size={16} />
-                      Saving...
-                    </>
+                      <button
+                        onClick={() => handleUpdateOldSNSubmit(item.id, index)}
+                        disabled={updatingDetailId === item.id}
+                        className={`px-3 py-1 text-sm rounded-md font-medium ${
+                          updatingDetailId === item.id
+                            ? "bg-gray-300 text-gray-700 cursor-not-allowed"
+                            : "bg-blue-600 text-white hover:bg-blue-700"
+                        }`}
+                      >
+                        {updatingDetailId === item.id ? (
+                          <Loader className="animate-spin h-4 w-4" />
+                        ) : (
+                          "Update"
+                        )}
+                      </button>
+                    </div>
                   ) : (
-                    <>
-                      <Save size={10} />
-                      Save
-                    </>
+                    <span
+                      className={
+                        item.oldSerialNumber && item.oldSerialNumber !== "N/A"
+                          ? "font-semibold text-green-700"
+                          : "text-gray-500"
+                      }
+                    >
+                      {item.oldSerialNumber || "—"}
+                    </span>
                   )}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+                </td>
+                <td className="px-2 py-2 text-sm text-gray-700 text-center">
+                  {item.quantity}
+                </td>
+                {/* <td className="px-2 py-2 text-sm text-gray-700 text-center">{item.productYear}</td> */}
+                {/* <td className="px-2 py-2 text-sm text-gray-700">{item.modelName}</td> */}
+                {/* <td className="px-2 py-2 text-sm text-gray-700 break-words">{item.vin}</td> */}
+                <td className="px-2 py-2 text-sm text-gray-700">
+                  {item.licensePlate}
+                </td>
+                <td className="px-2 py-2 text-sm text-gray-700">
+                  {item.category}
+                </td>
+                {/* <td className="px-2 py-2 text-sm text-gray-700">{item.technicianName}</td> */}
+                <td className="px-2 py-2 text-sm text-gray-700">
+                  {item.replacementDescription || "-"}
+                </td>
+                <td className="px-2 py-2 text-sm text-gray-700 break-words">
+                  {item.newSerialNumber || "-"}
+                </td>
+                <td className="px-2 py-2 text-sm text-gray-700">
+                  {item.installationDate
+                    ? `${item.installationDate[2]}/${item.installationDate[1]}/${item.installationDate[0]}`
+                    : "-"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     );
   };
@@ -551,7 +484,6 @@ const RepairOrderDetail = () => {
             No technician assigned yet!
           </p>
           <p className="text-gray-400 text-sm mt-1">No steps available</p>
-          <p className="text-gray-400 text-sm mt-1">No steps available</p>
         </div>
       );
 
@@ -571,38 +503,75 @@ const RepairOrderDetail = () => {
               {/* Dot status buttons */}
               {!isSCStaff &&
                 currentTech &&
-                !["COMPLETED", "CANCELLED"].includes(step.status) && (
-                  <div className="flex items-center gap-3">
-                    {step.nextStatuses.map((status) => {
-                      const isActive = step.status === status;
-                      return (
-                        <div key={status} className="relative group">
-                          <button
-                            onClick={() =>
-                              handleUpdateStatus(step.stepId, status)
-                            }
-                            disabled={updatingStepId === step.stepId}
-                            className={`w-7 h-7 rounded-full flex items-center justify-center transition border-black border-2 ${
-                              isActive
-                                ? "bg-blue-600 border-black text-white"
-                                : "bg-white border-gray-300 hover:border-blue-600"
-                            }`}
-                          >
-                            {isActive && <CheckCircle size={20} />}
-                          </button>
-                          {/* Tooltip */}
-                          <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-xs font-medium px-2 py-1 rounded pointer-events-none whitespace-nowrap z-10">
-                            {status}
-                          </div>
-                        </div>
-                      );
-                    })}
+                !["COMPLETED", "CANCELLED"].includes(step.status) &&
+                (() => {
+                  // Detect the special step (Repair/Replace Part) — require old serial numbers set before allowing COMPLETED
+                  const title = (step.title || "").toLowerCase();
+                  const isRepairReplaceStep =
+                    title.includes("repair") &&
+                    title.includes("replace") &&
+                    title.includes("part");
+                  const missingOldSN = Array.isArray(details)
+                    ? details.some(
+                        (d) => !d.oldSerialNumber || d.oldSerialNumber === "N/A"
+                      )
+                    : true;
 
-                    {updatingStepId === step.stepId && (
-                      <Loader className="animate-spin h-5 w-5 text-blue-600" />
-                    )}
-                  </div>
-                )}
+                  return (
+                    <div className="flex items-center gap-3">
+                      {/* If this is the Repair/Replace Part step and there are missing old SNs, show an instruction banner */}
+                      {isRepairReplaceStep && missingOldSN && (
+                        <div className="w-full p-3 rounded-md bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 text-sm font-medium">
+                          Please select the Old SN for all parts in Repair
+                          Details and click "Update" before marking this step as
+                          Completed.
+                        </div>
+                      )}
+
+                      {step.nextStatuses.map((status) => {
+                        const isActive = step.status === status;
+                        const isCompleteAction = status === "COMPLETED";
+                        const disableComplete =
+                          isRepairReplaceStep &&
+                          missingOldSN &&
+                          isCompleteAction;
+                        const disabled =
+                          updatingStepId === step.stepId || disableComplete;
+
+                        return (
+                          <div key={status} className="relative group">
+                            <button
+                              onClick={() =>
+                                !disabled &&
+                                handleUpdateStatus(step.stepId, status)
+                              }
+                              disabled={disabled}
+                              className={`w-7 h-7 rounded-full flex items-center justify-center transition border-black border-2 ${
+                                isActive
+                                  ? "bg-blue-600 border-black text-white"
+                                  : disabled
+                                  ? "bg-gray-200 border-gray-300 text-gray-500 cursor-not-allowed"
+                                  : "bg-white border-gray-300 hover:border-blue-600"
+                              }`}
+                            >
+                              {isActive && <CheckCircle size={20} />}
+                            </button>
+                            {/* Tooltip */}
+                            <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-xs font-medium px-2 py-1 rounded pointer-events-none whitespace-nowrap z-10">
+                              {disableComplete
+                                ? `${status} (disabled until Old SN updated)`
+                                : status}
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {updatingStepId === step.stepId && (
+                        <Loader className="animate-spin h-5 w-5 text-blue-600" />
+                      )}
+                    </div>
+                  );
+                })()}
             </div>
 
             {/* Info */}
@@ -663,7 +632,7 @@ const RepairOrderDetail = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen py-6 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Breadcrumb */}
         <div className="text-sm text-gray-500 mb-2">
           <Link to="/" className="hover:underline text-blue-600">
@@ -703,19 +672,19 @@ const RepairOrderDetail = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <QuickStat
             label="Status"
-            value={order?.claimStatus || "Loading..."}
+            value={order.claimStatus}
             icon={<CheckCircle className="text-blue-600" size={20} />}
             bg="bg-blue-100"
           />
           <QuickStat
             label="Progress"
-            value={`${order?.percentInProcess || 0}%`}
+            value={`${order.percentInProcess || 0}%`}
             icon={<Clock className="text-green-600" size={20} />}
             bg="bg-green-100"
           />
           <QuickStat
             label="Technician"
-            value={order?.techinal || "Unassigned"}
+            value={order.techinal || "Unassigned"}
             icon={<User className="text-purple-600" size={20} />}
             bg="bg-purple-100"
           />
@@ -727,9 +696,9 @@ const RepairOrderDetail = () => {
             Order Information
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <InfoItem label="Model Name" value={order?.modelName} />
-            <InfoItem label="VIN" value={order?.vin} mono />
-            <InfoItem label="Production Year" value={order?.prodcutYear} />
+            <InfoItem label="Model Name" value={order.modelName} />
+            <InfoItem label="VIN" value={order.vin} mono />
+            <InfoItem label="Production Year" value={order.prodcutYear} />
           </div>
 
           <div className="mt-6">
@@ -738,21 +707,21 @@ const RepairOrderDetail = () => {
                 Repair Progress
               </p>
               <p className="text-sm font-semibold text-gray-900">
-                {order?.percentInProcess || 0}%
+                {order.percentInProcess || 0}%
               </p>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3">
               <div
                 className={`h-3 rounded-full transition-all duration-500 ${getProgressColor(
-                  order?.percentInProcess || 0
+                  order.percentInProcess
                 )}`}
-                style={{ width: `${order?.percentInProcess || 0}%` }}
+                style={{ width: `${order.percentInProcess || 0}%` }}
               />
             </div>
 
-            {order?.percentInProcess === 100 && (
+            {order.percentInProcess === 100 && (
               <div className="mt-5 text-center">
-                {order?.claimStatus === "COMPLETED" ? (
+                {order.claimStatus === "COMPLETED" ? (
                   <div className="bg-green-50 border border-green-300 rounded-lg p-5 max-w-md mx-auto">
                     <h3 className="text-green-700 font-semibold text-lg mb-3">
                       Tested and confirmed complete
@@ -760,19 +729,19 @@ const RepairOrderDetail = () => {
                     <p className="text-sm text-gray-700">
                       Confirmer:{" "}
                       <span className="font-semibold">
-                        {order?.verifiedBy || "-"}
+                        {order.verifiedBy || "-"}
                       </span>
                     </p>
                     <p className="text-sm text-gray-700">
                       Signature:{" "}
                       <span className="font-semibold">
-                        {order?.signature || "-"}
+                        {order.signature || "-"}
                       </span>
                     </p>
                     <p className="text-sm text-gray-700">
                       Confirmation time:{" "}
                       <span className="font-semibold">
-                        {order?.verifiedAt
+                        {order.verifiedAt
                           ? `${order.verifiedAt[2]}/${order.verifiedAt[1]}/${
                               order.verifiedAt[0]
                             } ${order.verifiedAt[3]}:${String(
@@ -781,12 +750,12 @@ const RepairOrderDetail = () => {
                           : "–"}
                       </span>
                     </p>
-                    {order?.notes && (
+                    {order.notes && (
                       <p className="text-sm text-gray-700 mt-2 italic">
-                        Note: "{order.notes}"
+                        Note: “{order.notes}”
                       </p>
                     )}
-                    {order?.attachmentPaths &&
+                    {order.attachmentPaths &&
                       order.attachmentPaths.length > 0 && (
                         <RepairOrderAttachments
                           attachments={order.attachmentPaths}
@@ -809,6 +778,43 @@ const RepairOrderDetail = () => {
             )}
           </div>
         </div>
+
+        {/* Start Repair Card: only show if progress is 0% */}
+        {!repairStarted && order.percentInProcess === 0 && (
+          <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border-2 border-dashed border-green-300 p-8 mb-6 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="p-3 bg-green-100 rounded-full">
+                <CheckCircle className="text-green-600" size={32} />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Ready to Start Repair
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Click the button below to begin the repair process and access
+                  all repair steps.
+                </p>
+              </div>
+              <button
+                onClick={handleStartRepair}
+                disabled={startingRepair}
+                className="flex items-center gap-2 px-8 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition shadow-lg"
+              >
+                {startingRepair ? (
+                  <>
+                    <Loader size={20} className="animate-spin" />
+                    Starting...
+                  </>
+                ) : (
+                  <>
+                    <span>▶</span>
+                    Start Repair Process
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -852,72 +858,56 @@ const RepairOrderDetail = () => {
                 updating={updating}
               />
             ) : activeTab === "details" ? (
-              renderTable(details)
+              order.percentInProcess >= 50 ? (
+                renderTable(details)
+              ) : order.percentInProcess === 0 && !repairStarted ? (
+                <div className="text-center py-12">
+                  <AlertCircle className="h-12 w-12 text-yellow-300 mx-auto mb-3" />
+                  <p className="text-gray-600 font-medium">
+                    Click the "Start" button to begin the repair process
+                  </p>
+                </div>
+              ) : !inspectionCompleted ? (
+                <div className="text-center py-12">
+                  <AlertCircle className="h-12 w-12 text-yellow-300 mx-auto mb-3" />
+                  <p className="text-gray-600 font-medium">
+                    Complete the "Inspection" step to view repair details
+                  </p>
+                </div>
+              ) : (
+                renderTable(details)
+              )
             ) : (
               <>
-                {isSCStaff && (
+                {order.percentInProcess === 0 && !repairStarted && (
+                  <div className="mb-4 p-3 rounded-lg bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 text-sm font-medium">
+                    Click the "Start" button to begin the repair process and see
+                    repair steps.
+                  </div>
+                )}
+                {isSCStaff && repairStarted && (
                   <div className="mb-4 p-3 rounded-lg bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 text-sm font-medium">
                     Only technicians can update the repair progress in the
                     steps.
                   </div>
                 )}
-                {renderSteps(steps)}
+                {order.percentInProcess > 0 || repairStarted ? (
+                  renderSteps(steps)
+                ) : (
+                  <div className="text-center py-12">
+                    <AlertCircle className="h-12 w-12 text-yellow-300 mx-auto mb-3" />
+                    <p className="text-gray-600 font-medium">
+                      Click the "Start" button to begin the repair process
+                    </p>
+                  </div>
+                )}
               </>
             )}
           </div>
         </div>
       </div>
 
-      {/* Barcode Scanner Modal */}
-      {showBarcodeModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-auto max-h-[90vh] h-auto flex flex-col">
-            {/* Header   */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <Barcode className="text-blue-600" size={20} />
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">
-                    Scan Serial Number
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Part:{" "}
-                    <span className="font-semibold text-blue-700">
-                      {currentScanningPart?.partName}
-                    </span>
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setShowBarcodeModal(false);
-                  setCurrentScanningPart(null);
-                }}
-                className="text-gray-400 hover:text-gray-600 transition p-1"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Content -  */}
-            <div className="p-4 flex-1 overflow-hidden">
-              <RealBarcodeScanner
-                onScan={(scannedCode) => {
-                  console.log("🎯 Received code from scanner:", scannedCode);
-                  handleRealScanSubmit(scannedCode);
-                }}
-                onClose={() => {
-                  setShowBarcodeModal(false);
-                  setCurrentScanningPart(null);
-                }}
-                partName={currentScanningPart?.partName || "Part"}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Completion Confirmation Modal */}
+      {/* Modal xác nhận hoàn tất */}
       {showVerifyModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
           <div className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6">
@@ -941,11 +931,9 @@ const RepairOrderDetail = () => {
                       signature: e.target.value,
                     }))
                   }
-                  className={`w-full border rounded-lg p-2 focus:ring-2 focus:outline-none ${
-                    verifyErrors.signature
-                      ? "border-red-600"
-                      : "border-gray-300"
-                  } focus:border-blue-500 focus:ring-blue-500`}
+                  className={`w-full border rounded-lg p-2 focus:ring-2 focus:outline-none
+      ${verifyErrors.signature ? "border-red-600" : "border-gray-300"} 
+      focus:border-blue-500 focus:ring-blue-500`}
                   placeholder="Enter the name of the person confirming..."
                 />
                 {verifyErrors.signature && (
@@ -971,7 +959,7 @@ const RepairOrderDetail = () => {
                   rows={3}
                   className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   placeholder="Enter notes (if any)..."
-                />
+                ></textarea>
               </div>
 
               {/* Upload file */}
@@ -1073,7 +1061,8 @@ const RepairOrderDetail = () => {
   );
 };
 
-// Sub components (giữ nguyên)
+//Sub components
+
 const QuickStat = ({ label, value, icon, bg }) => (
   <div className="bg-white rounded-lg border border-gray-200 p-4">
     <div className="flex items-center gap-3">
@@ -1160,6 +1149,7 @@ const TechnicianTab = ({
               </option>
             ))}
           </select>
+
           <button
             onClick={handleAssignTech}
             disabled={updating || !selectedTech}
@@ -1217,27 +1207,29 @@ const RepairOrderAttachments = ({ attachments }) => {
 
             {/* Prev button */}
             {attachments.length > 1 && (
-              <>
-                <button
-                  onClick={() =>
-                    setLightboxIndex(
-                      (lightboxIndex - 1 + attachments.length) %
-                        attachments.length
-                    )
-                  }
-                  className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70 transition z-10"
-                >
-                  <ChevronLeft size={32} />
-                </button>
-                <button
-                  onClick={() =>
-                    setLightboxIndex((lightboxIndex + 1) % attachments.length)
-                  }
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70 transition z-10"
-                >
-                  <ChevronRight size={32} />
-                </button>
-              </>
+              <button
+                onClick={() =>
+                  setLightboxIndex(
+                    (lightboxIndex - 1 + attachments.length) %
+                      attachments.length
+                  )
+                }
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70 transition z-10"
+              >
+                <ChevronLeft size={32} />
+              </button>
+            )}
+
+            {/* Next button */}
+            {attachments.length > 1 && (
+              <button
+                onClick={() =>
+                  setLightboxIndex((lightboxIndex + 1) % attachments.length)
+                }
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70 transition z-10"
+              >
+                <ChevronRight size={32} />
+              </button>
             )}
 
             {/* Image */}
