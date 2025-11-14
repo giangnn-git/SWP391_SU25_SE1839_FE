@@ -839,7 +839,7 @@ const RepairOrderDetail = () => {
         </div>
 
         {/* Start Repair Card: only show if progress is 0% */}
-        {!repairStarted && order.percentInProcess === 0 && (
+        {!isSCStaff && !repairStarted && order.percentInProcess === 0 && (
           <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border-2 border-dashed border-green-300 p-8 mb-6 text-center">
             <div className="flex flex-col items-center gap-4">
               <div className="p-3 bg-green-100 rounded-full">
