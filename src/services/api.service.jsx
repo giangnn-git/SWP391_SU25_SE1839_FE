@@ -1,5 +1,6 @@
 import axios from "./axios.customize";
 
+// {Auth}
 // Login API
 export const userLoginApi = (user, password) => {
   const URL_BACKEND = "/api/auth/token";
@@ -9,22 +10,15 @@ export const userLoginApi = (user, password) => {
 };
 
 // Create User API
-export const createUserApi = async (
-  email,
-  name,
-  password,
-  phoneNumber,
-  role
-) => {
+export const createUserApi = async (userData) => {
   const URL_BACKEND = "/api/auth/user";
 
   const data = {
-    email: email,
-    name: name,
-    password: password,
-    phoneNumber: phoneNumber,
-    role: role,
-    serviceCenterId: 1,
+    email: userData.email,
+    name: userData.name,
+    phoneNumber: userData.phoneNumber,
+    role: userData.role,
+    serviceCenterId: userData.serviceCenterId,
   };
 
   return axios.post(URL_BACKEND, data);
@@ -46,33 +40,327 @@ export const updateUserApi = (id, userData) => {
     status: userData.status,
   });
 };
-
-// Inactive/Active user (toggle status)
-export const toggleUserStatusApi = (id, isActive) => {
-  return axios.patch(`/api/auth/users/${id}/status`, {
-    isActive,
-  });
-};
-
-// Delete user
-export const deleteUserApi = (id) => {
-  return axios.delete(`/api/auth/users/${id}`);
-};
-
-// Get user by ID
-export const getUserByIdApi = (id) => {
-  return axios.get(`/api/auth/users/${id}`);
-};
-
-export const getServiceCentersApi = () => {
-  return axios.get("/api/api/servicecenters");
-};
-
-export const changePasswordApi = async (id, passwordData) => {
-  const URL_BACKEND = `/api/auth/${id}/change-password`;
-
-  return axios.post(URL_BACKEND, {
-    oldPassword: passwordData.currentPassword,
+//change pass
+export const changePasswordApi = async (passwordData) => {
+  return axios.post("/api/auth/change-password", {
+    oldPassword: passwordData.oldPassword,
     newPassword: passwordData.newPassword,
   });
+};
+
+//forgot pass
+export const forgotPasswordApi = async (email) => {
+  return axios.post("/api/auth/forgot-password", {
+    email: email,
+  });
+};
+
+//toggle status
+export const toggleUserStatusApi = (userId, isActive) => {
+  const statusPath = isActive ? "active" : "inactive";
+  return axios.patch(`/api/auth/users/${statusPath}/${userId}`);
+};
+
+// // Delete user
+// export const deleteUserApi = (id) => {
+//   return axios.delete(`/api/auth/users/${id}`);
+// };
+
+// // Get user by ID
+// export const getUserByIdApi = (id) => {
+//   return axios.get(`/api/auth/users/${id}`);
+// };
+
+//get all SC
+export const getServiceCentersApi = () => {
+  return axios.get("/api/api/service-centers");
+};
+
+//
+//
+export const createWarrantyClaimApi = (data) => {
+  return axios.post("/api/api/claims", data, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};
+//{ Policy Warranty }
+
+//get all policy
+export const getAllWarrantyApi = () => {
+  return axios.get("/api/api/policies");
+};
+
+// create policy
+export const createWarrantyPolicyApi = (policyData) => {
+  return axios.post("/api/api/policy", policyData);
+};
+
+// update policy
+export const updateWarrantyPolicyApi = (id, policyData) => {
+  return axios.put(`/api/api/policy/${id}`, policyData);
+};
+
+//toggle policy status
+export const updateWarrantyPolicyStatusApi = (policyId) => {
+  return axios.patch(`/api/api/policy/status/${policyId}`);
+};
+
+//  Delete policy
+export const deleteWarrantyPolicyApi = (id) => {
+  return axios.delete(`/api/api/policy/${id}`);
+};
+
+//{ Policy Parts }
+export const getAllPartPoliciesApi = () => {
+  return axios.get("/api/api/part-policies");
+};
+
+// detail part
+export const getPartPolicyByIdApi = (policyId) => {
+  return axios.get(`/api/api/part-policies/${policyId}`);
+};
+
+//add part policy
+export const createPartPolicyApi = (partPolicyData) => {
+  return axios.post("/api/api/part-policy", partPolicyData);
+};
+
+// Get available part codes and policy codes
+export const getPartPolicyCodesApi = () => {
+  return axios.get("/api/api/part-policy/code");
+};
+
+// { Part Policy Status }
+export const updatePartPolicyStatusApi = (partPolicyId) => {
+  return axios.put(`/api/api/part-policy/status/${partPolicyId}`);
+};
+
+// { vehicle modal storage API}
+export const getVehicleDetailApi = (modalId) => {
+  return axios.get(`/api/api/model/detail/${modalId}`);
+};
+
+// Lấy tất cả vehicles còn trong campaign recall theo Service Center (SC Staff)
+export const getVehiclesInCampaignsByScApi = () => {
+  return axios.get("/api/api/campaigns/vehicles/by-sc");
+};
+
+// {Campaign API}
+
+export const getAllCampaignsApi = () => {
+  return axios.get("/api/api/campaigns");
+};
+
+export const createCampaignApi = (campaignData) => {
+  return axios.post("/api/api/campaigns", campaignData);
+};
+
+export const getAllVehicleModelsApi = () => {
+  return axios.get("/api/vehicle-models");
+};
+
+// {Campaign Notification API}
+
+export const sendCampaignNotificationApi = (campaignId) => {
+  return axios.post(`/api/api/campaigns/${campaignId}/notify`);
+};
+
+// {Claim API}
+
+// READ (Lấy tất cả claims)
+export const getAllClaimsApi = async () => {
+  return axios.get("/api/claims");
+};
+
+// READ (Lấy claim theo ID)
+export const getClaimByIdApi = async (id) => {
+  return axios.get(`/api/claims/${id}`);
+};
+
+// UPDATE (Cập nhật claim)
+export const updateClaimApi = async (id, updatedData) => {
+  return axios.put(`/api/claims/${id}`, updatedData);
+};
+
+// DELETE (Xóa claim)
+export const deleteClaimApi = async (id) => {
+  return axios.delete(`/api/claims/${id}`);
+};
+
+//  CREATE  claim
+export const createClaimApi = async (
+  vin,
+  mileage,
+  priority,
+  partClaims,
+  description,
+  attachments
+) => {
+  const data = {
+    vin,
+    mileage,
+    priority,
+    partClaims,
+    description,
+    attachments,
+  };
+
+  return axios.post("/api/claims", data);
+};
+
+//{repairOrders API}
+
+export const getAllRepairOrdersApi = () => {
+  return axios.get("/api/api/repairOrders");
+};
+
+//get Vehicle modal
+export const getAllModelsApi = () => {
+  return axios.get("/api/api/models");
+};
+
+//get SupplyChain
+export const getAllPartInventoriesApi = () => {
+  return axios.get("/api/api/part-inventories");
+};
+
+// {Warranty Claims API}
+
+export const updateWarrantyClaimApi = async (id, updatedData) => {
+  return axios.put(`/api/claims/${id}`, updatedData);
+};
+
+export const getAllWarrantyClaimsApi = () => {
+  return axios.get("/api/api/claims");
+};
+
+// Get all registered vehicles (Customer Registration page)
+// export const getAllVehiclesApi = () => {
+//   return axios.get("/api/api/vehicles");
+// };
+
+// {Customer API}
+
+// Get all customers
+export const getCustomersApi = () => {
+  return axios.get("/api/api/customers");
+};
+
+// {Customer Registration API}
+export const createCustomerApi = (customerData) => {
+  const URL_BACKEND = "/api/api/customers";
+  const data = {
+    name: customerData.name,
+    phoneNumber: customerData.phoneNumber,
+    licensePlate: customerData.licensePlate,
+    email: customerData.email,
+    address: customerData.address,
+    vin: customerData.vin,
+  };
+
+  return axios.post(URL_BACKEND, data);
+};
+
+// Update customer info
+export const updateCustomerApi = (customerId, customerData) => {
+  const URL_BACKEND = `/api/api/customers/${customerId}`;
+  const data = {
+    name: customerData.name,
+    phoneNumber: customerData.phoneNumber,
+    licensePlate: customerData.licensePlate,
+    email: customerData.email,
+    address: customerData.address,
+    vin: customerData.vin,
+  };
+
+  return axios.put(URL_BACKEND, data);
+};
+
+// {Customer Vehicles (View by customerId)}
+export const getVehiclesByCustomerIdApi = (customerId) => {
+  if (!customerId) {
+    return Promise.reject(new Error("customerId is required"));
+  }
+
+  return axios.get(`/api/api/${customerId}/vehicles`);
+};
+
+// add vehicle to customer
+export const addVehicleToCustomerApi = (customerId, vehicleData) => {
+  return axios.post(`/api/api/customers/${customerId}/vehicles`, vehicleData);
+};
+
+// {Repair History API}
+export const getRepairHistoryByVinApi = (vin) => {
+  return axios.get(`/api/api/repair-orders/history/${vin}`);
+};
+
+// Search Cus by VIN or Phone
+export const searchCustomerApi = (searchKey) => {
+  return axios.get(`/api/api/vehicles/find?key=${searchKey}`);
+};
+
+export const updateCampaignApi = (id, campaignData) => {
+  return axios.put(`/api/api/campaigns/${id}`, {
+    code: campaignData.code,
+    name: campaignData.name,
+    description: campaignData.description,
+    startDate: campaignData.startDate,
+    endDate: campaignData.endDate,
+    produceDateFrom: campaignData.produceDateFrom,
+    produceDateTo: campaignData.produceDateTo,
+    affectedModels: campaignData.affectedModels,
+    status: campaignData.status,
+  });
+};
+
+//Reporting & Analytics API
+
+// Get performance report (Service Center Performance)
+export const getPerformanceReportApi = () => {
+  return axios.get("/api/api/report/performances");
+};
+
+// { Reports - Resolution Time Distribution }
+export const getCompletedDurationReportApi = () => {
+  return axios.get("/api/api/report/completed-duration");
+};
+
+//{Get Customer by VIN}
+export const getCustomerByVinApi = (vin) => {
+  return axios.get(`/api/api/customer?vin=${vin}`);
+};
+
+export const searchVehiclesByPhoneApi = (phone) => {
+  return axios.get(`/api/api/vehicle?phone=${phone}`);
+};
+
+export const getCampaignByVinApi = (vin) => {
+  return axios.get(`/api/api/campaign?vin=${vin}`);
+};
+
+// create Part Request
+export const createPartRequestApi = (data) => {
+  return axios.post("/api/api/part-supply", data);
+};
+
+// Get all part requests
+export const getAllPartRequestsApi = () => {
+  return axios.get("/api/api/part-supplies");
+};
+
+// Get part request detail by ID
+export const getPartRequestDetailApi = (id) => {
+  return axios.get(`/api/api/part-supply/${id}`);
+};
+
+// Approve or Reject part supply request
+export const reviewPartSupplyApi = (reviewData) => {
+  return axios.put("/api/api/part-supply/review", reviewData, {});
+};
+
+export const getAllPartsApi = async () => {
+  return axios.get("/api/api/parts");
 };

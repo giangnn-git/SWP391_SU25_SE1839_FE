@@ -4,13 +4,28 @@ import App from "./App.jsx";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import LoginPage from "./pages/login.jsx";
 import PrivateRoute from "./components/routes/PrivateRoute.jsx";
-import RoleProtectedRoute from "./components/routes/RoleProtectedRoute.jsx";
+import SupplyChain from "./pages/SupplyChain.jsx";
+import Policy from "./pages/Policy.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
-import ManageUsers from "./pages/manageUsers.jsx";
-import SupplyChain from "./pages/SupplyChain";
-import PartPolicyManagement from "./pages/PartPolicyManagement.jsx";
+import ManageUsers from "./pages/ManageUsers.jsx";
+import WarrantyClaims from "./pages/WarrantyClaims.jsx";
+import RepairOrders from "./pages/RepairOrders.jsx";
+import ClaimDetail from "./pages/WarrantyClaimDetail.jsx";
+import RepairOrderDetail from "./pages/RepairOrderDetail.jsx";
+import WarrantyClaimApprovals from "./pages/WarrantyClaimsApproval.jsx";
+import WarrantyClaimApprovalDetail from "./pages/WCApprovalDetail.jsx";
 import ProfilePage from "./pages/Profiles.jsx";
 import ChangePasswordPage from "./pages/ChangePassword.jsx";
+import Profiles from "./pages/Profiles.jsx";
+import VehicleManagement from "./pages/VehicleManagement.jsx";
+import CampaignManagement from "./pages/CampaignManagement.jsx";
+import CustomerRegistration from "./pages/CustomerRegistration.jsx";
+import AnalyticsPage from "./pages/AnalyticsPage.jsx";
+import ClaimApprove from "./pages/ClaimApprove.jsx";
+import PartRequestPage from "./pages/PartRequest.jsx";
+import PartRequestReview from "./pages/PartRequestReview.jsx";
+import ScCampaignVehicles from "./pages/ScCampaignVehicles.jsx";
+import NotFoundPage from "./pages/NotFoundPage.jsx";
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -23,49 +38,221 @@ const router = createBrowserRouter([
     ),
     children: [
       {
-        index: true, //  Home page
+        index: true, // Home page
         element: <Dashboard />,
       },
-      {
-        path: "manage-users", // only admin access
-        element: <ManageUsers />,
-      },
-      {
 
-        path: "supply-chain", //  chỉ admin + evm staff mới truy cập được
+      //  Warranty Claims — chỉ SC_STAFF có quyền
+      {
+        path: "warranty-claims",
         element: (
-          <RoleProtectedRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+          <PrivateRoute
+            allowedRoles={["SC_STAFF", "TECHNICIAN"]}
+          >
+            <WarrantyClaims />
+          </PrivateRoute>
+        ),
+      },
+
+      //  Claim Detail — chỉ SC_STAFF có quyền
+      {
+        path: "claim/:id",
+        element: (
+          <PrivateRoute allowedRoles={["SC_STAFF"]}>
+            <ClaimDetail />
+          </PrivateRoute>
+        ),
+      },
+
+      //  Repair Orders — chỉ SC_STAFF có quyền
+      {
+        path: "repair-orders",
+        element: (
+          <PrivateRoute allowedRoles={["SC_STAFF", "TECHNICIAN"]}>
+            <RepairOrders />
+          </PrivateRoute>
+        ),
+      },
+
+      //  Repair Order Detail — chỉ SC_STAFF có quyền
+      {
+        path: "repair-orders/:id",
+        element: (
+          <PrivateRoute allowedRoles={["SC_STAFF", "TECHNICIAN"]}>
+            <RepairOrderDetail />
+          </PrivateRoute>
+        ),
+      },
+
+      //  Warranty Claims Approval — chỉ EVM_STAFF
+      {
+        path: "warranty-claim-approvals",
+        element: (
+          <PrivateRoute allowedRoles={["EVM_STAFF"]}>
+            <WarrantyClaimApprovals />
+          </PrivateRoute>
+        ),
+      },
+      // Warranty Claim Approval Detail — chỉ EVM_STAFF 
+      {
+        path: "warranty-claim-approval-detail/:id",
+        element: (
+          <PrivateRoute allowedRoles={["EVM_STAFF"]}>
+            <WarrantyClaimApprovalDetail />
+          </PrivateRoute>
+        ),
+      },
+
+      //  Customer Registration — chỉ SC_STAFF có quyền
+      {
+        path: "customer-registration",
+        element: (
+          <PrivateRoute allowedRoles={["SC_STAFF"]}>
+            <CustomerRegistration />
+          </PrivateRoute>
+        ),
+      },
+
+      //  Part Requests — chỉ SC_STAFF có quyền
+      {
+        path: "part-requests",
+        element: (
+          <PrivateRoute allowedRoles={["SC_STAFF"]}>
+            <PartRequestPage />
+          </PrivateRoute>
+        ),
+      },
+
+      //  Vehicle Management — ADMIN only
+      {
+        path: "vehicles",
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+            <VehicleManagement />
+          </PrivateRoute>
+        ),
+      },
+
+      //  Manage Users — ADMIN only
+      {
+        path: "manage-users",
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN"]}>
+            <ManageUsers />
+          </PrivateRoute>
+        ),
+      },
+
+      //  Supply Chain — ADMIN + EVM_STAFF only
+      {
+        path: "supply-chain",
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF", "SC_STAFF"]}>
             <SupplyChain />
-          </RoleProtectedRoute>
+          </PrivateRoute>
         ),
       },
+
+      //  Claim Approve — chỉ EVM_STAFF có quyền
       {
-        path: "part-policies", //  quản lý chính sách bảo hành chỉ admin và evm mới có
+        path: "claim-approve",
         element: (
-          <RoleProtectedRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
-            <PartPolicyManagement />
-          </RoleProtectedRoute>
+          <PrivateRoute allowedRoles={["EVM_STAFF"]}>
+            <ClaimApprove />
+          </PrivateRoute>
+        ),
+      },
+      //Part Approve - chỉ EVM
+      {
+        path: "part-requests-review",
+        element: (
+          <PrivateRoute allowedRoles={["EVM_STAFF"]}>
+            <PartRequestReview />
+          </PrivateRoute>
         ),
       },
 
+      //  Policy Management (Part + Warranty) — ADMIN + EVM_STAFF only
+      {
+        path: "part-policies",
+        path: "policy", // Policy Management (Part + Warranty)
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+            <Policy />
+          </PrivateRoute>
+        ),
+      },
 
+      {
         path: "profile",
         element: <ProfilePage />,
+        path: "part-policies",
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+            <Policy />
+          </PrivateRoute>
+        ),
       },
 
+      {
+        path: "warranty-policies",
+        path: "policy",
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+            <Policy />
+          </PrivateRoute>
+        ),
+      },
+
+      //  Campaign Management — ADMIN + EVM_STAFF only
+      {
+        path: "campaigns",
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+            <CampaignManagement />
+          </PrivateRoute>
+        ),
+      },
+
+      // Analytics Page (chỉ Admin + EVM Staff có quyền truy cập)
+      {
+        path: "analytics",
+        element: (
+          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
+            <AnalyticsPage />
+          </PrivateRoute>
+        ),
+      },
+
+      {
+        path: "sc/campaign-vehicles",
+        element: (
+          <PrivateRoute allowedRoles={["SC_STAFF"]}>
+            <ScCampaignVehicles />
+          </PrivateRoute>
+        ),
+      },
     ],
   },
-  {
-    path: "/change-password",
-    element: (
-      <PrivateRoute>
-        <ChangePasswordPage />
-      </PrivateRoute>
-    ),
-  },
+
+  //  Trang login / profile / đổi mật khẩu
   {
     path: "/login",
     element: <LoginPage />,
+  },
+  {
+    path: "/change-password",
+    element: <ChangePasswordPage />,
+  },
+  {
+    path: "/profile",
+    element: <Profiles />,
+  },
+
+  //Not Found Page (Wrong URL)
+  {
+    path: "*",
+    element: <NotFoundPage />,
   },
 ]);
 

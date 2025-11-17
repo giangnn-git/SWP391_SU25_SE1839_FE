@@ -8,6 +8,7 @@ import {
 import UserTable from "../components/users/userTable.jsx";
 import EditUserModal from "../components/users/editUserModal.jsx";
 import CreateUserModal from "../components/users/CreateUserModal.jsx";
+import { Users } from "lucide-react";
 
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
@@ -68,21 +69,22 @@ const ManageUsers = () => {
     setCreateLoading(true);
     setError("");
     try {
-      await createUserApi(
-        userData.email,
-        userData.name,
-        userData.password,
-        userData.phoneNumber,
-        userData.role
-      );
+      await createUserApi({
+        email: userData.email,
+        name: userData.name,
+        phoneNumber: userData.phoneNumber,
+        role: userData.role,
+        serviceCenterId: userData.serviceCenterId,
+      });
+
       setSuccess("User created successfully!");
       setIsCreateModalOpen(false);
-      loadUsers(); // Refresh list
+      loadUsers();
     } catch (err) {
       setError(
         "Failed to create user: " + (err.response?.data?.message || err.message)
       );
-      throw err;
+      throw err; // re-throw để modal có thể xử lý
     } finally {
       setCreateLoading(false);
     }
@@ -113,19 +115,52 @@ const ManageUsers = () => {
   };
 
   // Toggle user status
-  const handleToggleStatus = async (id, isActive) => {
+  const handleToggleStatus = async (id, currentIsActive) => {
     setError("");
     try {
-      await toggleUserStatusApi(id, isActive);
+      const targetUser = users.find((user) => user.id === id);
+      if (!targetUser) {
+        throw new Error("User not found");
+      }
+
+      // call api
+      await toggleUserStatusApi(id, !currentIsActive);
+
       setSuccess(
-        `User ${isActive ? "activated" : "deactivated"} successfully!`
+        `User ${!currentIsActive ? "activated" : "deactivated"} successfully!`
       );
-      loadUsers();
+
+      // Update local state
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user.id === id
+            ? {
+              ...user,
+              isActive: !currentIsActive,
+              status: !currentIsActive ? "ACTIVE" : "INACTIVE",
+            }
+            : user
+        )
+      );
+
+      // update filteredUsers for UI refresh
+      setFilteredUsers((prevFiltered) =>
+        prevFiltered.map((user) =>
+          user.id === id
+            ? {
+              ...user,
+              isActive: !currentIsActive,
+              status: !currentIsActive ? "ACTIVE" : "INACTIVE",
+            }
+            : user
+        )
+      );
     } catch (err) {
-      setError(
-        "Failed to update user status: " +
-          (err.response?.data?.message || err.message)
-      );
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "You don't have permission to perform this action";
+      setError(errorMessage);
       throw err;
     }
   };
@@ -146,12 +181,15 @@ const ManageUsers = () => {
       {/* Header với Create Button và Search */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Users />
+            User Management
+          </h1>
           <p className="text-gray-600">Manage system users and permissions</p>
         </div>
 
         <div className="flex items-center space-x-4">
-          {/* ✅ SEARCH INPUT */}
+          {/* SEARCH INPUT */}
           <div className="relative">
             <input
               type="text"
@@ -207,7 +245,7 @@ const ManageUsers = () => {
         </div>
       )}
 
-      {/* Users Table - pass filteredUsers instead of users */}
+      {/* Users Table */}
       <div className="bg-white rounded-lg shadow-sm border">
         <UserTable
           users={filteredUsers}

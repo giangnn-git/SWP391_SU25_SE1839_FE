@@ -1,13 +1,72 @@
 import { useState, useRef, useEffect } from "react";
 import { storage } from "../../utils/storage";
 import { useNavigate } from "react-router-dom";
+import { useCurrentUser } from "../../hooks/useCurrentUser";
+import { getServiceCentersApi } from "../../services/api.service";
 
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [serviceCenterName, setServiceCenterName] = useState("");
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
   const userName = storage.get("userName") || "User";
+  const { currentUser } = useCurrentUser();
+
+  // Chuẩn hóa role
+  const roleLabel = currentUser?.role || "";
+
+  // Xác định serviceCenterId dựa trên role
+  const userRole = currentUser?.role?.toUpperCase();
+  const isEVMStaff = userRole === "EVM_STAFF" || userRole === "ADMIN";
+
+  const getServiceCenterId = () => {
+    try {
+      if (isEVMStaff) return null;
+      const scid = localStorage.getItem("serviceCenterId");
+      return scid && !isNaN(scid) ? parseInt(scid) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const userServiceCenterId = getServiceCenterId();
+
+  // Lấy service center name
+  useEffect(() => {
+    const fetchServiceCenterName = async () => {
+      try {
+        // EVM_STAFF luôn là Main Warehouse
+        if (isEVMStaff) {
+          setServiceCenterName("Main Warehouse");
+          return;
+        }
+
+        // Nếu có serviceCenterId hợp lệ cho SC_STAFF
+        if (userServiceCenterId) {
+          const response = await getServiceCentersApi();
+          const serviceCenters = response.data.data;
+
+          const foundServiceCenter = serviceCenters.find(
+            (sc) => sc.id === userServiceCenterId
+          );
+
+          if (foundServiceCenter) {
+            setServiceCenterName(foundServiceCenter.name);
+          } else {
+            setServiceCenterName("Unknown Service Center");
+          }
+        } else {
+          setServiceCenterName("");
+        }
+      } catch (error) {
+        console.error("Error fetching service center:", error);
+        setServiceCenterName("");
+      }
+    };
+
+    fetchServiceCenterName();
+  }, [isEVMStaff, userServiceCenterId]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -16,7 +75,6 @@ const Header = () => {
         setIsDropdownOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
@@ -29,6 +87,7 @@ const Header = () => {
     storage.remove("userName");
     storage.remove("isLoggedIn");
     storage.remove("id");
+    storage.remove("serviceCenterId");
     navigate("/login");
   };
 
@@ -40,24 +99,63 @@ const Header = () => {
   return (
     <header className="bg-white shadow-sm border-b">
       <div className="flex justify-between items-center h-16 px-6">
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900">
+        {/* Title & Service Center */}
+        <div className="flex flex-col">
+          <h1 className="text-xl font-bold text-gray-900">
             EV Warranty Management System
           </h1>
+          {/* Hiển thị tên service center */}
+          {serviceCenterName && (
+            <div className="flex items-center mt-1">
+              <svg
+                className="w-4 h-4 text-blue-600 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+              <span className="text-sm font-semibold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200 shadow-sm">
+                {serviceCenterName}
+              </span>
+            </div>
+          )}
         </div>
 
+        {/* User Section */}
         <div className="flex items-center space-x-4">
-          {/* User Info & Dropdown */}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-              <div className="text-right">
+              <div className="text-right leading-tight">
                 <p className="text-sm font-medium text-gray-900">{userName}</p>
+
+                {/* Role badge chỉ hiển thị role */}
+                {roleLabel && (
+                  <span
+                    className="inline-block mt-[2px] text-[11px] font-medium text-blue-700 bg-blue-50 border border-blue-200 px-2 py-[2px] rounded-full shadow-sm tracking-wide"
+                    aria-label={`Role: ${roleLabel}`}
+                    title={roleLabel}
+                  >
+                    {roleLabel}
+                  </span>
+                )}
               </div>
 
-              {/* User Avatar Icon */}
+              {/* Avatar */}
               <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full border border-blue-200">
                 <svg
                   className="w-4 h-4 text-blue-600"
@@ -74,7 +172,7 @@ const Header = () => {
                 </svg>
               </div>
 
-              {/* Chevron Icon */}
+              {/* Chevron */}
               <svg
                 className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${
                   isDropdownOpen ? "rotate-180" : ""
@@ -92,10 +190,9 @@ const Header = () => {
               </svg>
             </button>
 
-            {/* Dropdown Menu */}
+            {/* Dropdown */}
             {isDropdownOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                {/* My Profile */}
                 <button
                   onClick={handleProfile}
                   className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
@@ -116,7 +213,6 @@ const Header = () => {
                   My Profile
                 </button>
 
-                {/* Logout */}
                 <button
                   onClick={handleLogout}
                   className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200"
