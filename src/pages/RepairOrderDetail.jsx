@@ -115,12 +115,36 @@ const RepairOrderDetail = () => {
 
     try {
       setUpdatingNewSN(scanningForDetail.id);
-      await axios.put(`/api/api/repair-details/${scanningForDetail.id}`, {
-        newSerialNumber: barcode.trim(),
-        installationDate: new Date().toISOString().split("T")[0],
-      });
 
-      toast.success(`New serial number updated: ${barcode}`);
+      const payload = {
+        oldSerialNumber: scanningForDetail.oldSerialNumber || "",
+        newSerialNumber: barcode.trim(),
+      };
+
+      // PHÂN BIỆT SCAN (POST) VÀ RESCAN (PATCH)
+      let res;
+
+      const isFirstScan =
+        !scanningForDetail.newSerialNumber ||
+        scanningForDetail.newSerialNumber === "N/A";
+
+      if (isFirstScan) {
+        // Lần đầu scan - dùng POST
+        res = await axios.post(
+          `/api/api/repair-detail/vehicle-part/${scanningForDetail.id}`,
+          payload
+        );
+      } else {
+        // Rescan - dùng PATCH
+        res = await axios.patch(
+          `/api/api/repair-detail/vehicle-part/${scanningForDetail.id}`,
+          payload
+        );
+      }
+
+      toast.success(
+        `New serial number ${isFirstScan ? "updated" : "rescanned"}: ${barcode}`
+      );
       await fetchDetails();
 
       const channel = new BroadcastChannel("repair_order_updates");
@@ -287,8 +311,10 @@ const RepairOrderDetail = () => {
         status: newStatus,
       });
       toast.success("Status update successful");
-      // fetchDetails();
-      await Promise.all([fetchSteps(), fetchOrderAndTechs()]);
+
+      // FIX: Fetch details ngay sau khi update status để hiển thị part ở step 2
+      await Promise.all([fetchSteps(), fetchOrderAndTechs(), fetchDetails()]);
+
       const channel = new BroadcastChannel("repair_order_updates");
       channel.postMessage({ type: "ORDER_UPDATED", id });
       channel.close();
@@ -398,8 +424,8 @@ const RepairOrderDetail = () => {
                 <td className="px-1 py-1 text-gray-700">{item.partName}</td>
                 <td className="px-1 py-1 text-gray-700 break-words">
                   {Array.isArray(item.listOldSerialNumber) &&
-                    item.listOldSerialNumber.length > 0 &&
-                    (!item.oldSerialNumber || item.oldSerialNumber === "N/A") ? (
+                  item.listOldSerialNumber.length > 0 &&
+                  (!item.oldSerialNumber || item.oldSerialNumber === "N/A") ? (
                     <div className="flex items-center gap-1">
                       <select
                         value={item.pendingOldSerialNumber || ""}
@@ -438,10 +464,11 @@ const RepairOrderDetail = () => {
                           handleUpdateOldSNSubmit(item.id, index);
                         }}
                         disabled={updatingDetailId === item.id}
-                        className={`px-1.5 py-0.5 text-xs rounded font-medium whitespace-nowrap ${updatingDetailId === item.id
+                        className={`px-1.5 py-0.5 text-xs rounded font-medium whitespace-nowrap ${
+                          updatingDetailId === item.id
                             ? "bg-gray-300 text-gray-700 cursor-not-allowed"
                             : "bg-blue-600 text-white hover:bg-blue-700"
-                          }`}
+                        }`}
                       >
                         {updatingDetailId === item.id ? (
                           <Loader className="h-3 w-3 animate-spin" />
@@ -485,6 +512,11 @@ const RepairOrderDetail = () => {
   const renderStep3Table = (data) => {
     if (!data || data.length === 0) return null;
 
+    // KIỂM TRA BƯỚC 3 THEO TITLE
+    const isStep3Completed = steps.some(
+      (step) => step.title === "Step 3: Assembly" && step.status === "COMPLETED"
+    );
+
     return (
       <div className="overflow-x-auto">
         <table className="w-full text-xs border-collapse">
@@ -502,9 +534,12 @@ const RepairOrderDetail = () => {
               <th className="px-1 py-1 text-left font-semibold text-gray-700">
                 Date
               </th>
-              <th className="px-1 py-1 text-left font-semibold text-gray-700">
-                Actions
-              </th>
+              {/* ẨN CỘT ACTIONS NẾU BƯỚC 3 ĐÃ COMPLETE */}
+              {!isStep3Completed && (
+                <th className="px-1 py-1 text-left font-semibold text-gray-700">
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -514,7 +549,6 @@ const RepairOrderDetail = () => {
                   {item.partName}
                 </td>
                 <td className="px-1 py-1 text-gray-700 text-xs break-words">
-                  {/* FIX: Chỉ hiển thị oldSerialNumber đã được lưu */}
                   {item.oldSerialNumber && item.oldSerialNumber !== "N/A" ? (
                     <span className="font-semibold text-green-700">
                       {item.oldSerialNumber}
@@ -524,7 +558,7 @@ const RepairOrderDetail = () => {
                   )}
                 </td>
                 <td className="px-1 py-1 text-gray-700 text-xs break-words">
-                  {item.newSerialNumber ? (
+                  {item.newSerialNumber && item.newSerialNumber !== "N/A" ? (
                     <span className="font-semibold text-blue-700">
                       {item.newSerialNumber}
                     </span>
@@ -537,41 +571,45 @@ const RepairOrderDetail = () => {
                     ? `${item.installationDate[2]}/${item.installationDate[1]}`
                     : "—"}
                 </td>
-                <td className="px-1 py-1">
-                  {!item.newSerialNumber ? (
-                    <button
-                      onClick={() => openScanner(item)}
-                      disabled={
-                        updatingNewSN === item.id ||
-                        !item.oldSerialNumber ||
-                        item.oldSerialNumber === "N/A"
-                      }
-                      className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition ${updatingNewSN === item.id ||
+                {/* ẨN CỘT ACTIONS NẾU BƯỚC 3 ĐÃ COMPLETE */}
+                {!isStep3Completed && (
+                  <td className="px-1 py-1">
+                    {!item.newSerialNumber || item.newSerialNumber === "N/A" ? (
+                      <button
+                        onClick={() => openScanner(item)}
+                        disabled={
+                          updatingNewSN === item.id ||
                           !item.oldSerialNumber ||
                           item.oldSerialNumber === "N/A"
-                          ? "bg-gray-300 text-gray-700 cursor-not-allowed"
-                          : "bg-blue-600 text-white hover:bg-blue-700"
+                        }
+                        className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition ${
+                          updatingNewSN === item.id ||
+                          !item.oldSerialNumber ||
+                          item.oldSerialNumber === "N/A"
+                            ? "bg-gray-300 text-gray-700 cursor-not-allowed"
+                            : "bg-blue-600 text-white hover:bg-blue-700"
                         }`}
-                    >
-                      {updatingNewSN === item.id ? (
-                        <Loader className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <>
-                          <Camera size={12} />
-                          Scan
-                        </>
-                      )}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => openScanner(item)}
-                      className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-orange-600 text-white hover:bg-orange-700 transition"
-                    >
-                      <Camera size={12} />
-                      Rescan
-                    </button>
-                  )}
-                </td>
+                      >
+                        {updatingNewSN === item.id ? (
+                          <Loader className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <>
+                            <Camera size={12} />
+                            Scan
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => openScanner(item)}
+                        className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-orange-600 text-white hover:bg-orange-700 transition"
+                      >
+                        <Camera size={12} />
+                        Rescan
+                      </button>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -579,7 +617,6 @@ const RepairOrderDetail = () => {
       </div>
     );
   };
-
   const renderSteps = (data, repairDetails = []) => {
     if (loadingTab)
       return (
@@ -613,16 +650,17 @@ const RepairOrderDetail = () => {
                       {step.title}
                     </h3>
                     <span
-                      className={`px-2 py-0.5 rounded text-xs font-medium ${step.status === "PENDING"
+                      className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        step.status === "PENDING"
                           ? "bg-yellow-100 text-yellow-700"
                           : step.status === "IN_PROGRESS"
-                            ? "bg-blue-100 text-blue-700"
-                            : step.status === "WAITING"
-                              ? "bg-purple-100 text-purple-700"
-                              : step.status === "CANCELLED"
-                                ? "bg-red-100 text-red-700"
-                                : "bg-green-100 text-green-700"
-                        }`}
+                          ? "bg-blue-100 text-blue-700"
+                          : step.status === "WAITING"
+                          ? "bg-purple-100 text-purple-700"
+                          : step.status === "CANCELLED"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-green-100 text-green-700"
+                      }`}
                     >
                       {step.status}
                     </span>
@@ -657,9 +695,9 @@ const RepairOrderDetail = () => {
                       title.includes("part");
                     const missingOldSN = Array.isArray(repairDetails)
                       ? repairDetails.some(
-                        (d) =>
-                          !d.oldSerialNumber || d.oldSerialNumber === "N/A"
-                      )
+                          (d) =>
+                            !d.oldSerialNumber || d.oldSerialNumber === "N/A"
+                        )
                       : true;
 
                     return (
@@ -683,12 +721,13 @@ const RepairOrderDetail = () => {
                                     handleUpdateStatus(step.stepId, status);
                                 }}
                                 disabled={disabled}
-                                className={`w-6 h-6 rounded-full flex items-center justify-center transition border-2 text-xs ${isActive
+                                className={`w-6 h-6 rounded-full flex items-center justify-center transition border-2 text-xs ${
+                                  isActive
                                     ? "bg-blue-600 border-blue-600 text-white"
                                     : disabled
-                                      ? "bg-gray-200 border-gray-300 text-gray-500 cursor-not-allowed"
-                                      : "bg-white border-gray-300 hover:border-blue-600"
-                                  }`}
+                                    ? "bg-gray-200 border-gray-300 text-gray-500 cursor-not-allowed"
+                                    : "bg-white border-gray-300 hover:border-blue-600"
+                                }`}
                               >
                                 {isActive && <CheckCircle size={16} />}
                               </button>
@@ -717,8 +756,8 @@ const RepairOrderDetail = () => {
                   title.includes("part");
                 const missingOldSN = Array.isArray(repairDetails)
                   ? repairDetails.some(
-                    (d) => !d.oldSerialNumber || d.oldSerialNumber === "N/A"
-                  )
+                      (d) => !d.oldSerialNumber || d.oldSerialNumber === "N/A"
+                    )
                   : false;
                 return isRepairReplaceStep && missingOldSN ? (
                   <div className="mt-2 p-2 text-xs bg-yellow-50 border border-yellow-300 rounded text-yellow-800">
@@ -738,8 +777,7 @@ const RepairOrderDetail = () => {
                   {renderStep2Table(repairDetails)}
                 </div>
               )}
-            {step.status === "COMPLETED" &&
-              stepIndex === 2 &&
+            {stepIndex === 2 &&
               repairDetails.length > 0 &&
               expandedSteps.includes(stepIndex) && (
                 <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -902,10 +940,11 @@ const RepairOrderDetail = () => {
                       Confirmation time:{" "}
                       <span className="font-semibold">
                         {order.verifiedAt
-                          ? `${order.verifiedAt[2]}/${order.verifiedAt[1]}/${order.verifiedAt[0]
-                          } ${order.verifiedAt[3]}:${String(
-                            order.verifiedAt[4]
-                          ).padStart(2, "0")}`
+                          ? `${order.verifiedAt[2]}/${order.verifiedAt[1]}/${
+                              order.verifiedAt[0]
+                            } ${order.verifiedAt[3]}:${String(
+                              order.verifiedAt[4]
+                            ).padStart(2, "0")}`
                           : "–"}
                       </span>
                     </p>
@@ -924,10 +963,11 @@ const RepairOrderDetail = () => {
                 ) : (
                   <button
                     onClick={() => setShowVerifyModal(true)}
-                    className={`px-5 py-2 rounded-lg text-white font-medium ${isSCStaff
+                    className={`px-5 py-2 rounded-lg text-white font-medium ${
+                      isSCStaff
                         ? "bg-gray-400 cursor-not-allowed"
                         : "bg-green-600 hover:bg-green-700"
-                      }`}
+                    }`}
                   >
                     Confirmation completed
                   </button>
@@ -988,10 +1028,11 @@ const RepairOrderDetail = () => {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-6 py-4 font-medium transition ${activeTab === tab.key
+                className={`flex items-center gap-2 px-6 py-4 font-medium transition ${
+                  activeTab === tab.key
                     ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
                     : "text-gray-600 hover:text-blue-500 hover:bg-gray-50"
-                  }`}
+                }`}
               >
                 {tab.icon}
                 {tab.label}
@@ -1239,8 +1280,9 @@ const InfoItem = ({ label, value, mono = false }) => (
       {label}
     </p>
     <p
-      className={`text-base font-semibold text-gray-900 ${mono ? "font-mono bg-gray-100 px-2 py-1 rounded inline-block" : ""
-        }`}
+      className={`text-base font-semibold text-gray-900 ${
+        mono ? "font-mono bg-gray-100 px-2 py-1 rounded inline-block" : ""
+      }`}
     >
       {value || "–"}
     </p>
@@ -1368,7 +1410,7 @@ const RepairOrderAttachments = ({ attachments }) => {
                 onClick={() =>
                   setLightboxIndex(
                     (lightboxIndex - 1 + attachments.length) %
-                    attachments.length
+                      attachments.length
                   )
                 }
                 className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70 transition z-10"

@@ -18,6 +18,11 @@ const ManageUsers = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // Phân trang state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(8);
+  const [totalItems, setTotalItems] = useState(0);
+
   // Edit modal state
   const [editingUser, setEditingUser] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -36,6 +41,7 @@ const ManageUsers = () => {
       const usersData = response.data?.data || [];
       setUsers(usersData);
       setFilteredUsers(usersData);
+      setTotalItems(usersData.length);
     } catch (err) {
       setError(
         "Failed to load users: " + (err.response?.data?.message || err.message)
@@ -54,6 +60,8 @@ const ManageUsers = () => {
   useEffect(() => {
     if (searchTerm.trim() === "") {
       setFilteredUsers(users);
+      setTotalItems(users.length);
+      setCurrentPage(1); // Reset về trang 1 khi search
     } else {
       const filtered = users.filter(
         (user) =>
@@ -61,8 +69,33 @@ const ManageUsers = () => {
           user.email.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredUsers(filtered);
+      setTotalItems(filtered.length);
+      setCurrentPage(1); // Reset về trang 1 khi search
     }
   }, [searchTerm, users]);
+
+  // Tính toán users hiển thị trên trang hiện tại
+  const getCurrentPageUsers = () => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredUsers.slice(startIndex, endIndex);
+  };
+
+  // Tính tổng số trang
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  // Xử lý chuyển trang
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  // Xử lý thay đổi items per page
+  const handleItemsPerPageChange = (value) => {
+    setItemsPerPage(Number(value));
+    setCurrentPage(1); // Reset về trang đầu tiên
+  };
 
   // Create user function
   const handleCreateUser = async (userData) => {
@@ -84,7 +117,7 @@ const ManageUsers = () => {
       setError(
         "Failed to create user: " + (err.response?.data?.message || err.message)
       );
-      throw err; // re-throw để modal có thể xử lý
+      throw err;
     } finally {
       setCreateLoading(false);
     }
@@ -123,7 +156,6 @@ const ManageUsers = () => {
         throw new Error("User not found");
       }
 
-      // call api
       await toggleUserStatusApi(id, !currentIsActive);
 
       setSuccess(
@@ -135,23 +167,10 @@ const ManageUsers = () => {
         prevUsers.map((user) =>
           user.id === id
             ? {
-              ...user,
-              isActive: !currentIsActive,
-              status: !currentIsActive ? "ACTIVE" : "INACTIVE",
-            }
-            : user
-        )
-      );
-
-      // update filteredUsers for UI refresh
-      setFilteredUsers((prevFiltered) =>
-        prevFiltered.map((user) =>
-          user.id === id
-            ? {
-              ...user,
-              isActive: !currentIsActive,
-              status: !currentIsActive ? "ACTIVE" : "INACTIVE",
-            }
+                ...user,
+                isActive: !currentIsActive,
+                status: !currentIsActive ? "ACTIVE" : "INACTIVE",
+              }
             : user
         )
       );
@@ -175,6 +194,110 @@ const ManageUsers = () => {
       return () => clearTimeout(timer);
     }
   }, [success, error]);
+
+  // Component phân trang
+  const Pagination = () => {
+    if (totalPages <= 1) return null;
+
+    const renderPageNumbers = () => {
+      const pages = [];
+      const maxVisiblePages = 5;
+
+      let startPage = Math.max(
+        1,
+        currentPage - Math.floor(maxVisiblePages / 2)
+      );
+      let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+      if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+      }
+
+      // Nút trang đầu
+      if (startPage > 1) {
+        pages.push(
+          <button
+            key={1}
+            onClick={() => handlePageChange(1)}
+            className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
+          >
+            1
+          </button>
+        );
+        if (startPage > 2) {
+          pages.push(
+            <span key="start-ellipsis" className="px-2 py-1 text-gray-500">
+              ...
+            </span>
+          );
+        }
+      }
+
+      // Các trang
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(
+          <button
+            key={i}
+            onClick={() => handlePageChange(i)}
+            className={`px-3 py-1 text-sm border rounded ${
+              currentPage === i
+                ? "bg-blue-600 text-white border-blue-600"
+                : "border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            {i}
+          </button>
+        );
+      }
+
+      // Nút trang cuối
+      if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+          pages.push(
+            <span key="end-ellipsis" className="px-2 py-1 text-gray-500">
+              ...
+            </span>
+          );
+        }
+        pages.push(
+          <button
+            key={totalPages}
+            onClick={() => handlePageChange(totalPages)}
+            className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
+          >
+            {totalPages}
+          </button>
+        );
+      }
+
+      return pages;
+    };
+
+    return (
+      <div className="flex items-center justify-end px-6 py-4 border-t border-gray-200 bg-white rounded-b-lg">
+        {/* Chỉ giữ phần điều hướng trang bên phải */}
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+
+          {renderPageNumbers()}
+
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="p-6">
@@ -227,8 +350,7 @@ const ManageUsers = () => {
       {searchTerm && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-700">
-            Showing {filteredUsers.length} of {users.length} users
-            {searchTerm && ` for "${searchTerm}"`}
+            Found {filteredUsers.length} users for "{searchTerm}"
           </p>
         </div>
       )}
@@ -248,11 +370,14 @@ const ManageUsers = () => {
       {/* Users Table */}
       <div className="bg-white rounded-lg shadow-sm border">
         <UserTable
-          users={filteredUsers}
+          users={getCurrentPageUsers()}
           onEdit={handleEditUser}
           onStatusToggle={handleToggleStatus}
           loading={loading}
+          currentPage={currentPage}
+          itemsPerPage={itemsPerPage}
         />
+        <Pagination />
       </div>
 
       {/* Edit User Modal */}

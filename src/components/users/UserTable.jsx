@@ -41,6 +41,9 @@ const UserTable = ({ users, onEdit, onStatusToggle, loading }) => {
               Email
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Phone
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Role
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -54,9 +57,12 @@ const UserTable = ({ users, onEdit, onStatusToggle, loading }) => {
         <tbody className="bg-white divide-y divide-gray-200">
           {users.map((user) => (
             <tr key={user.id} className="hover:bg-gray-50">
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              {/* Name Column */}
+              <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center">
-                  <span>{user.name}</span>
+                  <div className="text-sm font-medium text-gray-900">
+                    {user.name}
+                  </div>
                   {user.email === currentUserEmail && (
                     <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                       You
@@ -64,28 +70,45 @@ const UserTable = ({ users, onEdit, onStatusToggle, loading }) => {
                   )}
                 </div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {user.email}
+
+              {/* Email Column */}
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm text-gray-900">{user.email}</div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+
+              {/* Phone Column */}
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm text-gray-900">
+                  {user.phoneNumber || "N/A"}
+                </div>
+              </td>
+
+              {/* Role Column */}
+              <td className="px-6 py-4 whitespace-nowrap">
                 <span
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                   ${
                     user.role === "ADMIN"
                       ? "bg-purple-100 text-purple-800"
-                      : "bg-green-100 text-green-800"
+                      : user.role === "TECHNICIAN"
+                      ? "bg-blue-100 text-blue-800"
+                      : user.role === "SC_STAFF"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-orange-100 text-orange-800"
                   }`}
                 >
                   {user.role}
                 </span>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm">
+
+              {/* Status Column */}
+              <td className="px-6 py-4 whitespace-nowrap">
                 <button
                   onClick={() => handleStatusToggle(user.id, user.status)}
                   disabled={
                     actionLoading === user.id || user.email === currentUserEmail
                   }
-                  className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2
                     ${
                       user.status === "ACTIVE"
                         ? "bg-green-100 text-green-800 hover:bg-green-200 focus:ring-green-500"
@@ -97,9 +120,13 @@ const UserTable = ({ users, onEdit, onStatusToggle, loading }) => {
                         ? "opacity-50 cursor-not-allowed"
                         : "cursor-pointer"
                     }`}
+                  s
                 >
                   {actionLoading === user.id ? (
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current mr-1"></div>
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current mr-1"></div>
+                      Processing
+                    </div>
                   ) : user.status === "ACTIVE" ? (
                     <span className="flex items-center">
                       <svg
@@ -133,6 +160,8 @@ const UserTable = ({ users, onEdit, onStatusToggle, loading }) => {
                   )}
                 </button>
               </td>
+
+              {/* Actions Column */}
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <div className="flex space-x-3">
                   {/* Edit Button */}
@@ -140,9 +169,10 @@ const UserTable = ({ users, onEdit, onStatusToggle, loading }) => {
                     onClick={() => onEdit(user)}
                     className="inline-flex items-center text-blue-600 hover:text-blue-900 disabled:text-gray-400 transition-colors duration-200"
                     disabled={actionLoading === user.id}
+                    title="Edit User"
                   >
                     <svg
-                      className="w-4 h-4 mr-1"
+                      className="w-4 h-4"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
