@@ -11,9 +11,10 @@ import {
   Eye,
   X,
   PlusCircle,
+  PackagePlus,
 } from "lucide-react";
 import ViewVehicleModal from "../components/vehicles/ViewVehicleModal";
-import CreatePartRequestModal from "../components/part/CreatePartRequestModal";
+import CreatePartRequestModal from "../components/part/CreatePartRequestModal2";
 import axios from "../services/axios.customize";
 
 const ClaimDetail = () => {
@@ -29,6 +30,12 @@ const ClaimDetail = () => {
   const [selectedVehicle, setSelectedVehicle] = useState(null);
 
   const [showModal, setShowModal] = useState(false);
+
+  // Track updating quantity for each part
+  const [updatingQuantityId, setUpdatingQuantityId] = useState(null);
+
+  // Prefilled part for modal
+  const [prefilledPart, setPrefilledPart] = useState(null);
 
   // View Policy modal control
   const [showPolicyModal, setShowPolicyModal] = useState(false);
@@ -227,6 +234,61 @@ const ClaimDetail = () => {
     }
   };
 
+  // Handle quantity change with immediate API call and validation
+  const handleQuantityChange = async (part, newQuantity) => {
+    const qty = Number(newQuantity);
+
+    // Validation - BLOCK completely if invalid
+    if (qty < 0) {
+      toast.error("Quantity cannot be negative");
+      return;
+    }
+
+    if (part.remainingStock != null && qty > part.remainingStock) {
+      toast.error(`Quantity cannot exceed available stock (${part.remainingStock})`);
+      return;
+    }
+
+    if (part.recommendedQuantity != null && qty > part.recommendedQuantity) {
+      toast.error(`Quantity cannot exceed recommended quantity (${part.recommendedQuantity})`);
+      return;
+    }
+
+    // If validation passes, update immediately
+    try {
+      setUpdatingQuantityId(part.partId);
+
+      const payload = [{ id: part.partId, quantity: qty }];
+      await axios.put(`/api/api/${id}/parts/quantity`, payload, {
+        headers: { "Content-Type": "application/json" },
+      });
+
+      toast.success("Quantity updated successfully");
+
+      // Refresh data
+      const res = await axios.get(`/api/api/claims/${id}`);
+      setClaimDetail(res.data.data);
+      setEditedParts(res.data.data.partCLiam || []);
+    } catch (err) {
+      console.error("Failed to update quantity:", err);
+      toast.error("Failed to update quantity");
+    } finally {
+      setUpdatingQuantityId(null);
+    }
+  };
+
+  // Handle opening modal with prefilled part
+  const handleRequestPart = (part) => {
+    setPrefilledPart({
+      category: part.category,
+      partId: part.partId,
+      partName: part.name,
+      recommendedQuantity: part.recommendedQuantity,
+    });
+    setShowModal(true);
+  };
+
+
   if (loading)
     return (
       <div className="flex justify-center items-center h-screen bg-gray-50">
@@ -307,7 +369,10 @@ const ClaimDetail = () => {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <InfoItem label="Sender Name" value={fcr?.senderName} />
-            <InfoItem label="User Name" value={fcr?.userName} />
+            <InfoItem
+              label="User Name - Phone Number"
+              value={`${fcr?.userName || ""} - ${fcr?.userPhoneNumber || ""}`}
+            />
             <InfoItem label="Price" value={`$${fcr?.price || 0}`} />
             <InfoItem label="Priority" value={fcr?.priority} />
             <InfoItem
@@ -321,6 +386,11 @@ const ClaimDetail = () => {
             <InfoItem
               label="Claim Date"
               value={formatDateTime(fcr?.claimDate)}
+            />
+
+            <InfoItem
+              label="Service Center"
+              value={fcr?.serviceCenterName}
             />
 
             <InfoItem
@@ -339,6 +409,14 @@ const ClaimDetail = () => {
                 Description
               </h3>
               <p className="text-gray-700 leading-relaxed">{fcr.description}</p>
+            </div>
+          )}
+          {fcr?.diagnosis && (
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Diagnosis
+              </h3>
+              <p className="text-gray-700 leading-relaxed">{fcr.diagnosis}</p>
             </div>
           )}
         </div>
@@ -420,7 +498,7 @@ const ClaimDetail = () => {
 
             <div className="flex items-center gap-3">
               {/* Nút Update All Parts */}
-              {fcr?.currentStatus === "DRAFT" &&
+              {/* {fcr?.currentStatus === "DRAFT" &&
                 !editedParts.some((p) => p.remainingStock === 0) && (
                   <button
                     onClick={() => {
@@ -431,10 +509,10 @@ const ClaimDetail = () => {
                   >
                     Update All Parts
                   </button>
-                )}
+                )} */}
 
               {/* Nút Create Part Request */}
-              {fcr?.currentStatus === "DRAFT" &&
+              {/* {fcr?.currentStatus === "DRAFT" &&
                 editedParts.some(
                   (p) =>
                     p.remainingStock === 0 ||
@@ -453,19 +531,22 @@ const ClaimDetail = () => {
                   const bgColor = hasNoStock
                     ? "bg-red-600 hover:bg-red-700"
                     : hasLowStock
-                    ? "bg-amber-500 hover:bg-amber-600"
-                    : "bg-green-600 hover:bg-green-700";
+                      ? "bg-amber-500 hover:bg-amber-600"
+                      : "bg-green-600 hover:bg-green-700";
 
                   return (
                     <button
-                      onClick={() => setShowModal(true)}
+                      onClick={() => {
+                        setPrefilledPart(null);
+                        setShowModal(true);
+                      }}
                       className={`flex items-center gap-2 px-3 py-2 text-white rounded-md transition text-sm ${bgColor}`}
                     >
                       <PlusCircle size={16} />
                       Create Part Request
                     </button>
                   );
-                })()}
+                })()} */}
             </div>
           </div>
 
@@ -487,11 +568,10 @@ const ClaimDetail = () => {
                 <button
                   onClick={handleUpdate}
                   disabled={updating}
-                  className={`px-4 py-2 rounded-lg text-white font-medium ${
-                    updating
-                      ? "bg-gray-400"
-                      : "bg-blue-600 hover:bg-blue-700 transition"
-                  }`}
+                  className={`px-4 py-2 rounded-lg text-white font-medium ${updating
+                    ? "bg-gray-400"
+                    : "bg-blue-600 hover:bg-blue-700 transition"
+                    }`}
                 >
                   {updating ? "Updating..." : "Update Status"}
                 </button>
@@ -501,11 +581,10 @@ const ClaimDetail = () => {
                 <button
                   onClick={handleSaveParts}
                   disabled={updating}
-                  className={`px-4 py-2 ml-3 rounded-lg text-white font-medium ${
-                    updating
-                      ? "bg-gray-400"
-                      : "bg-green-600 hover:bg-green-700 transition"
-                  }`}
+                  className={`px-4 py-2 ml-3 rounded-lg text-white font-medium ${updating
+                    ? "bg-gray-400"
+                    : "bg-green-600 hover:bg-green-700 transition"
+                    }`}
                 >
                   {updating ? "Saving..." : "Save Parts"}
                 </button>
@@ -611,17 +690,17 @@ const ClaimDetail = () => {
               {editedParts.some(
                 (p) => p.remainingStock > 0 && p.remainingStock <= 10
               ) && (
-                <div className="mt-3 text-sm text-amber-700 font-medium border border-amber-300 bg-amber-50 rounded-lg p-3">
-                  Low stock warning for:{" "}
-                  {editedParts
-                    .filter(
-                      (p) => p.remainingStock > 0 && p.remainingStock <= 10
-                    )
-                    .map((p) => p.name)
-                    .join(", ")}
-                  . Please restock soon.
-                </div>
-              )}
+                  <div className="mt-3 text-sm text-amber-700 font-medium border border-amber-300 bg-amber-50 rounded-lg p-3">
+                    Low stock warning for:{" "}
+                    {editedParts
+                      .filter(
+                        (p) => p.remainingStock > 0 && p.remainingStock <= 10
+                      )
+                      .map((p) => p.name)
+                      .join(", ")}
+                    . Please restock soon.
+                  </div>
+                )}
               <thead>
                 <tr className="border-b border-gray-200">
                   <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">
@@ -630,7 +709,7 @@ const ClaimDetail = () => {
                   <th className="text-left py-3 px-4 text-xs font-bold text-gray-900 uppercase">
                     Category
                   </th>
-                  <th className="text-right py-3 px-4 text-xs font-bold text-gray-900 uppercase">
+                  <th className="text-center py-3 px-4 text-xs font-bold text-gray-900 uppercase">
                     Quantity
                   </th>
                   <th className="text-right py-3 px-4 text-xs font-bold text-gray-900 uppercase">
@@ -639,43 +718,95 @@ const ClaimDetail = () => {
                   <th className="text-right py-3 px-4 text-xs font-bold text-gray-900 uppercase">
                     Stock
                   </th>
+                  <th className="text-center py-3 px-4 text-xs font-bold text-gray-900 uppercase">
+                    Actions
+                  </th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-gray-100">
                 {editedParts.length > 0 ? (
-                  editedParts.map((part, i) => (
-                    <tr
-                      key={i}
-                      className={`hover:bg-gray-50 ${
-                        part.remainingStock === 0
+                  editedParts.map((part, i) => {
+                    const isNoStock = part.remainingStock === 0;
+                    const isLowStock = part.remainingStock > 0 && part.remainingStock < 10;
+
+                    return (
+                      <tr
+                        key={i}
+                        className={`hover:bg-gray-50 ${isNoStock
                           ? "bg-red-50"
-                          : part.remainingStock < 10
-                          ? "bg-yellow-50"
-                          : ""
-                      }`}
-                    >
-                      <td className="py-3 px-4 text-sm text-gray-900 font-medium">
-                        {part.name}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-700">
-                        {part.category}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-700 text-right">
-                        {part.quantity}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-700 text-right">
-                        {part.recommendedQuantity ?? "–"}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-700 text-right">
-                        {part.remainingStock ?? "–"}
-                      </td>
-                    </tr>
-                  ))
+                          : isLowStock
+                            ? "bg-yellow-50"
+                            : ""
+                          }`}
+                      >
+                        <td className="py-3 px-4 text-sm text-gray-900 font-medium">
+                          {part.name}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-700">
+                          {part.category}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-700 text-center">
+                          {/* NEW: Editable quantity input with auto-update */}
+                          <div className="flex items-center justify-center gap-2">
+                            <input
+                              type="number"
+                              min="0"
+                              max={Math.min(
+                                part.remainingStock ?? Infinity,
+                                part.recommendedQuantity ?? Infinity
+                              )}
+                              value={part.quantity}
+                              onChange={(e) => handleQuantityChange(part, e.target.value)}
+                              disabled={updatingQuantityId === part.partId}
+                              className={`w-20 px-2 py-1 border rounded text-center text-sm ${updatingQuantityId === part.partId
+                                ? "bg-gray-100 cursor-wait"
+                                : "border-gray-300 focus:ring-2 focus:ring-blue-500"
+                                }`}
+                            />
+                            {updatingQuantityId === part.partId && (
+                              <Loader className="animate-spin h-4 w-4 text-blue-600" />
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-700 text-right">
+                          {part.recommendedQuantity ?? "–"}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-700 text-right">
+                          <span
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${isNoStock
+                              ? "bg-red-100 text-red-800"
+                              : isLowStock
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-green-100 text-green-800"
+                              }`}
+                          >
+                            {part.remainingStock ?? "–"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          {/* NEW: Request Part button for low/no stock */}
+                          {(isNoStock || isLowStock) && (
+                            <button
+                              onClick={() => handleRequestPart(part)}
+                              className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium text-white transition ${isNoStock
+                                ? "bg-red-600 hover:bg-red-700"
+                                : "bg-amber-500 hover:bg-amber-600"
+                                }`}
+                              title={isNoStock ? "No stock - Request parts" : "Low stock - Request parts"}
+                            >
+                              <PackagePlus size={14} />
+                              Request
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
                     <td
-                      colSpan="5"
+                      colSpan="6"
                       className="py-6 text-center text-gray-500 italic"
                     >
                       No parts have been added yet.
@@ -714,10 +845,15 @@ const ClaimDetail = () => {
       {/* Create Part Request Modal */}
       {showModal && (
         <CreatePartRequestModal
-          onClose={() => setShowModal(false)}
+          prefilledPart={prefilledPart} // THÊM PROP NÀY
+          onClose={() => {
+            setShowModal(false);
+            setPrefilledPart(null); // THÊM DÒNG NÀY để reset
+          }}
           onCreated={() => {
             toast.success("Part supply request created successfully");
             setShowModal(false);
+            setPrefilledPart(null); // THÊM DÒNG NÀY
           }}
         />
       )}

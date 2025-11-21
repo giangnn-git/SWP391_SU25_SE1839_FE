@@ -439,8 +439,8 @@ const RepairOrderDetail = () => {
                         }}
                         disabled={updatingDetailId === item.id}
                         className={`px-1.5 py-0.5 text-xs rounded font-medium whitespace-nowrap ${updatingDetailId === item.id
-                            ? "bg-gray-300 text-gray-700 cursor-not-allowed"
-                            : "bg-blue-600 text-white hover:bg-blue-700"
+                          ? "bg-gray-300 text-gray-700 cursor-not-allowed"
+                          : "bg-blue-600 text-white hover:bg-blue-700"
                           }`}
                       >
                         {updatingDetailId === item.id ? (
@@ -547,10 +547,10 @@ const RepairOrderDetail = () => {
                         item.oldSerialNumber === "N/A"
                       }
                       className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition ${updatingNewSN === item.id ||
-                          !item.oldSerialNumber ||
-                          item.oldSerialNumber === "N/A"
-                          ? "bg-gray-300 text-gray-700 cursor-not-allowed"
-                          : "bg-blue-600 text-white hover:bg-blue-700"
+                        !item.oldSerialNumber ||
+                        item.oldSerialNumber === "N/A"
+                        ? "bg-gray-300 text-gray-700 cursor-not-allowed"
+                        : "bg-blue-600 text-white hover:bg-blue-700"
                         }`}
                     >
                       {updatingNewSN === item.id ? (
@@ -614,14 +614,14 @@ const RepairOrderDetail = () => {
                     </h3>
                     <span
                       className={`px-2 py-0.5 rounded text-xs font-medium ${step.status === "PENDING"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : step.status === "IN_PROGRESS"
-                            ? "bg-blue-100 text-blue-700"
-                            : step.status === "WAITING"
-                              ? "bg-purple-100 text-purple-700"
-                              : step.status === "CANCELLED"
-                                ? "bg-red-100 text-red-700"
-                                : "bg-green-100 text-green-700"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : step.status === "IN_PROGRESS"
+                          ? "bg-blue-100 text-blue-700"
+                          : step.status === "WAITING"
+                            ? "bg-purple-100 text-purple-700"
+                            : step.status === "CANCELLED"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-green-100 text-green-700"
                         }`}
                     >
                       {step.status}
@@ -684,10 +684,10 @@ const RepairOrderDetail = () => {
                                 }}
                                 disabled={disabled}
                                 className={`w-6 h-6 rounded-full flex items-center justify-center transition border-2 text-xs ${isActive
-                                    ? "bg-blue-600 border-blue-600 text-white"
-                                    : disabled
-                                      ? "bg-gray-200 border-gray-300 text-gray-500 cursor-not-allowed"
-                                      : "bg-white border-gray-300 hover:border-blue-600"
+                                  ? "bg-blue-600 border-blue-600 text-white"
+                                  : disabled
+                                    ? "bg-gray-200 border-gray-300 text-gray-500 cursor-not-allowed"
+                                    : "bg-white border-gray-300 hover:border-blue-600"
                                   }`}
                               >
                                 {isActive && <CheckCircle size={16} />}
@@ -925,8 +925,8 @@ const RepairOrderDetail = () => {
                   <button
                     onClick={() => setShowVerifyModal(true)}
                     className={`px-5 py-2 rounded-lg text-white font-medium ${isSCStaff
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-green-600 hover:bg-green-700"
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700"
                       }`}
                   >
                     Confirmation completed
@@ -989,8 +989,8 @@ const RepairOrderDetail = () => {
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-2 px-6 py-4 font-medium transition ${activeTab === tab.key
-                    ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
-                    : "text-gray-600 hover:text-blue-500 hover:bg-gray-50"
+                  ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
+                  : "text-gray-600 hover:text-blue-500 hover:bg-gray-50"
                   }`}
               >
                 {tab.icon}
