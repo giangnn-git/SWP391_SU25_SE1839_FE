@@ -571,44 +571,42 @@ const RepairOrderDetail = () => {
                     ? `${item.installationDate[2]}/${item.installationDate[1]}`
                     : "—"}
                 </td>
-                {/* ẨN CỘT ACTIONS NẾU BƯỚC 3 ĐÃ COMPLETE */}
-                {!isStep3Completed && (
-                  <td className="px-1 py-1">
-                    {!item.newSerialNumber || item.newSerialNumber === "N/A" ? (
-                      <button
-                        onClick={() => openScanner(item)}
-                        disabled={
-                          updatingNewSN === item.id ||
-                          !item.oldSerialNumber ||
-                          item.oldSerialNumber === "N/A"
-                        }
-                        className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition ${
-                          updatingNewSN === item.id ||
-                          !item.oldSerialNumber ||
-                          item.oldSerialNumber === "N/A"
-                            ? "bg-gray-300 text-gray-700 cursor-not-allowed"
-                            : "bg-blue-600 text-white hover:bg-blue-700"
-                        }`}
-                      >
-                        {updatingNewSN === item.id ? (
-                          <Loader className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <>
-                            <Camera size={12} />
-                            Scan
-                          </>
-                        )}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => openScanner(item)}
-                        className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-orange-600 text-white hover:bg-orange-700 transition"
-                      >
-                        <Camera size={12} />
-                        Rescan
-                      </button>
-                    )}
-                  </td>
+                <td className="px-1 py-1">
+                  {!item.newSerialNumber ? (
+                    <button
+                      onClick={() => openScanner(item)}
+                      disabled={
+                        updatingNewSN === item.id ||
+                        !item.oldSerialNumber ||
+                        item.oldSerialNumber === "N/A"
+                      }
+                      className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition ${
+                        updatingNewSN === item.id ||
+                        !item.oldSerialNumber ||
+                        item.oldSerialNumber === "N/A"
+                          ? "bg-gray-300 text-gray-700 cursor-not-allowed"
+                          : "bg-blue-600 text-white hover:bg-blue-700"
+                      }`}
+                    >
+                      {updatingNewSN === item.id ? (
+                        <Loader className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <>
+                          <Camera size={12} />
+                          Scan
+                        </>
+                      )}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => openScanner(item)}
+                      className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-orange-600 text-white hover:bg-orange-700 transition"
+                    >
+                      <Camera size={12} />
+                      Rescan
+                    </button>
+                  )}
+                </td>
                 )}
               </tr>
             ))}

@@ -27,6 +27,11 @@ const ClaimTable = ({ claims = [], loading, error }) => {
         text: "text-yellow-800",
         label: "Pending",
       },
+      assigned: {
+        bg: "bg-blue-100",
+        text: "text-blue-800",
+        label: "Assigned",
+      },
       approved: {
         bg: "bg-green-100",
         text: "text-green-800",
@@ -132,10 +137,9 @@ const ClaimTable = ({ claims = [], loading, error }) => {
                   <th className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">
                     Status
                   </th>
-                  {!isTech && (
-                    <th className="px-6 py-3 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-                      Action
-                    </th>)}
+                  <th className="px-6 py-3 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                    Action
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -156,19 +160,19 @@ const ClaimTable = ({ claims = [], loading, error }) => {
                           {claim.vin}
                         </div>
                         <div className="text-xs text-gray-500">
-                          {claim.licensePlate || "–"} , {claim.userName || "–"}
+                          {claim.licensePlate || " "} , {claim.userName || " "}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm text-gray-700 line-clamp-2">
-                        {claim.description || "–"}
+                        {claim.description || " "}
                       </span>
                     </td>
 
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm text-gray-700">
-                        {claim.senderName || "–"}
+                        {claim.senderName || " "}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -182,23 +186,20 @@ const ClaimTable = ({ claims = [], loading, error }) => {
                             "0"
                           )}/${String(claim.claimDate[1]).padStart(2, "0")}/${claim.claimDate[0]
                           }`
-                          : "–"}
+                          : " "}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(claim.currentStatus)}
                     </td>
-                    {!isTech && ( // ẩn nút nếu là TECHNICIAN
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-
-                        <button
-                          className="bg-blue-600 text-white px-4 py-1.5 rounded hover:bg-blue-700 text-sm font-medium"
-                          onClick={() => navigate(`/claim/${claim.id}`)}
-                        >
-                          View Detail
-                        </button>
-
-                      </td>)}
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <button
+                        className="bg-blue-600 text-white px-4 py-1.5 rounded hover:bg-blue-700 text-sm font-medium"
+                        onClick={() => navigate(`/claim/${claim.id}`)}
+                      >
+                        View Detail
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
