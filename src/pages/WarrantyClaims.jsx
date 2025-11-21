@@ -171,8 +171,8 @@ const WarrantyClaimsManagement = () => {
           </select>
         </div>
 
-        {/* New Claim Button */}
-        {!userLoading && !isSCStaff && (
+        {/* New Claim Button (visible to SC_STAFF) */}
+        {!userLoading && isSCStaff && (
           <button
             className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg transition duration-200 font-medium"
             onClick={() => setShowCreateModal(true)}
@@ -191,12 +191,14 @@ const WarrantyClaimsManagement = () => {
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
         fetchClaims={fetchClaims}
+        statusField="currentStatus"
       />
       {/* Modal */}
       {showCreateModal && (
         <CreateClaimModal
           onClose={() => setShowCreateModal(false)}
           onClaimCreated={handleClaimCreated}
+          isSCStaff={isSCStaff}
         />
       )}
     </div>

@@ -58,7 +58,7 @@ const router = createBrowserRouter([
       {
         path: "claim/:id",
         element: (
-          <PrivateRoute allowedRoles={["SC_STAFF"]}>
+          <PrivateRoute allowedRoles={["SC_STAFF", "TECHNICIAN"]}>
             <ClaimDetail />
           </PrivateRoute>
         ),

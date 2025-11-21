@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Plus, Image as ImageIcon, Loader, XCircle } from "lucide-react";
+import { Loader } from "lucide-react";
 import axios from "../../services/axios.customize";
 import toast from "react-hot-toast";
 
@@ -14,9 +14,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
     vin: "",
     priority: "NORMAL",
     agreeRecall: false,
-    diagnosis: "",
-    defectiveParts: [{ category: "", partId: "" }],
-    attachments: [],
+    // diagnosis/defectiveParts/attachments are not collected at creation
   };
 
   // Form data state
@@ -30,8 +28,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
   const [vehicles, setVehicles] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const [categories, setCategories] = useState([]);
-  const [partsByCategory, setPartsByCategory] = useState({});
+
   const [recallInfo, setRecallInfo] = useState(null);
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -39,41 +36,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
   const [showConfirmExit, setShowConfirmExit] = useState(false);
 
 
-  // Fetch categories when the modal loads
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await axios.get('/api/api/categories', {
-          params: { vin: formData.vin }
-        });
-        setCategories(res.data.data.category || []);
-        setPartsByCategory({});
-      } catch (err) {
-        console.error("Failed to fetch categories:", err);
-      }
-    };
-
-    if (formData.vin) {
-      fetchCategories();
-    }
-  }, [formData.vin]);
-
-
-  // Fetch parts by category if not already cached
-  const fetchParts = async (category, vin) => {
-    if (!category || partsByCategory[category]) return;
-    try {
-      const res = await axios.get(`/api/api/parts/${category}`, {
-        params: { vin: vin }
-      });
-      setPartsByCategory((prev) => ({
-        ...prev,
-        [category]: res.data.data.partList || [],
-      }));
-    } catch (err) {
-      console.error("Failed to fetch parts:", err);
-    }
-  };
+  // categories/parts are not needed for initial claim creation
 
 
   // Fetch vehicle list by customer phone
@@ -130,13 +93,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
       newErrors.description = "Description is required";
     if (!formData.mileage) newErrors.mileage = "Mileage is required";
     if (!formData.vin.trim()) newErrors.vin = "VIN is required";
-    if (!formData.diagnosis.trim()) newErrors.diagnosis = "Diagnosis is required";
-
-    const hasValidPart = formData.defectiveParts.some(
-      (p) => p.partId && p.category
-    );
-    if (!hasValidPart)
-      newErrors.defectiveParts = "Please select at least one defective part";
+    // diagnosis/defective parts are not required at create time
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -151,19 +108,15 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
 
       const claimObj = {
         description: formData.description,
-        diagnosis: formData.diagnosis,
         mileage: parseInt(formData.mileage),
         vin: formData.vin,
-        agreeRecall: formData.agreeRecall,
-        priority: formData.priority,
-        defectivePartIds: formData.defectiveParts
-          .filter((p) => p.partId)
-          .map((p) => parseInt(p.partId)),
+        status: formData.status || "PENDING",
+        priority: formData.priority || "NORMAL",
+        agreeRecall: Boolean(formData.agreeRecall),
       };
 
       const fd = new FormData();
       fd.append("claim", new Blob([JSON.stringify(claimObj)], { type: "application/json" }));
-      formData.attachments.forEach((file) => fd.append("attachments", file));
 
       const res = await axios.post("/api/api/claims", fd, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -171,10 +124,13 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
 
       const { status, data } = res;
 
-      if (status === 201 || data?.status === "201 CREATED" || data?.data?.success === "success") {
-        toast.success(data?.data?.message || data?.message || "Claim created successfully!");
-        onClaimCreated(data?.data?.claim);
-        setSuccessMessage(data?.data?.message || data?.message || "Claim created successfully!");
+      const isSuccess = (status === 200 || status === 201) && data?.data;
+
+      if (isSuccess) {
+        toast.success(data?.message || "Claim created successfully!");
+        // Backend returns ApiResponse.data = CreateClaimResponse
+        onClaimCreated(data.data);
+        setSuccessMessage(data?.message || "Claim created successfully!");
         setShowSuccessModal(true);
       } else {
         toast.error(data?.errorCode || data?.message || "Unknown error");
@@ -202,18 +158,6 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
 
 
 
-  // Handle file upload
-  const handleFileChange = (e) => {
-    const newFiles = Array.from(e.target.files);
-    const updatedFiles = [...formData.attachments, ...newFiles];
-    setFormData({ ...formData, attachments: updatedFiles });
-  };
-
-  // Remove uploaded image
-  const handleRemoveImage = (index) => {
-    const updated = formData.attachments.filter((_, i) => i !== index);
-    setFormData({ ...formData, attachments: updated });
-  };
 
   // Handle general input change
   const handleInputChange = (field, value) => {
@@ -223,18 +167,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
     }
   };
 
-  // Handle part info change
-  const handlePartChange = (idx, field, value) => {
-    const newParts = [...formData.defectiveParts];
-    newParts[idx][field] = value;
-
-    if (field === "category") {
-      newParts[idx].partId = "";
-      fetchParts(value, formData.vin);
-    }
-
-    setFormData({ ...formData, defectiveParts: newParts });
-  };
+  // (file/part handlers removed   not collected during initial claim creation)
 
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4">
@@ -254,7 +187,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
             onClick={handleClose}
             className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700"
           >
-            <X size={24} />
+            <span className="text-2xl leading-none"> </span>
           </button>
         </div>
 
@@ -412,157 +345,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
               <p className="text-red-600 text-xs mt-1">{errors.description}</p>
             )}
           </div>
-
-          {/* Diagnosis */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Diagnosis <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              placeholder="Enter diagnosis..."
-              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${errors.diagnosis ? "border-red-300 bg-red-50" : "border-gray-300"
-                }`}
-              rows="2"
-              value={formData.diagnosis}
-              onChange={(e) => handleInputChange("diagnosis", e.target.value)}
-            />
-            {errors.diagnosis && (
-              <p className="text-red-600 text-xs mt-1">{errors.diagnosis}</p>
-            )}
-          </div>
-
-          {/* Defective Parts */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Defective Parts <span className="text-red-500">*</span>
-            </label>
-
-            {formData.defectiveParts.map((p, idx) => (
-              <div key={idx} className="grid grid-cols-11 gap-2 mb-3">
-                {/* Category */}
-                <select
-                  className="col-span-5 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  value={p.category}
-                  onChange={(e) => handlePartChange(idx, "category", e.target.value)}
-                >
-                  <option value="">Select Category</option>
-                  {categories.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-
-                {/* Part */}
-                <select
-                  className="col-span-5 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  value={p.partId}
-                  onChange={(e) => handlePartChange(idx, "partId", e.target.value)}
-                  disabled={!p.category}
-                >
-                  <option value="">Select Part</option>
-                  {(partsByCategory[p.category] || []).map((part) => (
-                    <option key={part.id} value={part.id}>
-                      {part.name}
-                    </option>
-                  ))}
-                </select>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    const updatedParts = formData.defectiveParts.filter(
-                      (_, i) => i !== idx
-                    );
-                    setFormData({ ...formData, defectiveParts: updatedParts });
-                  }}
-                  disabled={formData.defectiveParts.length === 1}
-                  className="col-span-1 flex items-center justify-center bg-red-100 hover:bg-red-200 text-red-600 rounded-md transition disabled:opacity-40"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            ))}
-
-            {errors.defectiveParts && (
-              <p className="text-red-600 text-xs mt-1">{errors.defectiveParts}</p>
-            )}
-
-            <button
-              type="button"
-              onClick={() =>
-                setFormData({
-                  ...formData,
-                  defectiveParts: [
-                    ...formData.defectiveParts,
-                    { category: "", partId: "" },
-                  ],
-                })
-              }
-              className="flex items-center gap-2 px-3 py-1 text-sm bg-gray-100 rounded-md hover:bg-gray-200 mt-2"
-            >
-              <Plus size={14} /> Add Part
-            </button>
-          </div>
-
-
-          {/* Attachments */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-3">
-              Attachments
-            </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 hover:bg-blue-50 transition">
-              <ImageIcon size={32} className="mx-auto text-gray-400 mb-2" />
-              <label
-                htmlFor="file-upload"
-                className="cursor-pointer text-blue-600 hover:text-blue-700 font-semibold"
-              >
-                Choose Files
-              </label>
-              <p className="text-gray-500 text-sm">
-                or drag and drop images here
-              </p>
-              <input
-                id="file-upload"
-                type="file"
-                multiple
-                accept="image/*"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-            </div>
-
-            {formData.attachments.length > 0 && (
-              <div>
-                <p className="text-sm font-medium text-gray-700 mt-4 mb-3">
-                  {formData.attachments.length} file(s) selected
-                </p>
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                  {formData.attachments.map((file, index) => (
-                    <div
-                      key={index}
-                      className="relative group rounded-lg overflow-hidden border border-gray-200"
-                    >
-                      <img
-                        src={URL.createObjectURL(file)}
-                        alt={file.name}
-                        className="w-full h-24 object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage(index)}
-                        className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center transition"
-                      >
-                        <div className="bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition">
-                          <X size={16} />
-                        </div>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Diagnosis/Parts/Attachments are not collected during initial claim creation */}
         </div>
 
         {/* Footer */}
