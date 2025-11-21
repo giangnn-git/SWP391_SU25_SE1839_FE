@@ -6,6 +6,7 @@ import {
   FileText,
   CheckCircle2,
   Settings,
+  Folder,
 } from "lucide-react";
 import {
   createPartPolicyApi,
@@ -14,6 +15,7 @@ import {
 
 const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
+    category: "",
     partCode: "",
     policyCode: "",
     startDate: "",
@@ -22,7 +24,7 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [availableCodes, setAvailableCodes] = useState({
-    partMap: {}, // { partCode: partName }
+    categories: {}, // { categoryName: { partMap: { partCode: partName } } }
     policyMap: {}, // { policyCode: policyName }
   });
   const [codesLoading, setCodesLoading] = useState(true);
@@ -37,7 +39,7 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
         const response = await getPartPolicyCodesApi();
         const data = response.data?.data || {};
         setAvailableCodes({
-          partMap: data.partMap || {},
+          categories: data.categories || {},
           policyMap: data.policyMap || {},
         });
       } catch (err) {
@@ -52,6 +54,7 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
       fetchAvailableCodes();
       // Reset form when modal opens
       setFormData({
+        category: "",
         partCode: "",
         policyCode: "",
         startDate: "",
@@ -63,10 +66,21 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+
+    if (name === "category") {
+      // Reset partCode when category changes
+      setFormData((prev) => ({
+        ...prev,
+        category: value,
+        partCode: "",
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+
     // Clear error when user starts typing
     if (error) setError("");
   };
@@ -76,6 +90,7 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
 
     // Validation
     if (
+      !formData.category ||
       !formData.partCode ||
       !formData.policyCode ||
       !formData.startDate ||
@@ -99,13 +114,16 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
     };
 
     // Get display names for confirmation
+    const categoryName = formData.category;
     const partCodeDisplay =
-      availableCodes.partMap[formData.partCode] || formData.partCode;
+      availableCodes.categories[categoryName]?.partMap[formData.partCode] ||
+      formData.partCode;
     const policyCodeDisplay =
       availableCodes.policyMap[formData.policyCode] || formData.policyCode;
 
     setSubmissionData({
       ...policyData,
+      categoryName,
       partCodeDisplay,
       policyCodeDisplay,
     });
@@ -121,6 +139,7 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
 
       // Reset form
       setFormData({
+        category: "",
         partCode: "",
         policyCode: "",
         startDate: "",
@@ -136,7 +155,9 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
       }
     } catch (err) {
       const errorMessage =
-        err.response?.data?.message || "Failed to add part policy";
+        err.response?.data?.errorCode || // Ưu tiên lấy errorCode
+        err.response?.data?.message || // Fallback đến message
+        "Failed to add part policy";
       setError(errorMessage);
       setShowConfirmation(false);
     } finally {
@@ -150,6 +171,22 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
   };
 
   if (!showModal) return null;
+
+  // Get available categories and parts based on selected category
+  const categoryOptions = Object.keys(availableCodes.categories || {});
+  const partOptions = formData.category
+    ? Object.entries(
+        availableCodes.categories[formData.category]?.partMap || {}
+      ).map(([code, name]) => ({ code, name }))
+    : [];
+
+  // Convert policyMap object to array for dropdown options
+  const policyOptions = Object.entries(availableCodes.policyMap || {}).map(
+    ([code, name]) => ({
+      code,
+      name,
+    })
+  );
 
   // Confirmation Modal
   if (showConfirmation && submissionData) {
@@ -181,6 +218,14 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
               </p>
 
               <div className="bg-gray-50 rounded-lg p-4 space-y-3 border border-gray-200">
+                <div className="flex items-start justify-between">
+                  <span className="font-medium text-gray-700 text-sm">
+                    Category:
+                  </span>
+                  <span className="text-gray-900 font-medium text-right">
+                    {submissionData.categoryName}
+                  </span>
+                </div>
                 <div className="flex items-start justify-between">
                   <span className="font-medium text-gray-700 text-sm">
                     Part:
@@ -261,22 +306,6 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
     );
   }
 
-  // Convert partMap object to array for dropdown options
-  const partOptions = Object.entries(availableCodes.partMap).map(
-    ([code, name]) => ({
-      code,
-      name,
-    })
-  );
-
-  // Convert policyMap object to array for dropdown options
-  const policyOptions = Object.entries(availableCodes.policyMap).map(
-    ([code, name]) => ({
-      code,
-      name,
-    })
-  );
-
   // Main Form Modal
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
@@ -306,6 +335,35 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-4">
           <div className="space-y-4">
+            {/* Category Dropdown */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                <Folder size={14} className="text-purple-500" />
+                Category *
+              </label>
+              {codesLoading ? (
+                <div className="w-full px-3 py-3 border border-gray-300 rounded-lg bg-gray-100 animate-pulse text-gray-500">
+                  Loading categories...
+                </div>
+              ) : (
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:bg-gray-100 disabled:opacity-50"
+                >
+                  <option value="">Select Category</option>
+                  {categoryOptions.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
             {/* Part Code Dropdown */}
             <div>
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
@@ -322,10 +380,14 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
                   value={formData.partCode}
                   onChange={handleChange}
                   required
-                  disabled={loading}
+                  disabled={loading || !formData.category}
                   className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:bg-gray-100 disabled:opacity-50"
                 >
-                  <option value="">Select Part</option>
+                  <option value="">
+                    {formData.category
+                      ? "Select Part"
+                      : "Select category first"}
+                  </option>
                   {partOptions.map((part) => (
                     <option key={part.code} value={part.code}>
                       {part.code} - {part.name}

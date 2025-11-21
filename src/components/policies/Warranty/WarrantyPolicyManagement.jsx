@@ -12,7 +12,6 @@ import {
   getAllWarrantyApi,
   createWarrantyPolicyApi,
   updateWarrantyPolicyApi,
-  updateWarrantyPolicyStatusApi,
 } from "../../../services/api.service";
 
 import WarrantyPolicyTable from "./WarrantyPolicyTable";
@@ -45,7 +44,6 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
   // Filter, Search & Pagination
   const [filterDuration, setFilterDuration] = useState("");
   const [filterMileage, setFilterMileage] = useState("");
-  const [filterStatus, setFilterStatus] = useState("ACTIVE");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -64,9 +62,8 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
           policyType: policy.policyType || "NORMAL",
           name: policy.name || "Unnamed Policy",
           description: policy.description || "No description available",
-          durationPeriod: `${policy.durationPeriod} months`,
-          mileageLimit: `${policy.mileageLimit?.toLocaleString()} km`,
-          status: policy.status || "INACTIVE",
+          durationPeriod: policy.durationPeriod,
+          mileageLimit: policy.mileageLimit,
           originalData: policy,
         })
       );
@@ -154,25 +151,6 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
     setShowViewModal(true);
   };
 
-  // STATUS TOGGLE
-  const handleStatusToggle = async (policy) => {
-    setActionLoading(true);
-    try {
-      await updateWarrantyPolicyStatusApi(policy.id);
-      await fetchPolicies();
-      setSuccess(`Policy status updated successfully!`);
-    } catch (err) {
-      console.error("Error updating policy status:", err);
-      const errorMessage =
-        err.response?.data?.errorCode ||
-        err.response?.data?.message ||
-        "Failed to update policy status. Please try again.";
-      setError(errorMessage);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
   // Filter and Search logic
   const filteredPolicies = policies.filter((policy) => {
     const matchesSearch = searchTerm
@@ -182,16 +160,14 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
       : true;
 
     const matchesDuration = filterDuration
-      ? policy.durationPeriod === filterDuration
+      ? policy.durationPeriod === parseInt(filterDuration)
       : true;
 
     const matchesMileage = filterMileage
-      ? policy.mileageLimit === filterMileage
+      ? policy.mileageLimit === parseInt(filterMileage)
       : true;
 
-    const matchesStatus = filterStatus ? policy.status === filterStatus : true;
-
-    return matchesSearch && matchesDuration && matchesMileage && matchesStatus;
+    return matchesSearch && matchesDuration && matchesMileage;
   });
 
   const totalPages = Math.ceil(filteredPolicies.length / itemsPerPage);
@@ -208,7 +184,7 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterDuration, filterMileage, filterStatus, searchTerm]);
+  }, [filterDuration, filterMileage, searchTerm]);
 
   const clearSearch = () => {
     setSearchTerm("");
@@ -217,7 +193,6 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
   const clearFilters = () => {
     setFilterDuration("");
     setFilterMileage("");
-    setFilterStatus("");
     setSearchTerm("");
   };
 
@@ -347,7 +322,7 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
               <option value="">All Durations</option>
               {availableDurations.map((duration, i) => (
                 <option key={i} value={duration}>
-                  {duration}
+                  {duration} months
                 </option>
               ))}
             </select>
@@ -360,7 +335,7 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
               <option value="">All Mileages</option>
               {availableMileages.map((mileage, i) => (
                 <option key={i} value={mileage}>
-                  {mileage}
+                  {mileage.toLocaleString()} km
                 </option>
               ))}
             </select>
@@ -376,39 +351,6 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
             )}
           </div>
         </div>
-
-        {/* Status Filter Buttons */}
-        <div className="flex items-center gap-4 mt-4 pt-4 border-t border-gray-100">
-          <span className="text-sm font-medium text-gray-700">Status:</span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setFilterStatus("ACTIVE")}
-              className={`px-4 py-2 text-sm rounded-lg transition-all ${
-                filterStatus === "ACTIVE"
-                  ? "bg-green-600 text-white shadow-sm"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              Active
-            </button>
-            <button
-              onClick={() => setFilterStatus("INACTIVE")}
-              className={`px-4 py-2 text-sm rounded-lg transition-all ${
-                filterStatus === "INACTIVE"
-                  ? "bg-red-600 text-white shadow-sm"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              Inactive
-            </button>
-          </div>
-        </div>
-
-        {searchTerm && (
-          <div className="mt-3 text-sm text-green-600">
-            Found {filteredPolicies.length} policies matching "{searchTerm}"
-          </div>
-        )}
       </div>
 
       {/* Table */}
@@ -417,7 +359,6 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
         loading={loading}
         onView={handleView}
         onEdit={handleEdit}
-        onStatusToggle={handleStatusToggle}
         actionLoading={actionLoading}
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}

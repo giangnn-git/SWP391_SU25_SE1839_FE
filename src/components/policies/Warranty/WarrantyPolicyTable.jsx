@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Eye,
   Edit,
@@ -9,9 +9,6 @@ import {
   Shield,
   Tag,
   Layers,
-  ToggleLeft,
-  CheckCircle,
-  XCircle,
 } from "lucide-react";
 
 const WarrantyPolicyTable = ({
@@ -19,14 +16,11 @@ const WarrantyPolicyTable = ({
   loading,
   onView,
   onEdit,
-  onStatusToggle,
   actionLoading,
   currentPage,
   itemsPerPage,
   totalItems,
 }) => {
-  const [statusLoading, setStatusLoading] = useState({});
-
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -64,19 +58,6 @@ const WarrantyPolicyTable = ({
     return `${mileage.toLocaleString()} km`;
   };
 
-  // Handle Status Toggle
-  const handleStatusToggle = async (policy) => {
-    if (!onStatusToggle) return;
-
-    setStatusLoading((prev) => ({ ...prev, [policy.id]: true }));
-
-    try {
-      await onStatusToggle(policy);
-    } finally {
-      setStatusLoading((prev) => ({ ...prev, [policy.id]: false }));
-    }
-  };
-
   return (
     <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
       <table className="min-w-full text-sm text-gray-700">
@@ -110,12 +91,6 @@ const WarrantyPolicyTable = ({
               <div className="flex items-center gap-2">
                 <Gauge size={16} className="text-green-600" />
                 Mileage Limit
-              </div>
-            </th>
-            <th className="py-4 px-6 text-left text-xs uppercase tracking-wider">
-              <div className="flex items-center gap-2">
-                <ToggleLeft size={16} className="text-green-600" />
-                Status
               </div>
             </th>
             <th className="py-4 px-6 text-center text-xs uppercase tracking-wider">
@@ -199,48 +174,6 @@ const WarrantyPolicyTable = ({
                 </div>
               </td>
 
-              {/* Status */}
-              <td className="py-4 px-6">
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => handleStatusToggle(policy)}
-                    disabled={statusLoading[policy.id] || actionLoading}
-                    className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${
-                      policy.status === "ACTIVE"
-                        ? "bg-green-600 hover:bg-green-700"
-                        : "bg-gray-300 hover:bg-gray-400"
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    <span
-                      className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${
-                        policy.status === "ACTIVE"
-                          ? "translate-x-6"
-                          : "translate-x-1"
-                      }`}
-                    />
-                  </button>
-
-                  <div className="flex items-center gap-2">
-                    {statusLoading[policy.id] ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
-                    ) : policy.status === "ACTIVE" ? (
-                      <CheckCircle size={16} className="text-green-600" />
-                    ) : (
-                      <XCircle size={16} className="text-gray-400" />
-                    )}
-                    <span
-                      className={`text-sm font-medium ${
-                        policy.status === "ACTIVE"
-                          ? "text-green-700"
-                          : "text-gray-500"
-                      }`}
-                    >
-                      {policy.status}
-                    </span>
-                  </div>
-                </div>
-              </td>
-
               {/* Details */}
               <td className="py-4 px-6">
                 <div className="flex justify-center">
@@ -257,7 +190,7 @@ const WarrantyPolicyTable = ({
                 </div>
               </td>
 
-              {/* Actions  */}
+              {/* Actions */}
               <td className="py-4 px-6">
                 <div className="flex items-center justify-center gap-2">
                   <button

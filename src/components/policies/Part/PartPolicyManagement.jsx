@@ -21,7 +21,7 @@ const PartPolicyManagement = ({ refreshTrigger = 0 }) => {
   const [filterPartName, setFilterPartName] = useState("");
   const [filterPartCode, setFilterPartCode] = useState("");
   const [filterPolicyCode, setFilterPolicyCode] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
+  const [filterStatus, setFilterStatus] = useState("available");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -42,12 +42,15 @@ const PartPolicyManagement = ({ refreshTrigger = 0 }) => {
       const partPolicies = response.data?.data?.partPolicies || [];
       setOriginalPolicies(partPolicies);
 
-      // Sắp xếp theo cấu hình hiện tại
       const sortedPolicies = sortPolicies(partPolicies, sortConfig);
       setPolicies(sortedPolicies);
     } catch (err) {
       console.error("Error fetching part policies:", err);
-      setError("Failed to load part policies. Please try again.");
+      // THAY ĐỔI TỪ message SANG errorCode
+      const errorMessage =
+        err.response?.data?.errorCode ||
+        "Failed to load part policies. Please try again.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -173,8 +176,8 @@ const PartPolicyManagement = ({ refreshTrigger = 0 }) => {
       }
     } catch (err) {
       let errorMessage =
-        err.response?.data?.errorCode ||
-        err.response?.data?.message ||
+        err.response?.data?.errorCode || // Ưu tiên lấy errorCode
+        err.response?.data?.message || // Fallback đến message nếu không có errorCode
         "Failed to update policy status. Please try again.";
       setError(errorMessage);
     } finally {
@@ -361,16 +364,6 @@ const PartPolicyManagement = ({ refreshTrigger = 0 }) => {
         <div className="flex items-center gap-4 mt-4 pt-4 border-t border-gray-100">
           <span className="text-sm font-medium text-gray-700">Status:</span>
           <div className="flex gap-2">
-            <button
-              onClick={() => setFilterStatus("")}
-              className={`px-4 py-2 text-sm rounded-lg transition-all ${
-                filterStatus === ""
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              All
-            </button>
             <button
               onClick={() => setFilterStatus("available")}
               className={`px-4 py-2 text-sm rounded-lg transition-all ${
