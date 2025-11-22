@@ -9,8 +9,6 @@ const CustomerManagement = ({
   onViewCustomer,
   onViewVehicle,
   onAddVehicle,
-  searchTerm,
-  onSearchChange,
   showHeader = false,
   showRegisterBtn = false,
 }) => {
