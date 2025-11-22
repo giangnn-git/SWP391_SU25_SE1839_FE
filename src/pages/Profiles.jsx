@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { storage } from "../utils/storage";
 import ChangePasswordModal from "../components/auth/ChangePassModal";
-import EditUserModal from "../components/users/editUserModal";
+import EditUserModal from "../components/users/EditUserModal";
 import { useNavigate } from "react-router-dom";
 import { updateUserApi } from "../services/api.service";
 
