@@ -20,8 +20,6 @@ import Profiles from "./pages/Profiles.jsx";
 import VehicleManagement from "./pages/VehicleManagement.jsx";
 import CampaignManagement from "./pages/CampaignManagement.jsx";
 import CustomerRegistration from "./pages/CustomerRegistration.jsx";
-import AnalyticsPage from "./pages/AnalyticsPage.jsx";
-import ClaimApprove from "./pages/ClaimApprove.jsx";
 import PartRequestPage from "./pages/PartRequest.jsx";
 import PartRequestReview from "./pages/PartRequestReview.jsx";
 import ScCampaignVehicles from "./pages/ScCampaignVehicles.jsx";
@@ -46,9 +44,7 @@ const router = createBrowserRouter([
       {
         path: "warranty-claims",
         element: (
-          <PrivateRoute
-            allowedRoles={["SC_STAFF", "TECHNICIAN"]}
-          >
+          <PrivateRoute allowedRoles={["SC_STAFF", "TECHNICIAN"]}>
             <WarrantyClaims />
           </PrivateRoute>
         ),
@@ -93,7 +89,7 @@ const router = createBrowserRouter([
           </PrivateRoute>
         ),
       },
-      // Warranty Claim Approval Detail — chỉ EVM_STAFF 
+      // Warranty Claim Approval Detail — chỉ EVM_STAFF
       {
         path: "warranty-claim-approval-detail/:id",
         element: (
@@ -153,15 +149,6 @@ const router = createBrowserRouter([
         ),
       },
 
-      //  Claim Approve — chỉ EVM_STAFF có quyền
-      {
-        path: "claim-approve",
-        element: (
-          <PrivateRoute allowedRoles={["EVM_STAFF"]}>
-            <ClaimApprove />
-          </PrivateRoute>
-        ),
-      },
       //Part Approve - chỉ EVM
       {
         path: "part-requests-review",
@@ -210,16 +197,6 @@ const router = createBrowserRouter([
         element: (
           <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
             <CampaignManagement />
-          </PrivateRoute>
-        ),
-      },
-
-      // Analytics Page (chỉ Admin + EVM Staff có quyền truy cập)
-      {
-        path: "analytics",
-        element: (
-          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
-            <AnalyticsPage />
           </PrivateRoute>
         ),
       },

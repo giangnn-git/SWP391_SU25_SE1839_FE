@@ -16,10 +16,11 @@ const RealBarcodeScanner = ({ onScan, onClose, partName }) => {
     navigator.mediaDevices.enumerateDevices().then((devices) => {
       const cams = devices.filter((d) => d.kind === "videoinput");
       if (cams.length === 0) {
-        setCameraError("Không tìm thấy camera");
+        setCameraError("Cannot found camera");
         return;
       }
-      const preferred = cams.find((d) => d.label.toLowerCase().includes("back")) || cams[0];
+      const preferred =
+        cams.find((d) => d.label.toLowerCase().includes("back")) || cams[0];
       setDeviceId(preferred.deviceId);
     });
   }, []);
@@ -137,7 +138,9 @@ const RealBarcodeScanner = ({ onScan, onClose, partName }) => {
     };
   }, []);
 
-  const videoConstraints = deviceId ? { deviceId: { exact: deviceId } } : { width: 1280, height: 720 };
+  const videoConstraints = deviceId
+    ? { deviceId: { exact: deviceId } }
+    : { width: 1280, height: 720 };
 
   // Mock / manual
   const testWithMockBarcode = () => {
@@ -205,14 +208,24 @@ const RealBarcodeScanner = ({ onScan, onClose, partName }) => {
         <div className="text-xs font-mono text-gray-700 break-words">
           <strong>Status:</strong> {debugInfo || "Starting scanner..."}
         </div>
-        {retryCount > 0 && <div className="text-xs text-orange-600 mt-1">Retry: {retryCount}/3</div>}
+        {retryCount > 0 && (
+          <div className="text-xs text-orange-600 mt-1">
+            Retry: {retryCount}/3
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-2 mb-3">
-        <button onClick={testWithMockBarcode} className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm">
+        <button
+          onClick={testWithMockBarcode}
+          className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
+        >
           Test with Mock
         </button>
-        <button onClick={manualInput} className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm">
+        <button
+          onClick={manualInput}
+          className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
+        >
           Manual Input
         </button>
       </div>
@@ -221,10 +234,16 @@ const RealBarcodeScanner = ({ onScan, onClose, partName }) => {
         <div className="mb-3 bg-red-50 border border-red-200 rounded-lg p-3">
           <p className="text-red-700 text-sm font-medium">{cameraError}</p>
           <div className="flex gap-2 mt-2">
-            <button onClick={initScanner} className="flex-1 px-3 py-1 bg-red-600 text-white rounded text-sm">
+            <button
+              onClick={initScanner}
+              className="flex-1 px-3 py-1 bg-red-600 text-white rounded text-sm"
+            >
               Try Again
             </button>
-            <button onClick={manualInput} className="flex-1 px-3 py-1 bg-gray-600 text-white rounded text-sm">
+            <button
+              onClick={manualInput}
+              className="flex-1 px-3 py-1 bg-gray-600 text-white rounded text-sm"
+            >
               Manual Input
             </button>
           </div>
@@ -241,7 +260,10 @@ const RealBarcodeScanner = ({ onScan, onClose, partName }) => {
         >
           Close
         </button>
-        <button onClick={initScanner} className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 text-sm">
+        <button
+          onClick={initScanner}
+          className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 text-sm"
+        >
           Restart Scanner
         </button>
       </div>

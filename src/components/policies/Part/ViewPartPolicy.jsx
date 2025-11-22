@@ -10,11 +10,11 @@ import {
   Loader,
 } from "lucide-react";
 import { getPartPolicyByIdApi } from "../../../services/api.service";
+import toast from "react-hot-toast";
 
 const ViewPartPolicyModal = ({ showModal, selectedPolicy, onClose }) => {
   const [policyDetail, setPolicyDetail] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -42,13 +42,13 @@ const ViewPartPolicyModal = ({ showModal, selectedPolicy, onClose }) => {
     if (!selectedPolicy?.id) return;
 
     setLoading(true);
-    setError("");
+
     try {
       const response = await getPartPolicyByIdApi(selectedPolicy.id);
       setPolicyDetail(response.data?.data);
     } catch (err) {
       console.error("Error fetching policy detail:", err);
-      setError("Failed to load policy details. Please try again.");
+      toast.error("Failed to load policy details. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -73,16 +73,6 @@ const ViewPartPolicyModal = ({ showModal, selectedPolicy, onClose }) => {
             <div className="flex justify-center items-center py-8">
               <Loader size={24} className="animate-spin text-blue-600 mr-2" />
               <span className="text-gray-600">Loading policy details...</span>
-            </div>
-          ) : error ? (
-            <div className="text-center py-4">
-              <div className="text-red-600 mb-2">{error}</div>
-              <button
-                onClick={fetchPolicyDetail}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-              >
-                Retry
-              </button>
             </div>
           ) : policyDetail ? (
             <div className="space-y-4">

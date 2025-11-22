@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { PlusCircle, Filter, Search, X, Settings } from "lucide-react";
 import { getAllPartPoliciesApi } from "../../../services/api.service";
 import PartPolicyTable from "./PartPolicyTable";
 import ViewPartPolicyModal from "./ViewPartPolicy";
 import CreatePartPolicy from "./CreatePartPolicy";
 import { updatePartPolicyStatusApi } from "../../../services/api.service";
+import toast from "react-hot-toast";
 
 const PartPolicyManagement = ({ refreshTrigger = 0 }) => {
   const [policies, setPolicies] = useState([]);
   const [originalPolicies, setOriginalPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedPolicy, setSelectedPolicy] = useState(null);
@@ -36,7 +36,7 @@ const PartPolicyManagement = ({ refreshTrigger = 0 }) => {
   const fetchPolicies = async () => {
     try {
       setLoading(true);
-      setError("");
+
       const response = await getAllPartPoliciesApi();
 
       const partPolicies = response.data?.data?.partPolicies || [];
@@ -46,11 +46,11 @@ const PartPolicyManagement = ({ refreshTrigger = 0 }) => {
       setPolicies(sortedPolicies);
     } catch (err) {
       console.error("Error fetching part policies:", err);
-      // THAY ĐỔI TỪ message SANG errorCode
+      //  errorCode
       const errorMessage =
         err.response?.data?.errorCode ||
         "Failed to load part policies. Please try again.";
-      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -166,7 +166,7 @@ const PartPolicyManagement = ({ refreshTrigger = 0 }) => {
       const updatedPolicy = response.data?.data;
       if (updatedPolicy) {
         const newStatus = updatedPolicy.status;
-        setSuccess(
+        toast.success(
           `Policy ${
             newStatus === "ACTIVE" ? "activated" : "deactivated"
           } successfully!`
@@ -179,7 +179,7 @@ const PartPolicyManagement = ({ refreshTrigger = 0 }) => {
         err.response?.data?.errorCode || // Ưu tiên lấy errorCode
         err.response?.data?.message || // Fallback đến message nếu không có errorCode
         "Failed to update policy status. Please try again.";
-      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setActionLoading(false);
     }
@@ -194,17 +194,6 @@ const PartPolicyManagement = ({ refreshTrigger = 0 }) => {
     setSearchTerm("");
     setCurrentPage(1);
   };
-
-  // Clear messages
-  useEffect(() => {
-    if (success || error) {
-      const timer = setTimeout(() => {
-        setSuccess("");
-        setError("");
-      }, 6000);
-      return () => clearTimeout(timer);
-    }
-  }, [success, error]);
 
   const clearSearch = () => {
     setSearchTerm("");
@@ -246,37 +235,6 @@ const PartPolicyManagement = ({ refreshTrigger = 0 }) => {
           </button>
         </div>
       </div>
-
-      {/* Message Area */}
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
-          <div className="w-3 h-3 bg-red-500 rounded-full flex-shrink-0"></div>
-          <div className="flex-1">
-            <p className="text-red-700 font-medium">{error}</p>
-          </div>
-          <button
-            onClick={() => setError("")}
-            className="text-red-500 hover:text-red-700 transition-colors"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
-
-      {success && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
-          <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
-          <div className="flex-1">
-            <p className="text-green-700 font-medium">{success}</p>
-          </div>
-          <button
-            onClick={() => setSuccess("")}
-            className="text-green-500 hover:text-green-700 transition-colors"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
 
       {/* Search and Filter Bar */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6 shadow-sm">
@@ -449,7 +407,7 @@ const PartPolicyManagement = ({ refreshTrigger = 0 }) => {
         showModal={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSuccess={() => {
-          setSuccess("Part policy created successfully!");
+          toast.success("Part policy created successfully!");
           setShowCreateModal(false);
           fetchPolicies();
         }}

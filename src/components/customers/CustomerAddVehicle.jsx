@@ -1,21 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
-import {
-  X,
-  Car,
-  FileText,
-  Check,
-  Search,
-  ChevronDown,
-  Plus,
-} from "lucide-react";
+import { X, Car, FileText, Search, Plus } from "lucide-react";
 import { addVehicleToCustomerApi } from "../../services/api.service";
-import ToastMessage from "../common/ToastMessage";
+import toast from "react-hot-toast";
 
 const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
-  // State cho toast
-  const [actionMessage, setActionMessage] = useState("");
-  const [messageType, setMessageType] = useState("");
-
   const [formData, setFormData] = useState({
     vin: "",
     licensePlate: "",
@@ -25,14 +13,8 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
   const [availableVehicles, setAvailableVehicles] = useState([]);
   const [loadingVehicles, setLoadingVehicles] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(""); // XÓA state error này nếu không cần
-  const vinDropdownRef = useRef(null);
 
-  // Hàm hiển thị toast
-  const showMessage = (message, type = "info") => {
-    setActionMessage(message);
-    setMessageType(type);
-  };
+  const vinDropdownRef = useRef(null);
 
   // Filter vehicles based on search
   const filteredVins = availableVehicles.filter(
@@ -70,23 +52,20 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
   const validateForm = () => {
     // Required VIN
     if (!formData.vin.trim()) {
-      showMessage("VIN is required", "error");
+      toast.error("VIN is required");
       return false;
     }
 
     // VIN nhập tay: kiểm tra tối thiểu độ dài/định dạng cơ bản
     const vinTrim = formData.vin.trim();
     if (vinTrim.length < 5) {
-      showMessage("VIN must be at least 5 characters long", "error");
+      toast.error("VIN must be at least 5 characters long");
       return false;
     }
 
     // Validate license plate format
     if (formData.licensePlate && !validateLicensePlate(formData.licensePlate)) {
-      showMessage(
-        "Wrong License plate format. Correct format: 63A-003.33",
-        "error"
-      );
+      toast.error("Wrong License plate format.");
       return false;
     }
 
@@ -112,7 +91,6 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
 
       await addVehicleToCustomerApi(customer.id, submitData);
 
-      showMessage("Vehicle added successfully!", "success");
       onSuccess();
 
       // Reset form
@@ -138,7 +116,6 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
         errorMsg += "Unexpected error occurred.";
       }
 
-      showMessage(errorMsg, "error");
       if (onError) {
         onError(errorMsg);
       }
@@ -166,15 +143,6 @@ const AddVehicleModal = ({ customer, onClose, onSuccess, onError }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      {/* Toast Message - CHỈ GIỮ LẠI PHẦN NÀY */}
-      {actionMessage && (
-        <ToastMessage
-          type={messageType}
-          message={actionMessage}
-          onClose={() => setActionMessage("")}
-        />
-      )}
-
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
