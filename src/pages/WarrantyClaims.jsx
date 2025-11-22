@@ -18,6 +18,9 @@ const WarrantyClaimsManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [idSort, setIdSort] = useState("none");
+
+
   const [currentPage, setCurrentPage] = useState(1); // pagination state
 
   const { currentUser, loading: userLoading } = useCurrentUser();
@@ -102,6 +105,14 @@ const WarrantyClaimsManagement = () => {
     return matchSearch && matchPriority && matchStatus;
   });
 
+  // Sort sau khi filter
+  const sortedClaims = [...filteredClaims].sort((a, b) => {
+    if (idSort === "asc") return Number(a.id) - Number(b.id);
+    if (idSort === "desc") return Number(b.id) - Number(a.id);
+    return 0;
+  });
+
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Breadcrumb */}
@@ -146,6 +157,17 @@ const WarrantyClaimsManagement = () => {
             />
           </div>
 
+          <select
+            value={idSort}
+            onChange={(e) => setIdSort(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="none">ID: Default</option>
+            <option value="asc">ID: Ascending</option>
+            <option value="desc">ID: Descending</option>
+          </select>
+
+
           {/* Priority Filter */}
           <select
             value={priorityFilter}
@@ -185,7 +207,7 @@ const WarrantyClaimsManagement = () => {
 
       {/* Table */}
       <ClaimTable
-        claims={filteredClaims}
+        claims={sortedClaims}
         loading={loading}
         error={error}
         currentPage={currentPage}
@@ -193,6 +215,7 @@ const WarrantyClaimsManagement = () => {
         fetchClaims={fetchClaims}
         statusField="currentStatus"
       />
+
       {/* Modal */}
       {showCreateModal && (
         <CreateClaimModal

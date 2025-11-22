@@ -424,8 +424,8 @@ const RepairOrderDetail = () => {
                 <td className="px-1 py-1 text-gray-700">{item.partName}</td>
                 <td className="px-1 py-1 text-gray-700 break-words">
                   {Array.isArray(item.listOldSerialNumber) &&
-                  item.listOldSerialNumber.length > 0 &&
-                  (!item.oldSerialNumber || item.oldSerialNumber === "N/A") ? (
+                    item.listOldSerialNumber.length > 0 &&
+                    (!item.oldSerialNumber || item.oldSerialNumber === "N/A") ? (
                     <div className="flex items-center gap-1">
                       <select
                         value={item.pendingOldSerialNumber || ""}
@@ -464,11 +464,10 @@ const RepairOrderDetail = () => {
                           handleUpdateOldSNSubmit(item.id, index);
                         }}
                         disabled={updatingDetailId === item.id}
-                        className={`px-1.5 py-0.5 text-xs rounded font-medium whitespace-nowrap ${
-                          updatingDetailId === item.id
+                        className={`px-1.5 py-0.5 text-xs rounded font-medium whitespace-nowrap ${updatingDetailId === item.id
                             ? "bg-gray-300 text-gray-700 cursor-not-allowed"
                             : "bg-blue-600 text-white hover:bg-blue-700"
-                        }`}
+                          }`}
                       >
                         {updatingDetailId === item.id ? (
                           <Loader className="h-3 w-3 animate-spin" />
@@ -582,13 +581,12 @@ const RepairOrderDetail = () => {
                           !item.oldSerialNumber ||
                           item.oldSerialNumber === "N/A"
                         }
-                        className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition ${
-                          updatingNewSN === item.id ||
-                          !item.oldSerialNumber ||
-                          item.oldSerialNumber === "N/A"
+                        className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition ${updatingNewSN === item.id ||
+                            !item.oldSerialNumber ||
+                            item.oldSerialNumber === "N/A"
                             ? "bg-gray-300 text-gray-700 cursor-not-allowed"
                             : "bg-blue-600 text-white hover:bg-blue-700"
-                        }`}
+                          }`}
                       >
                         {updatingNewSN === item.id ? (
                           <Loader className="h-3 w-3 animate-spin" />
@@ -650,17 +648,16 @@ const RepairOrderDetail = () => {
                       {step.title}
                     </h3>
                     <span
-                      className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        step.status === "PENDING"
+                      className={`px-2 py-0.5 rounded text-xs font-medium ${step.status === "PENDING"
                           ? "bg-yellow-100 text-yellow-700"
                           : step.status === "IN_PROGRESS"
-                          ? "bg-blue-100 text-blue-700"
-                          : step.status === "WAITING"
-                          ? "bg-purple-100 text-purple-700"
-                          : step.status === "CANCELLED"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-green-100 text-green-700"
-                      }`}
+                            ? "bg-blue-100 text-blue-700"
+                            : step.status === "WAITING"
+                              ? "bg-purple-100 text-purple-700"
+                              : step.status === "CANCELLED"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-green-100 text-green-700"
+                        }`}
                     >
                       {step.status}
                     </span>
@@ -695,9 +692,9 @@ const RepairOrderDetail = () => {
                       title.includes("part");
                     const missingOldSN = Array.isArray(repairDetails)
                       ? repairDetails.some(
-                          (d) =>
-                            !d.oldSerialNumber || d.oldSerialNumber === "N/A"
-                        )
+                        (d) =>
+                          !d.oldSerialNumber || d.oldSerialNumber === "N/A"
+                      )
                       : true;
 
                     return (
@@ -721,13 +718,12 @@ const RepairOrderDetail = () => {
                                     handleUpdateStatus(step.stepId, status);
                                 }}
                                 disabled={disabled}
-                                className={`w-6 h-6 rounded-full flex items-center justify-center transition border-2 text-xs ${
-                                  isActive
+                                className={`w-6 h-6 rounded-full flex items-center justify-center transition border-2 text-xs ${isActive
                                     ? "bg-blue-600 border-blue-600 text-white"
                                     : disabled
-                                    ? "bg-gray-200 border-gray-300 text-gray-500 cursor-not-allowed"
-                                    : "bg-white border-gray-300 hover:border-blue-600"
-                                }`}
+                                      ? "bg-gray-200 border-gray-300 text-gray-500 cursor-not-allowed"
+                                      : "bg-white border-gray-300 hover:border-blue-600"
+                                  }`}
                               >
                                 {isActive && <CheckCircle size={16} />}
                               </button>
@@ -756,8 +752,8 @@ const RepairOrderDetail = () => {
                   title.includes("part");
                 const missingOldSN = Array.isArray(repairDetails)
                   ? repairDetails.some(
-                      (d) => !d.oldSerialNumber || d.oldSerialNumber === "N/A"
-                    )
+                    (d) => !d.oldSerialNumber || d.oldSerialNumber === "N/A"
+                  )
                   : false;
                 return isRepairReplaceStep && missingOldSN ? (
                   <div className="mt-2 p-2 text-xs bg-yellow-50 border border-yellow-300 rounded text-yellow-800">
@@ -940,11 +936,10 @@ const RepairOrderDetail = () => {
                       Confirmation time:{" "}
                       <span className="font-semibold">
                         {order.verifiedAt
-                          ? `${order.verifiedAt[2]}/${order.verifiedAt[1]}/${
-                              order.verifiedAt[0]
-                            } ${order.verifiedAt[3]}:${String(
-                              order.verifiedAt[4]
-                            ).padStart(2, "0")}`
+                          ? `${order.verifiedAt[2]}/${order.verifiedAt[1]}/${order.verifiedAt[0]
+                          } ${order.verifiedAt[3]}:${String(
+                            order.verifiedAt[4]
+                          ).padStart(2, "0")}`
                           : "–"}
                       </span>
                     </p>
@@ -963,11 +958,10 @@ const RepairOrderDetail = () => {
                 ) : (
                   <button
                     onClick={() => setShowVerifyModal(true)}
-                    className={`px-5 py-2 rounded-lg text-white font-medium ${
-                      isSCStaff
+                    className={`px-5 py-2 rounded-lg text-white font-medium ${isSCStaff
                         ? "bg-gray-400 cursor-not-allowed"
                         : "bg-green-600 hover:bg-green-700"
-                    }`}
+                      }`}
                   >
                     Confirmation completed
                   </button>
@@ -1005,7 +999,7 @@ const RepairOrderDetail = () => {
                   </>
                 ) : (
                   <>
-                    <span>▶</span>
+                    <span></span>
                     Start Repair Process
                   </>
                 )}
@@ -1028,11 +1022,10 @@ const RepairOrderDetail = () => {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-6 py-4 font-medium transition ${
-                  activeTab === tab.key
+                className={`flex items-center gap-2 px-6 py-4 font-medium transition ${activeTab === tab.key
                     ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
                     : "text-gray-600 hover:text-blue-500 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 {tab.icon}
                 {tab.label}
@@ -1280,9 +1273,8 @@ const InfoItem = ({ label, value, mono = false }) => (
       {label}
     </p>
     <p
-      className={`text-base font-semibold text-gray-900 ${
-        mono ? "font-mono bg-gray-100 px-2 py-1 rounded inline-block" : ""
-      }`}
+      className={`text-base font-semibold text-gray-900 ${mono ? "font-mono bg-gray-100 px-2 py-1 rounded inline-block" : ""
+        }`}
     >
       {value || "–"}
     </p>
@@ -1410,7 +1402,7 @@ const RepairOrderAttachments = ({ attachments }) => {
                 onClick={() =>
                   setLightboxIndex(
                     (lightboxIndex - 1 + attachments.length) %
-                      attachments.length
+                    attachments.length
                   )
                 }
                 className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70 transition z-10"

@@ -67,15 +67,23 @@ const Dashboard = () => {
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
           <p className="text-sm font-semibold text-gray-900">{payload[0].payload.month}</p>
-          <p className="text-sm text-gray-600">
-            Total: <span className="font-bold text-blue-600">{payload[0].value}</span>
-          </p>
-          {payload[0].payload.totalCostFormatted && (
-            <p className="text-sm text-gray-600">
-              Cost: <span className="font-bold text-green-600">{payload[0].payload.totalCostFormatted}$</span>
-
-            </p>
-          )}
+          {/* Show both series if present */}
+          {payload.map((p, idx) => {
+            const key = p.dataKey || p.name || `val-${idx}`;
+            if (key === '_totalCost' || key === 'totalCost') {
+              return (
+                <p key={key} className="text-sm text-gray-600">
+                  Cost: <span className="font-bold text-green-600">{p.payload.totalCostFormatted ?? `${p.value}$`}$</span>
+                </p>
+              );
+            }
+            // default to totalClaims / numeric series
+            return (
+              <p key={key} className="text-sm text-gray-600">
+                Total: <span className="font-bold text-blue-600">{p.value}</span>
+              </p>
+            );
+          })}
         </div>
       );
     }
@@ -118,6 +126,75 @@ const Dashboard = () => {
   const performanceMetrics = summary.performanceMetrics || {};
   const urgentItems = summary.urgentItems || {};
   const quickStats = summary.quickStatistics || {};
+
+  // Compute yMax for Monthly Trend chart: prefer server-provided value if present,
+  // otherwise compute from the data. Ensure non-zero to avoid zero-range axis.
+  const monthlyMaxComputed = monthlyTrend.reduce((max, item) => {
+    const val = Number(item?.totalClaims) || 0;
+    return val > max ? val : max;
+  }, 0);
+  // Helper to round up to a 'nice' max for cleaner ticks (e.g., 2 -> 2, 3 -> 4, 7 -> 10).
+  const getNiceMax = (n) => {
+    if (!n || n <= 0) return 1;
+    if (n <= 5) return Math.ceil(n);
+    const pow = Math.pow(10, Math.floor(Math.log10(n)));
+    const lead = Math.ceil(n / pow);
+    const niceLead = lead <= 1 ? 1 : lead <= 2 ? 2 : lead <= 5 ? 5 : 10;
+    return niceLead * pow;
+  };
+
+  // Use the max of `totalClaims` for the LEFT axis (claims count). Do NOT
+  // use any server-provided yMax here because server yMax may be for cost.
+  const yMax = getNiceMax(monthlyMaxComputed);
+  const ticks = Array.from({ length: 5 }, (_, i) => {
+    const t = (yMax * i) / 4;
+    return Number(Number.isInteger(t) ? t : Number(t.toFixed(2)));
+  });
+
+  // --- Cost axis and data preparation ---
+  const parseCost = (s) => {
+    if (s == null) return 0;
+    if (typeof s === 'number') return s;
+    if (typeof s === 'string') {
+      const n = Number(s.replace(/[^0-9.-]+/g, ''));
+      return Number.isFinite(n) ? n : 0;
+    }
+    return 0;
+  };
+
+  const monthlyCostMaxComputed = monthlyTrend.reduce((max, item) => {
+    const val = Number(item?.totalCost) || parseCost(item?.totalCostFormatted);
+    return val > max ? val : max;
+  }, 0);
+  const costYMax = getNiceMax(monthlyCostMaxComputed);
+  const costTicks = Array.from({ length: 5 }, (_, i) => {
+    const t = (costYMax * i) / 4;
+    return Number(Number.isInteger(t) ? t : Number(t.toFixed(2)));
+  });
+
+  // Prefer server-provided yMax for the base axis when available and numeric.
+  // Backend fields checked (in order): `monthlyTrendYMax`, `monthlyTrendMax`, `yMax`.
+  const serverYMaxCandidate = Number(summary?.monthlyTrendYMax ?? summary?.monthlyTrendMax ?? summary?.yMax ?? 0);
+  const serverYMax = Number.isFinite(serverYMaxCandidate) && serverYMaxCandidate > 0 ? serverYMaxCandidate : null;
+
+  // Decide a single axis max: prefer serverYMax if present, otherwise use the
+  // larger of computed cost/claims and round to a 'nice' value.
+  const computedBaseMax = Math.max(monthlyCostMaxComputed, monthlyMaxComputed);
+  const defaultBaseYMax = getNiceMax(computedBaseMax);
+  const baseYMax = serverYMax ?? defaultBaseYMax;
+  const baseTicks = Array.from({ length: 5 }, (_, i) => {
+    const t = (baseYMax * i) / 4;
+    return Number(Number.isInteger(t) ? t : Number(t.toFixed(2)));
+  });
+
+  // Determine whether the base axis should be treated as cost (for formatting)
+  const baseIsCost = (serverYMax !== null && monthlyCostMaxComputed > 0) ? true : (computedBaseMax === monthlyCostMaxComputed && monthlyCostMaxComputed > 0);
+
+  // attach a numeric cost field for plotting
+  const trendData = monthlyTrend.map((it) => ({
+    ...it,
+    _totalCost: Number(it?.totalCost) || parseCost(it?.totalCostFormatted),
+  }));
 
   return (
     <div className="bg-gray-50 min-h-screen py-6 px-4 sm:px-6 lg:px-8">
@@ -280,13 +357,13 @@ const Dashboard = () => {
             <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-all duration-200">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Monthly Claims Trend</h3>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={monthlyTrend}>
+                <LineChart data={trendData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis
                     dataKey="month"
                     tick={{ fill: '#6b7280', fontSize: 12 }}
                   />
-                  <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} />
+                  <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} domain={[0, baseYMax]} ticks={baseTicks} tickFormatter={baseIsCost ? (v) => `${v}$` : undefined} />
                   <Tooltip content={<CustomTooltip1 />} />
                   <Line
                     type="monotone"
@@ -294,6 +371,14 @@ const Dashboard = () => {
                     stroke="#3b82f6"
                     strokeWidth={2}
                     dot={{ fill: '#3b82f6', r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="_totalCost"
+                    stroke="#10b981"
+                    strokeWidth={2}
+                    dot={{ fill: '#10b981', r: 4 }}
                     activeDot={{ r: 6 }}
                   />
                 </LineChart>
