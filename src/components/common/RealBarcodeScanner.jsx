@@ -5,39 +5,24 @@ import Quagga from "@ericblade/quagga2";
 
 const RealBarcodeScanner = ({ onScan, onClose, partName }) => {
   const webcamRef = useRef(null);
-  const [deviceId, setDeviceId] = useState(null);
   const [scanning, setScanning] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [debugInfo, setDebugInfo] = useState("");
   const [retryCount, setRetryCount] = useState(0);
 
-  // Lấy danh sách camera
-  useEffect(() => {
-    navigator.mediaDevices.enumerateDevices().then((devices) => {
-      const cams = devices.filter((d) => d.kind === "videoinput");
-      if (cams.length === 0) {
-        setCameraError("Cannot found camera");
-        return;
-      }
-      const preferred =
-        cams.find((d) => d.label.toLowerCase().includes("back")) || cams[0];
-      setDeviceId(preferred.deviceId);
-    });
-  }, []);
-
-  // Init scanner
   const initScanner = useCallback(async () => {
-    if (!webcamRef.current?.video?.srcObject) {
-      setDebugInfo("Camera stream chưa sẵn sàng…");
-      setTimeout(initScanner, 500);
+    if (!webcamRef.current?.video) {
+      setDebugInfo("Waiting for video element...");
       return;
     }
 
     try {
       setScanning(true);
       setCameraError(null);
-      setDebugInfo("Initializing scanner…");
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      setDebugInfo("Initializing scanner...");
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       const video = webcamRef.current.video;
 
       const config = {
@@ -46,30 +31,51 @@ const RealBarcodeScanner = ({ onScan, onClose, partName }) => {
           type: "LiveStream",
           target: video,
           constraints: {
-            deviceId: deviceId ? { exact: deviceId } : undefined,
-            width: { min: 640, ideal: 1280, max: 1920 },
-            height: { min: 480, ideal: 720, max: 1080 },
+            width: { min: 1280, ideal: 1920, max: 2560 },
+            height: { min: 720, ideal: 1080, max: 1440 },
             facingMode: "environment",
+            aspectRatio: { ideal: 1.7777777778 },
           },
-          area: { top: "10%", right: "5%", left: "5%", bottom: "10%" },
+          area: {
+            top: "10%",
+            right: "5%",
+            left: "5%",
+            bottom: "10%",
+          },
         },
-        frequency: 30,
-        decoder: { readers: ["code_128_reader"] }, // chỉ quét Code 128
-        locator: { patchSize: "large", halfSample: false },
+        frequency: 15,
+        decoder: {
+          readers: [
+            "code_128_reader",
+            "ean_reader",
+            "ean_8_reader",
+            "code_39_reader",
+            "code_39_vin_reader",
+            "codabar_reader",
+            "upc_reader",
+            "upc_e_reader",
+          ],
+        },
+        locator: {
+          patchSize: "large",
+          halfSample: false,
+        },
         numOfWorkers: 4,
         locate: true,
+        src: null,
       };
 
       Quagga.init(config, (err) => {
         if (err) {
           console.error("Quagga init error:", err);
-          setCameraError("Scanner init failed: " + err.message);
+          setCameraError(`Scanner init failed: ${err.message}`);
           setScanning(false);
+
           if (retryCount < 3) {
             setTimeout(() => {
               setRetryCount((prev) => prev + 1);
               initScanner();
-            }, 1500);
+            }, 2000);
           }
           return;
         }
@@ -79,80 +85,115 @@ const RealBarcodeScanner = ({ onScan, onClose, partName }) => {
         setScanning(true);
 
         Quagga.onDetected((result) => {
+          console.log("Barcode detected:", result);
+
           if (result?.codeResult?.code) {
             const barcode = result.codeResult.code.trim();
-            setDebugInfo(`Detected: ${barcode}`);
+            const format = result.codeResult.format;
+
+            setDebugInfo(`Detected: ${barcode} (${format})`);
+
             setTimeout(() => {
               Quagga.stop();
               setScanning(false);
               onScan(barcode);
-            }, 300);
+            }, 500);
           }
         });
 
         Quagga.onProcessed((result) => {
-          const ctx = Quagga.canvas.ctx.overlay;
-          const canvas = Quagga.canvas.dom.overlay;
-          if (!ctx || !canvas) return;
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          if (result) {
+            const drawingCtx = Quagga.canvas.ctx.overlay;
+            const drawingCanvas = Quagga.canvas.dom.overlay;
 
-          if (result && result.boxes) {
-            ctx.strokeStyle = "#FF0000";
-            result.boxes
-              .filter((b) => b !== result.box)
-              .forEach((b) => {
-                ctx.beginPath();
-                ctx.moveTo(b[0][0], b[0][1]);
-                b.forEach((p) => ctx.lineTo(p[0], p[1]));
-                ctx.closePath();
-                ctx.stroke();
-              });
-          }
+            if (!drawingCtx || !drawingCanvas) return;
 
-          if (result && result.box) {
-            ctx.strokeStyle = "#00FF00";
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(result.box[0][0], result.box[0][1]);
-            result.box.forEach((p) => ctx.lineTo(p[0], p[1]));
-            ctx.closePath();
-            ctx.stroke();
+            drawingCtx.clearRect(
+              0,
+              0,
+              drawingCanvas.width,
+              drawingCanvas.height
+            );
+
+            const canvasWidth = drawingCanvas.width;
+            const canvasHeight = drawingCanvas.height;
+
+            drawingCtx.strokeStyle = "#00FF00";
+            drawingCtx.lineWidth = 2;
+            drawingCtx.setLineDash([5, 5]);
+            drawingCtx.strokeRect(
+              canvasWidth * 0.05,
+              canvasHeight * 0.1,
+              canvasWidth * 0.9,
+              canvasHeight * 0.8
+            );
+            drawingCtx.setLineDash([]);
+
+            if (result.box) {
+              drawingCtx.strokeStyle = "#FF0000";
+              drawingCtx.lineWidth = 3;
+              drawingCtx.strokeRect(
+                result.box[0],
+                result.box[1],
+                result.box[2] - result.box[0],
+                result.box[3] - result.box[1]
+              );
+            }
           }
         });
       });
     } catch (error) {
       console.error("Scanner error:", error);
-      setCameraError("Scanner error: " + error.message);
+      setCameraError(`Scanner error: ${error.message}`);
       setScanning(false);
     }
-  }, [deviceId, retryCount, onScan]);
+  }, [onScan, retryCount]);
 
-  // Stop scanner on unmount
+  const testWithMockBarcode = () => {
+    const testBarcodes = [
+      "1234567890128",
+      "12345678",
+      "ABC123DEF",
+      "123456789012",
+      "BOSCH-SMG180-001",
+      "SN-2024-001-ABC",
+    ];
+    const randomBarcode =
+      testBarcodes[Math.floor(Math.random() * testBarcodes.length)];
+    setDebugInfo(`🧪 TEST: Using mock barcode: ${randomBarcode}`);
+
+    setTimeout(() => {
+      onScan(randomBarcode);
+    }, 1000);
+  };
+
+  const manualInput = () => {
+    const manualCode = prompt("Enter barcode manually:");
+    if (manualCode && manualCode.trim()) {
+      setDebugInfo(`Manual input: ${manualCode}`);
+      onScan(manualCode.trim());
+    }
+  };
+
   useEffect(() => {
+    const timer = setTimeout(() => {
+      initScanner();
+    }, 1000);
+
     return () => {
+      clearTimeout(timer);
       if (Quagga) {
         Quagga.stop();
         Quagga.offDetected();
         Quagga.offProcessed();
       }
     };
-  }, []);
+  }, [initScanner]);
 
-  const videoConstraints = deviceId
-    ? { deviceId: { exact: deviceId } }
-    : { width: 1280, height: 720 };
-
-  // Mock / manual
-  const testWithMockBarcode = () => {
-    const codes = ["123456789012", "ABC123", "CODE128-TEST"];
-    const random = codes[Math.floor(Math.random() * codes.length)];
-    setDebugInfo("Mock: " + random);
-    setTimeout(() => onScan(random), 1000);
-  };
-
-  const manualInput = () => {
-    const code = prompt("Enter barcode manually:");
-    if (code) onScan(code.trim());
+  const videoConstraints = {
+    facingMode: "environment",
+    width: { ideal: 1920, max: 2560 },
+    height: { ideal: 1080, max: 1440 },
   };
 
   return (
@@ -165,30 +206,30 @@ const RealBarcodeScanner = ({ onScan, onClose, partName }) => {
       </div>
 
       <div className="relative bg-black rounded-lg overflow-hidden mb-4 border-2 border-green-500 w-full">
-        {deviceId ? (
-          <Webcam
-            ref={webcamRef}
-            audio={false}
-            videoConstraints={videoConstraints}
-            className="w-full h-80 object-cover"
-            onUserMedia={() => setDebugInfo("Camera ready")}
-            onUserMediaError={(err) => {
-              console.error(err);
-              setCameraError("Camera error: " + err.message);
-            }}
-          />
-        ) : (
-          <div className="text-white text-center py-20">Detecting camera…</div>
-        )}
+        <Webcam
+          ref={webcamRef}
+          audio={false}
+          screenshotFormat="image/jpeg"
+          videoConstraints={videoConstraints}
+          className="w-full h-80 object-cover"
+          onUserMedia={() => {
+            setDebugInfo("✅ Camera access granted - Wide area ready");
+            console.log("Webcam initialized successfully");
+          }}
+          onUserMediaError={(error) => {
+            console.error("Webcam error:", error);
+            setCameraError(`❌ Camera error: ${error.message}`);
+            setScanning(false);
+          }}
+        />
 
-        {/* Green box overlay */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="border-2 border-green-500 w-4/5 h-3/4 rounded-lg relative animate-pulse">
             <div className="absolute -top-8 left-0 right-0 text-center text-white font-semibold text-sm bg-black bg-opacity-70 rounded px-2 py-1">
               Position anywhere in green box
             </div>
             <div className="absolute -bottom-8 left-0 right-0 text-center text-white text-xs bg-black bg-opacity-70 rounded px-2 py-1">
-              No need to center perfectly
+              No need to center perfectly - Just keep in green area
             </div>
           </div>
         </div>
@@ -206,11 +247,12 @@ const RealBarcodeScanner = ({ onScan, onClose, partName }) => {
 
       <div className="mb-3 p-3 bg-gray-100 rounded-lg border">
         <div className="text-xs font-mono text-gray-700 break-words">
-          <strong>Status:</strong> {debugInfo || "Starting scanner..."}
+          <strong>Status:</strong>{" "}
+          {debugInfo || "Initializing wide area scanner..."}
         </div>
         {retryCount > 0 && (
           <div className="text-xs text-orange-600 mt-1">
-            Retry: {retryCount}/3
+            Retry attempt: {retryCount}/3
           </div>
         )}
       </div>
@@ -218,13 +260,13 @@ const RealBarcodeScanner = ({ onScan, onClose, partName }) => {
       <div className="grid grid-cols-2 gap-2 mb-3">
         <button
           onClick={testWithMockBarcode}
-          className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
+          className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium transition"
         >
           Test with Mock
         </button>
         <button
           onClick={manualInput}
-          className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
+          className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm font-medium transition"
         >
           Manual Input
         </button>
@@ -236,13 +278,13 @@ const RealBarcodeScanner = ({ onScan, onClose, partName }) => {
           <div className="flex gap-2 mt-2">
             <button
               onClick={initScanner}
-              className="flex-1 px-3 py-1 bg-red-600 text-white rounded text-sm"
+              className="flex-1 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
             >
               Try Again
             </button>
             <button
               onClick={manualInput}
-              className="flex-1 px-3 py-1 bg-gray-600 text-white rounded text-sm"
+              className="flex-1 px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm"
             >
               Manual Input
             </button>
@@ -253,16 +295,18 @@ const RealBarcodeScanner = ({ onScan, onClose, partName }) => {
       <div className="flex gap-2">
         <button
           onClick={() => {
-            Quagga.stop();
+            if (Quagga) {
+              Quagga.stop();
+            }
             onClose();
           }}
-          className="flex-1 bg-gray-600 text-white py-2 px-3 rounded-lg hover:bg-gray-700 text-sm"
+          className="flex-1 bg-gray-600 text-white py-2 px-3 rounded-lg hover:bg-gray-700 transition font-medium text-sm"
         >
           Close
         </button>
         <button
           onClick={initScanner}
-          className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 text-sm"
+          className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition font-medium text-sm"
         >
           Restart Scanner
         </button>
