@@ -14,7 +14,6 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
     vin: "",
     priority: "NORMAL",
     agreeRecall: false,
-    // diagnosis/defectiveParts/attachments are not collected at creation
   };
 
   // Form data state
@@ -35,8 +34,9 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
   const [successMessage, setSuccessMessage] = useState("");
   const [showConfirmExit, setShowConfirmExit] = useState(false);
 
-
-  // categories/parts are not needed for initial claim creation
+  const [vehicleWarning, setVehicleWarning] = useState("");
+  const isVehicleLocked = !!vehicleWarning;
+  const isInputLocked = !formData.phone?.trim() || !formData.vin || isVehicleLocked;
 
 
   // Fetch vehicle list by customer phone
@@ -53,6 +53,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
       const list = Array.isArray(data)
         ? data.map((item) => ({
           vehicle: item.vehicle,
+          warningMessage: item.warningMessage || null,
           recall: item.code
             ? {
               code: item.code,
@@ -76,6 +77,9 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
 
       setVehicles(list);
       setRecallInfo(null);
+      setVehicleWarning("");
+      // Reset VIN khi fetch mới
+      setFormData(prev => ({ ...prev, vin: "" }));
     } catch (err) {
       const errorMessage =
         err.response?.data?.errorCode ||
@@ -93,7 +97,6 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
       newErrors.description = "Description is required";
     if (!formData.mileage) newErrors.mileage = "Mileage is required";
     if (!formData.vin.trim()) newErrors.vin = "VIN is required";
-    // diagnosis/defective parts are not required at create time
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -102,6 +105,12 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
   // Create claim
   const handleCreateClaim = async () => {
     if (!validateForm()) return;
+
+    // Kiểm tra vehicle warning trước khi tạo claim
+    if (vehicleWarning) {
+      toast.error("Cannot create claim: Vehicle is currently under warranty processing");
+      return;
+    }
 
     try {
       setActionLoading(true);
@@ -128,15 +137,12 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
 
       if (isSuccess) {
         toast.success(data?.message || "Claim created successfully!");
-        // Backend returns ApiResponse.data = CreateClaimResponse
         onClaimCreated(data.data);
         setSuccessMessage(data?.message || "Claim created successfully!");
         setShowSuccessModal(true);
       } else {
         toast.error(data?.errorCode || data?.message || "Unknown error");
       }
-
-
     } catch (err) {
       console.error("Create claim error:", err);
       const data = err.response?.data;
@@ -156,9 +162,6 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
     }
   };
 
-
-
-
   // Handle general input change
   const handleInputChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
@@ -167,14 +170,11 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
     }
   };
 
-  // (file/part handlers removed   not collected during initial claim creation)
-
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 z-20 flex items-center justify-between p-6 border-b border-gray-200 bg-white shadow-sm">
-
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
               Create New Claim
@@ -187,54 +187,32 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
             onClick={handleClose}
             className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700"
           >
-            <span className="text-2xl leading-none"> </span>
+            <span className="text-2xl leading-none">×</span>
           </button>
         </div>
 
         {/* Body */}
         <div className="p-6 space-y-5">
-
-          {/* Mileage and Phone */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Mileage (km) <span className="text-red-500">*</span>
-              </label>
+          {/* Customer Phone */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Customer Phone <span className="text-red-500">*</span>
+            </label>
+            <div className="flex gap-2">
               <input
-                type="number"
-                placeholder="Enter mileage..."
-                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${errors.mileage
-                  ? "border-red-300 bg-red-50"
-                  : "border-gray-300"
-                  }`}
-                value={formData.mileage}
-                onChange={(e) => handleInputChange("mileage", e.target.value)}
+                type="text"
+                placeholder="Enter phone..."
+                className="flex-1 px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 transition border-gray-300"
+                value={formData.phone}
+                onChange={(e) => handleInputChange("phone", e.target.value)}
               />
-              {errors.mileage && (
-                <p className="text-red-600 text-xs mt-1">{errors.mileage}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Customer Phone <span className="text-red-500">*</span>
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Enter phone..."
-                  className="flex-1 px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 transition border-gray-300"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                />
-                <button
-                  type="button"
-                  onClick={fetchVehiclesByPhone}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Search
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={fetchVehiclesByPhone}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Search
+              </button>
             </div>
           </div>
 
@@ -247,7 +225,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
             <select
               className={`w-full px-4 py-2.5 border rounded-lg transition ${errors.vin ? "border-red-300 bg-red-50" : "border-gray-300"
                 } ${!formData.phone?.trim()
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  ? "bg-gray-100 text-gray-400"
                   : "focus:ring-2 focus:ring-blue-500"
                 }`}
               value={formData.vin}
@@ -256,14 +234,29 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
                 const selectedVin = e.target.value;
                 handleInputChange("vin", selectedVin);
 
-                const selectedItem = vehicles.find(
-                  (v) => v.vehicle.vin === selectedVin
-                );
+                const selectedItem = vehicles.find(v => v.vehicle.vin === selectedVin);
 
-                if (selectedItem?.recall) {
-                  setRecallInfo(selectedItem.recall);
-                } else {
+                // Kiểm tra warning trước tiên
+                if (selectedItem?.warningMessage) {
+                  setVehicleWarning(selectedItem.warningMessage);
                   setRecallInfo(null);
+                  // Clear các field khác
+                  setFormData(prev => ({
+                    ...prev,
+                    vin: selectedVin,
+                    description: "",
+                    mileage: "",
+                    priority: "NORMAL",
+                    agreeRecall: false
+                  }));
+                } else {
+                  setVehicleWarning("");
+                  // Nếu không có warning, kiểm tra recall
+                  if (selectedItem?.recall) {
+                    setRecallInfo(selectedItem.recall);
+                  } else {
+                    setRecallInfo(null);
+                  }
                 }
               }}
             >
@@ -283,69 +276,106 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
               )}
             </select>
 
-            {errors.vin && (
+            {vehicleWarning && (
+              <div className="mt-2 p-4 bg-red-50 border-l-4 border-red-500 rounded">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl"></span>
+                  <div>
+                    <p className="text-red-800 font-semibold text-sm">
+                      Cannot Create Claim
+                    </p>
+                    <p className="text-red-700 text-sm mt-1">
+                      {vehicleWarning}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {errors.vin && !vehicleWarning && (
               <p className="text-red-600 text-xs mt-1">{errors.vin}</p>
             )}
           </div>
 
-          {/* Recall */}
-          {recallInfo && (
-            <div className="p-3 border rounded-md bg-yellow-50 mb-3">
-              <h4 className="font-semibold text-yellow-700">
-                This vehicle is under a Recall campaign.: {recallInfo.name} (
-                {recallInfo.code})
-              </h4>
-              <p className="text-sm text-gray-600 mb-2">
-                {recallInfo.description}
-              </p>
-              <label className="flex items-center gap-2">
+          {/* Nếu có warning thì dừng lại ở đây, không hiển thị các field khác */}
+          {!vehicleWarning && formData.vin && (
+            <>
+              {/* Recall Info */}
+              {recallInfo && (
+                <div className="p-4 border-l-4 border-yellow-500 rounded bg-yellow-50">
+                  <h4 className="font-semibold text-yellow-800 flex items-center gap-2">
+                    <span>🔔</span>
+                    Recall Campaign: {recallInfo.name} ({recallInfo.code})
+                  </h4>
+                  <p className="text-sm text-gray-700 mt-2">
+                    {recallInfo.description}
+                  </p>
+                  <label className="flex items-center gap-2 mt-3">
+                    <input
+                      type="checkbox"
+                      checked={formData.agreeRecall}
+                      onChange={(e) =>
+                        setFormData({ ...formData, agreeRecall: e.target.checked })
+                      }
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm font-medium">Agree to participate in Recall</span>
+                  </label>
+                </div>
+              )}
+
+              {/* Mileage */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Mileage (km) <span className="text-red-500">*</span>
+                </label>
                 <input
-                  type="checkbox"
-                  checked={formData.agreeRecall}
-                  onChange={(e) =>
-                    setFormData({ ...formData, agreeRecall: e.target.checked })
-                  }
+                  type="number"
+                  placeholder="Enter mileage..."
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${errors.mileage ? "border-red-300 bg-red-50" : "border-gray-300"
+                    }`}
+                  value={formData.mileage}
+                  onChange={(e) => handleInputChange("mileage", e.target.value)}
                 />
-                <span>Agree to participate in Recall</span>
-              </label>
-            </div>
+                {errors.mileage && (
+                  <p className="text-red-600 text-xs mt-1">{errors.mileage}</p>
+                )}
+              </div>
+
+              {/* Priority */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Priority
+                </label>
+                <select
+                  className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 transition border-gray-300"
+                  value={formData.priority}
+                  onChange={(e) => handleInputChange("priority", e.target.value)}
+                >
+                  <option value="NORMAL">Normal</option>
+                  <option value="HIGH">High</option>
+                </select>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Description <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  placeholder="Enter claim description..."
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${errors.description ? "border-red-300 bg-red-50" : "border-gray-300"
+                    }`}
+                  rows="4"
+                  value={formData.description}
+                  onChange={(e) => handleInputChange("description", e.target.value)}
+                />
+                {errors.description && (
+                  <p className="text-red-600 text-xs mt-1">{errors.description}</p>
+                )}
+              </div>
+            </>
           )}
-
-          {/* Priority */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Priority
-            </label>
-            <select
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition"
-              value={formData.priority}
-              onChange={(e) => handleInputChange("priority", e.target.value)}
-            >
-              <option value="NORMAL">Normal</option>
-              <option value="HIGH">High</option>
-            </select>
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Description <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              placeholder="Enter claim description..."
-              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${errors.description
-                ? "border-red-300 bg-red-50"
-                : "border-gray-300"
-                }`}
-              rows="3"
-              value={formData.description}
-              onChange={(e) => handleInputChange("description", e.target.value)}
-            />
-            {errors.description && (
-              <p className="text-red-600 text-xs mt-1">{errors.description}</p>
-            )}
-          </div>
-          {/* Diagnosis/Parts/Attachments are not collected during initial claim creation */}
         </div>
 
         {/* Footer */}
@@ -358,9 +388,9 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
             Cancel
           </button>
           <button
-            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition"
+            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition"
             onClick={handleCreateClaim}
-            disabled={actionLoading}
+            disabled={actionLoading || !formData.vin || isVehicleLocked}
           >
             {actionLoading ? (
               <>
@@ -372,6 +402,7 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
           </button>
         </div>
       </div>
+
       {showSuccessModal && (
         <SuccessModal
           message={successMessage}
@@ -380,7 +411,6 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
             onClose();
           }}
         />
-
       )}
 
       {showConfirmExit && (
@@ -392,7 +422,6 @@ const CreateClaimModal = ({ onClose, onClaimCreated }) => {
           }}
         />
       )}
-
     </div>
   );
 };
@@ -438,7 +467,5 @@ const ConfirmExitModal = ({ onCancel, onConfirm }) => (
     </div>
   </div>
 );
-
-
 
 export default CreateClaimModal;

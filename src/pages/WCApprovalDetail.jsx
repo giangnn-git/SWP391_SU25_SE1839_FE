@@ -451,7 +451,7 @@ const ClaimDetail = () => {
                                         name: fcr?.modelName,
                                         releaseYear: fcr?.productYear,
                                         isInProduction: true,
-                                        description: "Policy",
+                                        description: "Model " + fcr?.modelName + ": This policy applies specifically to this vehicle model. All warranty terms, inspection criteria, repair rules, and claim procedures are defined based on the specifications and standards of this model. Any evaluation or replacement follows the guidelines outlined for this model only.",
                                     };
                                     setSelectedVehicle(ModelVehicle);
                                     setShowPolicyModal(true);

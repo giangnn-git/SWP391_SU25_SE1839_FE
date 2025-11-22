@@ -1,3 +1,10 @@
+// Warranty Claim Detail page
+// Purpose: display claim information, images, parts and technician workflow.
+// Major responsibilities:
+//  - Load claim data (claimDetail) and related lists (technicians, categories)
+//  - Provide Detail tab UI for viewing/updating status and claim-wide parts
+//  - Provide Technician tab UI for technicians to submit diagnosis, attachments and local parts
+//  - Keep API interaction at page level; UI controls update local state and call endpoints
 import { useEffect, useState } from "react";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import { useParams, useNavigate, Link } from "react-router-dom";
@@ -20,9 +27,19 @@ import axios from "../services/axios.customize";
 const ClaimDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-
+  // -----------------------------
+  // Overview & grouped state
+  // -----------------------------
+  // Top-level data: `claimDetail` stores the canonical claim object returned
+  // from the server. Whenever we need to show the most up-to-date information
+  // we re-fetch and overwrite this state.
   const [claimDetail, setClaimDetail] = useState(null);
+
+  // UI: which tab is active. We default to 'technicians' but some role-based
+  // logic will force 'detail' to avoid duplicate tech submissions.
   const [activeTab, setActiveTab] = useState("technicians");
+
+  // Loading & helpers for visual feedback
   const [loading, setLoading] = useState(true);
   const [previewImg, setPreviewImg] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState("");
@@ -30,6 +47,7 @@ const ClaimDetail = () => {
   const [reason, setReason] = useState("");
   const [selectedVehicle, setSelectedVehicle] = useState(null);
 
+  // Generic modals and transient UI
   const [showModal, setShowModal] = useState(false);
 
   // View Policy modal control
@@ -52,6 +70,23 @@ const ClaimDetail = () => {
   const [editedParts, setEditedParts] = useState([]);
   const [isEditingParts, setIsEditingParts] = useState(false);
 
+  const isPending = selectedStatus === "PENDING";
+
+  // Helper: normalize parts coming from backend into a predictable shape
+  // Ensures each part has `id` and numeric `quantity` fields so downstream
+  // logic (like showPending) can rely on stable keys.
+  const normalizePartsArray = (arr) => {
+    if (!Array.isArray(arr)) return [];
+    return arr.map((p) => {
+      const id = p?.id ?? p?.partId ?? p?.partID ?? p?.part_id ?? null;
+      const quantity = Number(p?.quantity ?? p?.qty ?? p?.amount ?? p?.requestedQuantity ?? p?.requestedQty ?? 0);
+      const recommendedQuantity = p?.recommendedQuantity ?? p?.recommendedQty ?? p?.recommendQty ?? undefined;
+      // Normalize incoming status for each part. Backend may return different keys.
+      const partClaimStatus = p?.partClaimStatus ?? p?.partStatus ?? p?.status ?? p?.claimPartStatus ?? null;
+      return { ...p, id, quantity: isNaN(quantity) ? 0 : quantity, recommendedQuantity, partClaimStatus };
+    });
+  };
+
   // Categories & Parts
   const [categories, setCategories] = useState([]);
   const [partsByCategory, setPartsByCategory] = useState({});
@@ -63,7 +98,24 @@ const ClaimDetail = () => {
   const [techParts, setTechParts] = useState([]);
   const [techPreviews, setTechPreviews] = useState([]);
 
+  // If a TECHNICIAN has already added parts (editedParts non-empty), hide the
+  // 'Technicians' tab and switch to the Detail tab to avoid duplicate entries.
+  useEffect(() => {
+    const isTech = currentUser?.role === "TECHNICIAN";
+    const hasParts = Array.isArray(editedParts) && editedParts.length > 0;
+    if (isTech && hasParts) {
+      setActiveTab("detail");
+    }
+  }, [editedParts, currentUser]);
+
   // Fetch claim detail
+  // This is the primary data loader for the page. It populates:
+  //  - `claimDetail`: canonical server data for the claim
+  //  - `technicians`: a list carried in the response used for assignment and matching
+  //  - `selectedStatus`: current status used by the status control
+  //  - `editedParts`: claim-scoped parts (may be empty)
+  // We deliberately re-fetch the claim after important writes so the UI stays
+  // consistent with the server rather than trying to keep complex optimistic state.
   useEffect(() => {
     const fetchDetail = async () => {
       try {
@@ -76,7 +128,8 @@ const ClaimDetail = () => {
         // populate technicians from claim response if available
         setTechnicians(data.getTechnicalsResponse?.technicians || []);
         setSelectedStatus(data.fcr?.currentStatus);
-        setEditedParts(data.partCLiam || []);
+        // normalize parts into predictable shape
+        setEditedParts(normalizePartsArray(data.partCLiam ?? data.partClaim ?? data.partList ?? []));
       } catch (err) {
         console.error("Failed to fetch claim detail:", err);
       } finally {
@@ -85,6 +138,9 @@ const ClaimDetail = () => {
     };
     fetchDetail();
   }, [id]);
+
+  // NOTE: fetchDetail is the primary data loader for the page and also primes
+  // the `technicians`, `selectedStatus` and `editedParts` state used by the UI.
 
   // technicians are provided inside claim detail response (getTechnicalsResponse)
 
@@ -104,6 +160,10 @@ const ClaimDetail = () => {
   // }, []);
 
   // Fetch parts by category
+  // Called lazily when a category is selected. Results are cached in
+  // `partsByCategory` to avoid repeat requests for the same category.
+  // The function normalizes incoming part objects so the rest of the UI
+  // can rely on `id`, `partId`, `name`, and `code` fields consistently.
   const fetchParts = async (category) => {
     if (!category || partsByCategory[category]) return;
     try {
@@ -127,12 +187,18 @@ const ClaimDetail = () => {
     }
   };
 
+  // fetchParts: called when user selects a category. Results cached in `partsByCategory`.
+  // Normalizes varying backend shapes (id/partId, name/partName) for consistent usage.
+
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
     setSelectedPart(null);
     fetchParts(category);
   };
 
+  // Add a selected part into the claim-level `editedParts` list.
+  // If the part already exists we increment its quantity; otherwise we append it.
+  // Quantities are normalized to numbers here.
   const handleAddPart = () => {
     const qty = Number(partQuantity || 0);
     if (!selectedCategory || !selectedPart || qty <= 0) return;
@@ -151,10 +217,19 @@ const ClaimDetail = () => {
 
     setSelectedCategory("");
     setSelectedPart(null);
-    setPartQuantity("1");
+    setPartQuantity("0");
   };
 
+  // handleAddPartTech: add a part to the technician-local list (`techParts`).
+  // This is separate from `editedParts` which represents claim-level parts.
+
+  // handleAddPart: merge or append the selected part into `editedParts` (claim-wide).
+  // Quantities are converted to numbers; UI resets selection after adding.
+
   // Add part only to the technician's temporary list (shown on Technician tab only)
+  // This does NOT modify `editedParts`. `techParts` are local to the technician
+  // session and will only be sent to the server when the technician clicks
+  // "Submit Work" (they are included as `defectivePartIds` in the multipart payload).
   const handleAddPartTech = () => {
     const qty = 1; // technicians only choose part (default quantity 1)
     if (!selectedCategory || !selectedPart || qty <= 0) return;
@@ -173,7 +248,7 @@ const ClaimDetail = () => {
 
     setSelectedCategory("");
     setSelectedPart(null);
-    setPartQuantity("1");
+    setPartQuantity("0");
   };
 
   const handleRemoveTechPart = (partId) => {
@@ -193,6 +268,8 @@ const ClaimDetail = () => {
     };
   }, [techAttachments]);
 
+  // Create object URLs for local-file previews and revoke them on cleanup.
+
   // Fetch categories based on VIN when claim detail is loaded
   useEffect(() => {
     const fetchCategories = async () => {
@@ -208,7 +285,12 @@ const ClaimDetail = () => {
     fetchCategories();
   }, [claimDetail?.fcr?.vin]);
 
-  // Updated handleUpdate with "reason"
+  // fetchCategories: populate category dropdown used by technician/parts UI.
+
+  // handleUpdate: send status and/or parts update for the claim.
+  // - REJECTED requires a non-empty `reason`.
+  // - ASSIGNED/PENDING path is handled by immediate-change logic in the select handler.
+  // - For other statuses we include the `parts` payload built from `editedParts`.
   const handleUpdate = async () => {
     if (!selectedStatus) {
       toast.error("Please select a status");
@@ -223,14 +305,26 @@ const ClaimDetail = () => {
     try {
       setUpdating(true);
       if (!id) throw new Error("Missing claim id");
-      const payload = {
-        changeStatus: selectedStatus,
-        ...(selectedStatus === "REJECTED" && { reason: reason.trim() }),
-        parts: editedParts.map((p) => ({
-          id: p.id,
-          quantity: Number(p.quantity),
-        })),
-      };
+
+      // For ASSIGNED/PENDING we use a dedicated helper that sends
+      // { changeStatus } via PATCH and refreshes local state.
+      if (selectedStatus === "ASSIGNED" || selectedStatus === "PENDING") {
+        await changeClaimStatus(selectedStatus);
+        return;
+      }
+
+      let payload;
+      if (selectedStatus === "REJECTED") {
+        payload = { changeStatus: selectedStatus, reason: reason.trim() };
+      } else {
+        payload = {
+          changeStatus: selectedStatus,
+          parts: editedParts.map((p) => ({
+            id: p.id,
+            quantity: Number(p.quantity),
+          })),
+        };
+      }
 
       await axios.patch(`/api/api/claims/${id}`, payload);
       toast.success("Updated successfully!");
@@ -245,7 +339,7 @@ const ClaimDetail = () => {
       // Update local state with new detail
       setClaimDetail(updatedData);
       setSelectedStatus(updatedData.fcr?.currentStatus || "");
-      setEditedParts(updatedData.partCLiam || []);
+      setEditedParts(normalizePartsArray(updatedData.partCLiam ?? updatedData.partClaim ?? updatedData.partList ?? []));
       setReason("");
       setIsEditingParts(false);
     } catch (err) {
@@ -256,6 +350,49 @@ const ClaimDetail = () => {
     }
   };
 
+  // changeClaimStatus: helper to call PATCH /claims/{id} with { changeStatus }
+  // Refreshes claimDetail and editedParts from server on success.
+  const changeClaimStatus = async (newStatus) => {
+    if (!id) return toast.error("Missing claim id");
+    try {
+      setUpdating(true);
+      const payload = { changeStatus: newStatus };
+      const res = await axios.patch(`/api/api/claims/${id}`, payload, {
+        headers: { "Content-Type": "application/json" },
+      });
+      toast.success(res.data?.message || "Change status claim successfully");
+
+      // Some backends may return the updated claim, others may only return a
+      // message. To be robust, always re-fetch the canonical claim after a
+      // successful status change so the UI stays in sync (avoids needing F5).
+      try {
+        const fetchRes = await axios.get(`/api/api/claims/${id}`);
+        const fetched = fetchRes.data?.data;
+        if (fetched) {
+          setClaimDetail(fetched);
+          setSelectedStatus(fetched.fcr?.currentStatus || "");
+          setEditedParts(normalizePartsArray(fetched.partCLiam ?? fetched.partClaim ?? fetched.partList ?? []));
+        }
+      } catch (fetchErr) {
+        console.warn('Status changed but failed to re-fetch claim:', fetchErr);
+      }
+      try {
+        const channel = new BroadcastChannel("claim_updates");
+        channel.postMessage({ type: "CLAIM_UPDATED", id });
+        channel.close();
+      } catch (e) {
+        // ignore
+      }
+    } catch (err) {
+      console.error("Failed to change claim status:", err);
+      toast.error("Failed to change status");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // handleSaveParts: persist the current `editedParts` to the backend (part-claims endpoint)
+  // Called when user saves bulk part changes from the Update Parts modal or UI.
   const handleSaveParts = async () => {
     try {
       setUpdating(true);
@@ -272,7 +409,7 @@ const ClaimDetail = () => {
 
       const res = await axios.get(`/api/api/claims/${id}`);
       setClaimDetail(res.data.data);
-      setEditedParts(res.data.data.partCLiam || []);
+      setEditedParts(normalizePartsArray(res.data.data.partCLiam ?? res.data.data.partClaim ?? res.data.data.partList ?? []));
       setIsEditingParts(false);
     } catch (err) {
       console.error("Failed to save parts:", err);
@@ -282,6 +419,9 @@ const ClaimDetail = () => {
     }
   };
 
+  // Helper: formatDateTime
+  // Input: [year, month, day] or other arrays used by the backend for dates.
+  // Output: DD/MM/YYYY or '–' when data is missing.
   const formatDateTime = (dateArray) => {
     if (!Array.isArray(dateArray) || dateArray.length < 3) return "–";
     const [year, month, day] = dateArray;
@@ -291,6 +431,11 @@ const ClaimDetail = () => {
     )}/${year}`;
   };
 
+  // handleUpdatePartQuantity: update a single part quantity via API and refresh claim
+  // Expects a non-negative numeric quantity and a valid part id.
+  // Note: some UI controls call the PUT endpoint with a single object,
+  // while bulk updates send an array. This helper focuses on the per-row case
+  // and always re-fetches the claim after a successful write for canonical state.
   const handleUpdatePartQuantity = async (partId, quantity) => {
     try {
       if (quantity < 0) {
@@ -312,7 +457,7 @@ const ClaimDetail = () => {
       // Refresh dữ liệu
       const refreshed = await axios.get(`/api/api/claims/${id}`);
       setClaimDetail(refreshed.data.data);
-      setEditedParts(refreshed.data.data.partCLiam || []);
+      setEditedParts(normalizePartsArray(refreshed.data.data.partCLiam ?? refreshed.data.data.partClaim ?? refreshed.data.data.partList ?? []));
     } catch (err) {
       console.error("Lỗi khi update part quantity:", err);
       toast.error("Không thể cập nhật số lượng");
@@ -353,9 +498,38 @@ const ClaimDetail = () => {
     );
 
   const { fcr, images } = claimDetail;
-  const statuses = Array.from(
-    new Set([fcr?.currentStatus, ...(fcr?.availableStatuses || [])])
-  );
+  // Determine status for display: show PENDING only if all claim-level parts
+  // have quantity > 0. Be defensive about backend shapes: some responses use
+  // `id` vs `partId`, and `quantity` may be a string or stored under different
+  // keys. Normalize when checking so the dropdown reliably shows PENDING.
+  let showPending = false;
+  if (Array.isArray(editedParts) && editedParts.length > 0) {
+    // only consider parts that have any identifier (id or partId)
+    const hasAnyId = editedParts.some((p) => (p?.id ?? p?.partId) !== undefined);
+    if (hasAnyId) {
+      showPending = editedParts.every((p) => {
+        const qty = Number(p?.quantity ?? p?.qty ?? 0);
+        return !Number.isNaN(qty) && qty > 0;
+      });
+    }
+  }
+
+  // Build the statuses list so that we always include the current server
+  // status (e.g. ASSIGNED) and additionally include PENDING when
+  // `showPending` is true. We also merge availableStatuses but prevent
+  // duplicate entries and only include PENDING from availableStatuses when
+  // `showPending` is true.
+  const statusesSet = new Set();
+  if (fcr?.currentStatus) statusesSet.add(fcr.currentStatus);
+  if (showPending) statusesSet.add("PENDING");
+  (fcr?.availableStatuses || []).forEach((s) => {
+    if (s === "PENDING") {
+      if (showPending) statusesSet.add(s);
+    } else {
+      statusesSet.add(s);
+    }
+  });
+  const statuses = Array.from(statusesSet);
 
   const assignedTechnicianId = fcr?.technician?.id || fcr?.technicianId || fcr?.techinicianId || claimDetail?.technicianId || claimDetail?.assignedTechnicianId;
   let assignedTechnicianName =
@@ -484,10 +658,19 @@ const ClaimDetail = () => {
           <p className="text-gray-600 mt-1">Claim ID: <span className="font-semibold text-gray-900">WC-{String(fcr?.id || id).padStart(3, "0")}</span></p>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs
+            - 'Technicians' tab: shows the technician work panel. Hidden for a
+              current user with role TECHNICIAN when `editedParts` (claim-wide)
+              already exist to prevent duplicate submissions.
+            - 'Detail' tab: canonical claim information and the claim-level parts
+              table. Many actions (status update, save parts) operate here and
+              re-fetch the claim after writes.
+        */}
         <div className="mb-6">
           <div className="flex border-b border-gray-200">
-            <button onClick={() => setActiveTab("technicians")} className={`px-4 py-3 -mb-px font-medium ${activeTab === "technicians" ? "border-b-2 border-blue-600 text-blue-600" : "text-gray-600 hover:text-blue-600"}`}>Technicians</button>
+            {!(currentUser?.role === "TECHNICIAN" && Array.isArray(editedParts) && editedParts.length > 0) && (
+              <button onClick={() => setActiveTab("technicians")} className={`px-4 py-3 -mb-px font-medium ${activeTab === "technicians" ? "border-b-2 border-blue-600 text-blue-600" : "text-gray-600 hover:text-blue-600"}`}>Technicians</button>
+            )}
             <button
               onClick={() => setActiveTab("detail")}
               title="Detail"
@@ -590,15 +773,37 @@ const ClaimDetail = () => {
                   </div>
                 ) : (
                   <>
-                    <select value={selectedStatus || ""} onChange={(e) => setSelectedStatus(e.target.value)} className="border rounded px-3 py-2">
-                      {statuses.map((s, i) => <option key={i} value={s}>{s}</option>)}
-                    </select>
+                    {isPending ? (
+                      // Read-only khi đã ở trạng thái PENDING
+                      <div className="px-3 py-2 border rounded bg-gray-100 text-gray-700 font-semibold min-w-[100px]">
+                        Status: {selectedStatus}
+                      </div>
+                    ) : (
+                      // Dropdown bình thường nếu chưa PENDING
+                      <select
+                        value={selectedStatus || ""}
+                        onChange={async (e) => {
+                          const newStatus = e.target.value;
+                          setSelectedStatus(newStatus);
+
+                          if (newStatus === "ASSIGNED" || newStatus === "PENDING") {
+                            await changeClaimStatus(newStatus);
+                          }
+                        }}
+                        className="border rounded px-3 py-2"
+                      >
+                        {statuses.map((s, i) => (
+                          <option key={i} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    )}
+
                     {fcr?.currentStatus === "DRAFT" && <button onClick={handleUpdate} disabled={updating} className="px-4 py-2 bg-blue-600 text-white rounded">{updating ? 'Updating...' : 'Update Status'}</button>}
                   </>
                 )}
                 {/* Edit parts inline */}
                 {fcr?.currentStatus === "ASSIGNED" && (
-                  !isEditingParts ? (
+                  currentUser?.role !== "SC_STAFF" && !isEditingParts ? (
                     <button onClick={() => setIsEditingParts(true)} className="px-4 py-2 bg-amber-500 text-white rounded">Update Parts</button>
                   ) : null
                 )}
@@ -610,6 +815,7 @@ const ClaimDetail = () => {
                     <tr className="border-b">
                       <th className="py-2 text-left">Part Name</th>
                       <th className="py-2 text-left">Category</th>
+                      <th className="py-2 text-left">Status</th>
                       <th className="py-2 text-right">Recommended</th>
                       <th className="py-2 text-right">Quantity</th>
                       <th className="py-2 text-right">Stock</th>
@@ -620,38 +826,68 @@ const ClaimDetail = () => {
                       <tr key={i} className="border-b">
                         <td className="py-2">{p.name}</td>
                         <td className="py-2">{p.category}</td>
+                        <td className="py-2">{p.partClaimStatus ?? p.status ?? '–'}</td>
                         <td className="py-2 text-right">{p.recommendedQuantity ?? p.recommendedQty ?? '–'}</td>
                         <td className="py-2 text-right">
                           {isEditingParts ? (
                             <div className="flex items-center justify-end gap-2">
-                              <input type="number" min={0} value={Number(p.quantity || 0)} onChange={(e) => {
+                              <input type="number" min={0} max={p.recommendedQuantity ?? p.recommendedQty ?? undefined} value={Number(p.quantity || 0)} onChange={(e) => {
                                 const val = Number(e.target.value || 0);
                                 const newParts = [...editedParts];
                                 newParts[i].quantity = val;
                                 setEditedParts(newParts);
                               }} className="w-20 text-right border rounded px-2 py-1" />
-                              <button onClick={async () => {
-                                try {
-                                  setUpdating(true);
-                                  if (!id) throw new Error('Missing claim id');
-                                  const payload = [{ id: p.id ?? p.partId, quantity: Number(p.quantity) }];
-                                  if (!payload[0].id) {
-                                    toast.error('Part id không hợp lệ!');
-                                    setUpdating(false);
-                                    return;
-                                  }
-                                  await axios.put(`/api/api/${id}/parts/quantity`, payload, { headers: { 'Content-Type': 'application/json' } });
-                                  toast.success('Part updated');
-                                  const res = await axios.get(`/api/api/claims/${id}`);
-                                  setClaimDetail(res.data.data);
-                                  setEditedParts(res.data.data.partCLiam || []);
-                                } catch (err) {
-                                  console.error('Failed to update part:', err);
-                                  toast.error('Failed to update part');
-                                } finally { setUpdating(false); }
-                              }} disabled={updating} className="px-2 py-1 bg-green-500 text-white rounded" title="Update this part">
-                                ✓
-                              </button>
+                              {selectedStatus !== "PENDING" && (
+                                <button onClick={async () => {
+                                  try {
+                                    setUpdating(true);
+                                    if (!id) throw new Error('Missing claim id');
+
+                                    // Validate only against recommended limit (user requested)
+                                    const newQty = Number(p.quantity || 0);
+                                    const recommendedLimit = p.recommendedQuantity ?? p.recommendedQty;
+
+                                    if (recommendedLimit !== undefined && newQty > recommendedLimit) {
+                                      toast.error('Quantity vượt giới hạn khuyến nghị');
+                                      // reset this row quantity to 0 as requested
+                                      setEditedParts((prev) => {
+                                        const copy = [...prev];
+                                        if (copy[i]) copy[i] = { ...copy[i], quantity: 0 };
+                                        return copy;
+                                      });
+                                      setUpdating(false);
+                                      return;
+                                    }
+
+                                    const payload = [{ id: p.id ?? p.partId, quantity: newQty }];
+                                    if (!payload[0].id) {
+                                      toast.error('Part id không hợp lệ!');
+                                      setUpdating(false);
+                                      return;
+                                    }
+                                    await axios.put(`/api/api/${id}/parts/quantity`, payload, { headers: { 'Content-Type': 'application/json' } });
+                                    toast.success('Part updated');
+
+                                    // After updating a single part, refresh the claim to get canonical server state
+                                    const res = await axios.get(`/api/api/claims/${id}`);
+                                    const updatedData = res.data.data;
+                                    setClaimDetail(updatedData);
+                                    setEditedParts(normalizePartsArray(updatedData.partCLiam ?? updatedData.partClaim ?? updatedData.partList ?? []));
+
+                                    // Refresh done — update selected status from server.
+                                    // NOTE: do NOT auto-change the claim status to PENDING here; the
+                                    // PENDING option will be made available in the status dropdown
+                                    // when all quantities are positive. The user must select it
+                                    // explicitly from the dropdown to change the claim status.
+                                    setSelectedStatus(updatedData.fcr?.currentStatus || '');
+                                  } catch (err) {
+                                    console.error('Failed to update part:', err);
+                                    toast.error('Failed to update part');
+                                  } finally { setUpdating(false); }
+                                }} disabled={updating} className="px-2 py-1 bg-green-500 text-white rounded" title="Update this part">
+                                  ✓
+                                </button>
+                              )}
                             </div>
                           ) : (
                             <span>{p.quantity}</span>
@@ -688,7 +924,7 @@ const ClaimDetail = () => {
                   <div className="grid grid-cols-2 gap-8 mt-4">
                     <div>
                       <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Status</div>
-                      <div className="text-lg font-bold text-gray-900">Đang hoạt động</div>
+                      <div className="text-lg font-bold text-gray-900">Currently Activity</div>
                     </div>
                     <div>
                       <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Jobs in Progress</div>
@@ -738,152 +974,238 @@ const ClaimDetail = () => {
 
             {/* Technician Work (visible only to technicians) */}
             {currentUser?.role === "TECHNICIAN" && !techViewingDetail && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold">Technician Work</h3>
-                  <div>
-                    <button onClick={() => setTechViewingDetail(true)} className="px-3 py-1 text-sm bg-indigo-600 text-white rounded">View Detail</button>
-                  </div>
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Diagnosis</label>
-                  <textarea rows={3} value={techDiagnosis} onChange={(e) => setTechDiagnosis(e.target.value)} className="w-full border rounded px-3 py-2" />
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Attachments</label>
-                  <input type="file" accept="image/*" multiple onChange={(e) => {
-                    const newFiles = Array.from(e.target.files || []);
-                    if (newFiles.length === 0) return;
-                    setTechAttachments((prev) => [...prev, ...newFiles]);
-                  }} />
-
-                  {/* Previews */}
-                  {techPreviews && techPreviews.length > 0 && (
-                    <div className="mt-3 grid grid-cols-3 sm:grid-cols-4 gap-3">
-                      {techPreviews.map((src, i) => (
-                        <div key={i} className="relative rounded overflow-hidden border border-gray-200">
-                          <img src={src} alt={`preview-${i}`} className="w-full h-28 object-cover" />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newFiles = techAttachments.filter((_, idx) => idx !== i);
-                              setTechAttachments(newFiles);
-                            }}
-                            className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Select Category</label>
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => {
-                      const c = e.target.value;
-                      setSelectedCategory(c);
-                      setSelectedPart(null);
-                      fetchParts(c);
-                    }}
-                    className="border rounded px-3 py-2 w-full"
+              <div className="bg-white rounded-lg border border-gray-300">
+                {/* Header */}
+                <div className="px-6 py-4 border-b border-gray-300 flex items-center justify-between">
+                  <h3 className="text-base font-semibold text-gray-900">Technician Work</h3>
+                  <button
+                    onClick={() => setTechViewingDetail(true)}
+                    className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50"
                   >
-                    <option value="">Select category...</option>
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                    View Detail
+                  </button>
                 </div>
 
-                {selectedCategory && (
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Select Part</label>
-                    <select
-                      value={selectedPart?.id || ""}
-                      onChange={(e) => {
-                        const id = e.target.value;
-                        const list = partsByCategory[selectedCategory] || [];
-                        const part = list.find((p) => String(p.id) === String(id) || String(p.partId) === String(id));
-                        if (part) {
-                          // normalize and set
-                          setSelectedPart({
-                            ...part,
-                            id: part.id ?? part.partId,
-                            name: part.name ?? part.partName ?? part.partCode,
-                            code: part.code ?? part.partCode,
-                          });
-                        } else {
-                          setSelectedPart(null);
-                        }
-                      }}
-                      className="border rounded px-3 py-2 w-full"
-                    >
-                      <option value="">Select part...</option>
-                      {(partsByCategory[selectedCategory] || []).map((p) => (
-                        <option key={p.id ?? p.partId} value={p.id ?? p.partId}>
-                          {p.name} ({p.code || p.partCode || '-'})
-                        </option>
-                      ))}
-                    </select>
-                    <div className="mt-2">
+                {/* Content */}
+                <div className="p-6 space-y-4">
+                  {/* Diagnosis */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Diagnosis <span className="text-red-600">*</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={techDiagnosis}
+                      onChange={(e) => setTechDiagnosis(e.target.value)}
+                      placeholder="Enter diagnosis..."
+                      className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-gray-400"
+                    />
+                  </div>
+
+                  {/* Attachments */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Attachments
+                    </label>
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-indigo-400 transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => {
+                          const newFiles = Array.from(e.target.files || []);
+                          if (newFiles.length === 0) return;
+                          setTechAttachments((prev) => [...prev, ...newFiles]);
+                        }}
+                        className="hidden"
+                        id="tech-file-upload"
+                      />
+                      <label
+                        htmlFor="tech-file-upload"
+                        className="flex flex-col items-center justify-center cursor-pointer py-2"
+                      >
+                        <svg className="w-10 h-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <span className="text-sm text-gray-600">Click to upload images</span>
+                        <span className="text-xs text-gray-400 mt-1">PNG, JPG, ...</span>
+                      </label>
+                    </div>
+
+                    {/* Image Previews */}
+                    {techPreviews && techPreviews.length > 0 && (
+                      <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {techPreviews.map((src, i) => (
+                          <div key={i} className="relative group rounded-lg overflow-hidden border-2 border-gray-200 hover:border-indigo-400 transition-colors">
+                            <img src={src} alt={`preview-${i}`} className="w-full h-24 object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newFiles = techAttachments.filter((_, idx) => idx !== i);
+                                setTechAttachments(newFiles);
+                              }}
+                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Part Selection */}
+                  <div className="border-t border-gray-200 pt-4 space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Category */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Category</label>
+                        <select
+                          value={selectedCategory}
+                          onChange={(e) => {
+                            const c = e.target.value;
+                            setSelectedCategory(c);
+                            setSelectedPart(null);
+                            fetchParts(c);
+                          }}
+                          className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-gray-400"
+                        >
+                          <option value="">Select category...</option>
+                          {categories.map((cat) => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Part */}
+                      {selectedCategory && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">Part</label>
+                          <select
+                            value={selectedPart?.id || ""}
+                            onChange={(e) => {
+                              const id = e.target.value;
+                              const list = partsByCategory[selectedCategory] || [];
+                              const part = list.find((p) => String(p.id) === String(id) || String(p.partId) === String(id));
+                              if (part) {
+                                setSelectedPart({
+                                  ...part,
+                                  id: part.id ?? part.partId,
+                                  name: part.name ?? part.partName ?? part.partCode,
+                                  code: part.code ?? part.partCode,
+                                });
+                              } else {
+                                setSelectedPart(null);
+                              }
+                            }}
+                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-gray-400"
+                          >
+                            <option value="">Select part...</option>
+                            {(partsByCategory[selectedCategory] || []).map((p) => (
+                              <option key={p.id ?? p.partId} value={p.id ?? p.partId}>
+                                {p.name} ({p.code || p.partCode || '-'})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+
+                    {selectedCategory && (
                       <button
                         type="button"
                         onClick={handleAddPartTech}
-                        className="px-3 py-1 bg-blue-600 text-white rounded"
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50"
                       >
                         Add Part
                       </button>
-                    </div>
+                    )}
                   </div>
-                )}
-                {/* Technician-only selected parts preview */}
-                {currentUser?.role === "TECHNICIAN" && techParts.length > 0 && (
-                  <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-semibold">Parts to submit (Technician)</h4>
-                      <button onClick={() => setTechParts([])} className="text-sm text-red-600">Clear</button>
+
+                  {/* Selected Parts List */}
+                  {currentUser?.role === "TECHNICIAN" && techParts.length > 0 && (
+                    <div className="border border-gray-300 rounded p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-medium text-gray-900">
+                          Selected Parts ({techParts.length})
+                        </h4>
+                        <button
+                          onClick={() => setTechParts([])}
+                          className="text-sm text-gray-600 hover:text-gray-900"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                      <ul className="space-y-2">
+                        {techParts.map((tp) => (
+                          <li key={tp.id} className="flex items-center justify-between border border-gray-200 rounded p-2">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{tp.name}</div>
+                              <div className="text-xs text-gray-500">{tp.category}</div>
+                            </div>
+                            <button
+                              onClick={() => handleRemoveTechPart(tp.id)}
+                              className="text-sm text-gray-600 hover:text-gray-900"
+                            >
+                              Remove
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                    <ul className="space-y-2">
-                      {techParts.map((tp) => (
-                        <li key={tp.id} className="flex items-center justify-between gap-3 border rounded p-2">
-                          <div>
-                            <div className="font-medium">{tp.name}</div>
-                            <div className="text-xs text-gray-500">{tp.category} • Qty: {tp.quantity}</div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => handleRemoveTechPart(tp.id)} className="text-sm text-red-600 px-2 py-1 border rounded">Remove</button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={async () => {
+                        if (!techDiagnosis.trim()) return toast.error('Please enter diagnosis');
+                        try {
+                          if (!id) return toast.error('Missing claim id');
+                          setTechUploading(true);
+                          const fd = new FormData();
+                          const claimPayload = {
+                            diagnosis: techDiagnosis,
+                            vin: claimDetail?.fcr?.vin,
+                            defectivePartIds: techParts.map((p) => p.id)
+                          };
+                          fd.append('claim', new Blob([JSON.stringify(claimPayload)], { type: 'application/json' }));
+                          techAttachments.forEach((f) => fd.append('attachments', f));
+                          console.log('Submitting technician update for claim', id, claimPayload, techAttachments.length, 'attachments');
+                          await axios.put(`/api/api/claims/${id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+                          toast.success('Submitted technician update');
+                          const refreshed = await axios.get(`/api/api/claims/${id}`);
+                          setClaimDetail(refreshed.data.data);
+                          setEditedParts(normalizePartsArray(refreshed.data.data.partCLiam ?? refreshed.data.data.partClaim ?? refreshed.data.data.partList ?? []));
+                          setActiveTab('detail');
+                          setTechViewingDetail(false);
+                          setTechDiagnosis('');
+                          setTechAttachments([]);
+                          setTechParts([]);
+                        } catch (err) {
+                          console.error(err);
+                          toast.error('Failed to submit update');
+                        } finally {
+                          setTechUploading(false);
+                        }
+                      }}
+                      disabled={techUploading}
+                      className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-500 disabled:bg-blue-300"
+                    >
+                      {techUploading ? 'Submitting...' : 'Submit Work'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setTechDiagnosis('');
+                        setTechAttachments([]);
+                      }}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50"
+                    >
+                      Reset
+                    </button>
                   </div>
-                )}
-                <div className="flex gap-3">
-                  <button onClick={async () => {
-                    if (!techDiagnosis.trim()) return toast.error('Please enter diagnosis');
-                    try {
-                      if (!id) return toast.error('Missing claim id');
-                      setTechUploading(true);
-                      const fd = new FormData();
-                      // use technician-local parts when submitting work
-                      const claimPayload = { diagnosis: techDiagnosis, vin: claimDetail?.fcr?.vin, defectivePartIds: techParts.map((p) => p.id) };
-                      fd.append('claim', new Blob([JSON.stringify(claimPayload)], { type: 'application/json' }));
-                      techAttachments.forEach((f) => fd.append('attachments', f));
-                      console.log('Submitting technician update for claim', id, claimPayload, techAttachments.length, 'attachments');
-                      await axios.put(`/api/api/claims/${id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-                      toast.success('Submitted technician update');
-                      const refreshed = await axios.get(`/api/api/claims/${id}`);
-                      setClaimDetail(refreshed.data.data);
-                      // reset only technician-local state; do not alter global editedParts shown in Detail tab
-                      setTechDiagnosis('');
-                      setTechAttachments([]);
-                      setTechParts([]);
-                    } catch (err) { console.error(err); toast.error('Failed to submit update'); } finally { setTechUploading(false); }
-                  }} disabled={techUploading} className="px-4 py-2 bg-green-600 text-white rounded">{techUploading ? 'Submitting...' : 'Submit Work'}</button>
-                  <button onClick={() => { setTechDiagnosis(''); setTechAttachments([]); }} className="px-4 py-2 bg-gray-200 rounded">Reset</button>
                 </div>
               </div>
             )}
@@ -906,6 +1228,11 @@ const ClaimDetail = () => {
         <CreatePartRequestModal onClose={() => setShowModal(false)} onCreated={() => { toast.success('Part supply request created successfully'); setShowModal(false); }} />
       )}
 
+      {/* Bulk Update Modal:
+          - Copies `editedParts` into `tempParts` before opening so the user can
+          - adjust quantities for many parts at once. Validation runs before saving
+          - to ensure no quantity exceeds recommended limits.
+        */}
       {showUpdateAllModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl p-6 relative">
@@ -914,7 +1241,7 @@ const ClaimDetail = () => {
             <div className="max-h-[400px] overflow-y-auto border rounded-md">
               <table className="w-full text-sm">
                 <thead className="bg-gray-100 border-b"><tr><th className="py-2 px-3 text-left">Part Name</th><th className="py-2 px-3 text-center">Category</th><th className="py-2 px-3 text-center">Quantity</th></tr></thead>
-                <tbody>{tempParts.map((part, i) => (<tr key={i} className="border-b hover:bg-gray-50"><td className="py-2 px-3">{part.name}</td><td className="py-2 px-3 text-center">{part.category}</td><td className="py-2 px-3 text-center"><input type="number" max={part.recommendedQuantity ?? Infinity} min={0} value={part.quantity} onChange={(e) => { const newParts = [...tempParts]; newParts[i].quantity = Number(e.target.value); setTempParts(newParts); }} className="border rounded px-2 py-1 w-20 text-right" /></td></tr>))}</tbody>
+                <tbody>{tempParts.map((part, i) => (<tr key={i} className="border-b hover:bg-gray-50"><td className="py-2 px-3">{part.name}</td><td className="py-2 px-3 text-center">{part.category}</td><td className="py-2 px-3 text-center"><input type="number" max={part.recommendedQuantity ?? part.recommendedQty ?? undefined} min={0} value={part.quantity} onChange={(e) => { const newParts = [...tempParts]; newParts[i].quantity = Number(e.target.value); setTempParts(newParts); }} className="border rounded px-2 py-1 w-20 text-right" /></td></tr>))}</tbody>
               </table>
             </div>
             <div className="flex justify-end gap-3 mt-5">
@@ -922,6 +1249,15 @@ const ClaimDetail = () => {
               <button onClick={async () => {
                 try {
                   if (!id) return toast.error('Missing claim id');
+                  // Validate tempParts: ensure quantity <= recommended when provided
+                  const invalid = tempParts.find((p) => {
+                    const rec = p.recommendedQuantity ?? p.recommendedQty;
+                    return rec !== undefined && Number(p.quantity) > rec;
+                  });
+                  if (invalid) {
+                    toast.error('Một số quantity vượt giới hạn recommended. Vui lòng kiểm tra.');
+                    return;
+                  }
                   const payload = tempParts.map((p) => ({ id: p.id ?? p.partId, quantity: p.quantity }));
                   if (!payload.every(item => item.id)) {
                     toast.error('Có part id không hợp lệ!');
@@ -930,8 +1266,16 @@ const ClaimDetail = () => {
                   await axios.put(`/api/api/${id}/parts/quantity`, payload, { headers: { 'Content-Type': 'application/json' } });
                   toast.success('All parts updated successfully!');
                   setShowUpdateAllModal(false);
+                  // Refresh claim to pick up server state after bulk update
                   const res = await axios.get(`/api/api/claims/${id}`);
-                  setClaimDetail(res.data.data); setEditedParts(res.data.data.partCLiam || []);
+                  const updatedData = res.data.data;
+                  setClaimDetail(updatedData);
+                  setEditedParts(normalizePartsArray(updatedData.partCLiam ?? updatedData.partClaim ?? updatedData.partList ?? []));
+
+                  // Update selectedStatus from server but DO NOT auto-change status to PENDING.
+                  // The PENDING option will appear in the dropdown when all quantities
+                  // are positive; the user must explicitly choose it.
+                  setSelectedStatus(updatedData.fcr?.currentStatus || '');
                 } catch (err) { console.error(err); toast.error('Failed to update all parts'); }
               }} className="px-4 py-2 bg-blue-600 text-white rounded">Save Changes</button>
             </div>

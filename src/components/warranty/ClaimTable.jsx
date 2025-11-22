@@ -28,8 +28,8 @@ const ClaimTable = ({ claims = [], loading, error }) => {
         label: "Pending",
       },
       assigned: {
-        bg: "bg-blue-100",
-        text: "text-blue-800",
+        bg: "bg-gray-100",
+        text: "text-yellow-800",
         label: "Assigned",
       },
       approved: {
