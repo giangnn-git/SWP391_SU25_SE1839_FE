@@ -43,7 +43,7 @@ const CustomerRegistration = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [filteredCustomers, setFilteredCustomers] = useState([]);
 
-  // Hàm xử lý tìm kiếm THÔNG MINH (SEARCH API + BASIC FILTER)
+  // Hàm xử lý tìm kiếm THÔNG MINH
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
       setSearchResults([]);
@@ -296,7 +296,6 @@ const CustomerRegistration = () => {
               <div className="hidden sm:flex items-center gap-2 text-sm text-gray-500 bg-white/80 rounded-lg px-4 py-2 border border-gray-200">
                 <Users size={16} />
                 <span>{customersSummary.length} customers</span>
-                {/* 🎯 ĐÃ BỎ HIỂN THỊ "from X total" vì không còn filter theo SC */}
               </div>
               <button
                 onClick={() => setShowForm(true)}

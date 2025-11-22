@@ -18,14 +18,13 @@ import WarrantyPolicyTable from "./WarrantyPolicyTable";
 import CreateEditWarrantyPolicyModal from "./CreateEditWarrantyPolicyModal";
 import ViewWarrantyPolicyModal from "./ViewWarrantyPolicy";
 import UpdateWarrantyPolicyModal from "./UpdateWarrantyPolicyModal";
+import toast from "react-hot-toast";
 
 const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState("");
 
-  // THÊM STATE formData Ở ĐÂY
+  //   STATE formData
   const [formData, setFormData] = useState({
     code: "",
     name: "",
@@ -52,7 +51,7 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
   const fetchPolicies = async () => {
     try {
       setLoading(true);
-      setError(null);
+
       const response = await getAllWarrantyApi();
 
       const transformedPolicies = response.data.data.policyList.map(
@@ -71,7 +70,9 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
       setPolicies(transformedPolicies);
     } catch (err) {
       console.error("Error fetching policies:", err);
-      setError("Failed to load warranty policies. Please try again.");
+      const errorMessage =
+        "Failed to load warranty policies. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -99,8 +100,6 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
   const handleCreatePolicy = async () => {
     try {
       setActionLoading(true);
-      setError(null);
-      setSuccess("");
 
       const apiData = {
         code: formData.code.trim(),
@@ -113,7 +112,7 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
 
       await createWarrantyPolicyApi(apiData);
       await fetchPolicies();
-      setSuccess("Policy created successfully!");
+      toast.success("Policy created successfully!");
       setShowCreateModal(false);
 
       // Reset form data sau khi tạo thành công
@@ -131,7 +130,7 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
         error.response?.data?.errorCode ||
         error.response?.data?.message ||
         "Failed to create policy. Please try again.";
-      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setActionLoading(false);
     }
@@ -196,32 +195,6 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
     setSearchTerm("");
   };
 
-  // Clear message after timeout
-  useEffect(() => {
-    if (error || success) {
-      const timer = setTimeout(() => {
-        setError(null);
-        setSuccess("");
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [error, success]);
-
-  if (error && !policies.length) {
-    return (
-      <div className="p-6 flex flex-col items-center justify-center h-64 bg-white rounded-xl border border-gray-200">
-        <XCircle size={48} className="text-red-400 mb-4" />
-        <div className="text-lg text-red-600 mb-4">{error}</div>
-        <button
-          onClick={fetchPolicies}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div className="p-6">
       {/* Header */}
@@ -251,37 +224,6 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
           </button>
         </div>
       </div>
-
-      {/* Message Area */}
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
-          <XCircle size={20} className="text-red-500 flex-shrink-0" />
-          <div className="flex-1">
-            <p className="text-red-700 font-medium">{error}</p>
-          </div>
-          <button
-            onClick={() => setError(null)}
-            className="text-red-500 hover:text-red-700 transition-colors"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
-
-      {success && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
-          <CheckCircle2 size={20} className="text-green-500 flex-shrink-0" />
-          <div className="flex-1">
-            <p className="text-green-700 font-medium">{success}</p>
-          </div>
-          <button
-            onClick={() => setSuccess("")}
-            className="text-green-500 hover:text-green-700 transition-colors"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
 
       {/* Search and Filter Bar */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6 shadow-sm">
@@ -427,7 +369,7 @@ const WarrantyPolicyManagement = ({ refreshTrigger = 0 }) => {
         onClose={() => setShowUpdateModal(false)}
         onUpdated={() => {
           fetchPolicies();
-          setSuccess("Policy updated successfully!");
+          toast.success("Policy updated successfully!");
         }}
         updatePolicyApi={updateWarrantyPolicyApi}
       />

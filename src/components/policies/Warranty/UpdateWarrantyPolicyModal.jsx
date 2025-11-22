@@ -10,7 +10,7 @@ import {
   Layers,
   Lock,
 } from "lucide-react";
-import ToastMessage from "../../common/ToastMessage";
+import toast from "react-hot-toast";
 
 const UpdateWarrantyPolicyModal = ({
   showModal,
@@ -28,7 +28,6 @@ const UpdateWarrantyPolicyModal = ({
     durationPeriod: "",
     mileageLimit: "",
   });
-  const [toast, setToast] = useState({ show: false, type: "", message: "" });
 
   useEffect(() => {
     if (policy) {
@@ -41,7 +40,6 @@ const UpdateWarrantyPolicyModal = ({
         mileageLimit: policy.mileageLimit?.toString() || "",
       });
     }
-    setToast({ show: false, type: "", message: "" }); // RESET TOAST KHI MỞ MODAL
   }, [policy, showModal]);
 
   const handleFormDataChange = (field, value) => {
@@ -49,14 +47,6 @@ const UpdateWarrantyPolicyModal = ({
       ...prev,
       [field]: value,
     }));
-  };
-
-  const showToast = (type, message) => {
-    setToast({ show: true, type, message });
-  };
-
-  const hideToast = () => {
-    setToast({ show: false, type: "", message: "" });
   };
 
   const isChanged =
@@ -72,7 +62,7 @@ const UpdateWarrantyPolicyModal = ({
   // Gửi request update
   const handleSubmit = async () => {
     if (!policy?.id) {
-      showToast("error", "Invalid policy ID.");
+      toast.error("Invalid policy ID.");
       return;
     }
 
@@ -84,13 +74,11 @@ const UpdateWarrantyPolicyModal = ({
       !formData.durationPeriod ||
       !formData.mileageLimit
     ) {
-      showToast("error", "Please fill in all fields before saving.");
+      toast.error("Please fill in all fields before saving.");
       return;
     }
 
     try {
-      hideToast();
-
       const apiData = {
         code: formData.code.trim(),
         policyType: formData.policyType.trim(),
@@ -102,7 +90,7 @@ const UpdateWarrantyPolicyModal = ({
 
       await updatePolicyApi(policy.id, apiData);
 
-      showToast("success", "Policy updated successfully!");
+      toast.success("Policy updated successfully!");
 
       setTimeout(() => {
         if (onUpdated) onUpdated();
@@ -117,7 +105,7 @@ const UpdateWarrantyPolicyModal = ({
         error.response?.data?.error ||
         "Failed to update policy. Please try again.";
 
-      showToast("error", errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -125,16 +113,6 @@ const UpdateWarrantyPolicyModal = ({
 
   return (
     <>
-      {/* TOAST MESSAGE */}
-      {toast.show && (
-        <ToastMessage
-          type={toast.type}
-          message={toast.message}
-          onClose={hideToast}
-          duration={toast.type === "success" ? 3000 : 5000}
-        />
-      )}
-
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
         <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden">
           {/* Header */}
