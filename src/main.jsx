@@ -161,7 +161,6 @@ const router = createBrowserRouter([
 
       //  Policy Management (Part + Warranty) — ADMIN + EVM_STAFF only
       {
-        path: "part-policies",
         path: "policy", // Policy Management (Part + Warranty)
         element: (
           <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
@@ -172,21 +171,9 @@ const router = createBrowserRouter([
 
       {
         path: "profile",
-        element: <ProfilePage />,
-        path: "part-policies",
         element: (
           <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
-            <Policy />
-          </PrivateRoute>
-        ),
-      },
-
-      {
-        path: "warranty-policies",
-        path: "policy",
-        element: (
-          <PrivateRoute allowedRoles={["ADMIN", "EVM_STAFF"]}>
-            <Policy />
+            <ProfilePage />
           </PrivateRoute>
         ),
       },
