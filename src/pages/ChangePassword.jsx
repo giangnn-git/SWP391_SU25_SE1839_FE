@@ -5,7 +5,7 @@ import { storage } from "../utils/storage";
 
 const ChangePasswordPage = () => {
   const [formData, setFormData] = useState({
-    oldPassword: "", // Đổi từ currentPassword thành oldPassword
+    oldPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
@@ -42,7 +42,7 @@ const ChangePasswordPage = () => {
 
   const validateForm = () => {
     if (
-      !formData.oldPassword || // Đổi từ currentPassword thành oldPassword
+      !formData.oldPassword ||
       !formData.newPassword ||
       !formData.confirmPassword
     ) {
@@ -61,7 +61,6 @@ const ChangePasswordPage = () => {
     }
 
     if (formData.oldPassword === formData.newPassword) {
-      // Đổi từ currentPassword thành oldPassword
       setError("New password must be different from current password");
       return false;
     }
@@ -79,9 +78,8 @@ const ChangePasswordPage = () => {
     setLoading(true);
 
     try {
-      // Sửa payload để match với BE expectation
       await changePasswordApi({
-        oldPassword: formData.oldPassword, // Đúng field name BE expect
+        oldPassword: formData.oldPassword,
         newPassword: formData.newPassword,
       });
 
@@ -144,19 +142,19 @@ const ChangePasswordPage = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Current Password - Đổi thành Old Password */}
+            {/*  Old Password */}
             <div>
               <label
-                htmlFor="oldPassword" // Đổi id
+                htmlFor="oldPassword"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
                 Current Password
               </label>
               <input
-                id="oldPassword" // Đổi id
-                name="oldPassword" // Đổi name
+                id="oldPassword"
+                name="oldPassword"
                 type="password"
-                value={formData.oldPassword} // Đổi value
+                value={formData.oldPassword}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter current password"

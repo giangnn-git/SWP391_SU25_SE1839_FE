@@ -16,7 +16,7 @@ const RealBarcodeScanner = ({ onScan, onClose, partName }) => {
     navigator.mediaDevices.enumerateDevices().then((devices) => {
       const cams = devices.filter((d) => d.kind === "videoinput");
       if (cams.length === 0) {
-        setCameraError("Không tìm thấy camera");
+        setCameraError("Cannot found camera");
         return;
       }
       const preferred = cams.find((d) => d.label.toLowerCase().includes("back")) || cams[0];

@@ -1,13 +1,5 @@
-import React, { useState, useEffect } from "react";
-import {
-  CheckCircle,
-  AlertCircle,
-  X,
-  Car,
-  Users,
-  Plus,
-  Search,
-} from "lucide-react";
+import { useState, useEffect } from "react";
+import { CheckCircle, X, Car, Users, Plus, Search } from "lucide-react";
 import CustomerCreate from "../components/customers/CustomerCreateAndUpdate";
 import CustomerManagement from "../components/customers/CustomerManagement";
 import CustomerView from "../components/customers/CustomerView";
@@ -20,14 +12,10 @@ import {
   searchCustomerApi,
 } from "../services/api.service";
 import { useCurrentUser } from "../hooks/useCurrentUser";
-import ToastMessage from "../components/common/ToastMessage";
+import toast from "react-hot-toast";
 
 const CustomerRegistration = () => {
   const { currentUser, loading: userLoading } = useCurrentUser();
-
-  // State cho toast
-  const [actionMessage, setActionMessage] = useState("");
-  const [messageType, setMessageType] = useState("");
 
   // State chính
   const [showForm, setShowForm] = useState(false);
@@ -54,12 +42,6 @@ const CustomerRegistration = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [filteredCustomers, setFilteredCustomers] = useState([]);
-
-  // Hàm hiển thị toast
-  const showMessage = (message, type = "info") => {
-    setActionMessage(message);
-    setMessageType(type);
-  };
 
   // Hàm xử lý tìm kiếm THÔNG MINH (SEARCH API + BASIC FILTER)
   const handleSearch = async () => {
@@ -94,7 +76,7 @@ const CustomerRegistration = () => {
         setSearchResults([]);
         setFilteredCustomers([]);
         // Hiển thị thông báo từ BE
-        showMessage(err.response.data.errorCode, "warning");
+        toast.error(err.response.data.errorCode);
       } else {
         // Fallback cho các lỗi khác
         const filtered = customersSummary.filter((customer) =>
@@ -136,7 +118,7 @@ const CustomerRegistration = () => {
       setFilteredCustomers(list);
     } catch (err) {
       console.error("Error fetching customers summary:", err);
-      showMessage("Failed to load customers summary", "error");
+      toast.error("Failed to load customers summary");
     } finally {
       setLoadingCustomersSummary(false);
     }
@@ -206,7 +188,7 @@ const CustomerRegistration = () => {
 
   // HÀM XỬ LÝ KHI EDIT THÀNH CÔNG TỪ CustomerView
   const handleEditSuccessFromView = async (updated) => {
-    showMessage("Customer updated successfully!", "success");
+    toast.success("Customer updated successfully!");
     if (updated?.vin && viewVehicle?.vin === updated.vin) {
       setViewVehicle((prev) =>
         prev ? { ...prev, licensePlate: updated.licensePlate } : prev
@@ -221,9 +203,9 @@ const CustomerRegistration = () => {
     }
   };
 
-  // HÀM XỬ LÝ KHI THÊM VEHICLE THÀNH CÔNG
+  //HÀM XỬ LÝ KHI THÊM VEHICLE THÀNH CÔNG
   const handleAddVehicleSuccess = async () => {
-    showMessage("Vehicle added successfully!", "success");
+    toast.success("Vehicle added successfully!");
     await fetchCustomersSummary();
 
     if (viewingCustomer) {
@@ -243,7 +225,7 @@ const CustomerRegistration = () => {
       setCustomerVehicles(Array.isArray(list) ? list : []);
     } catch (err) {
       console.error("Error fetching vehicles by customer id:", err);
-      showMessage("Failed to load vehicles for this customer", "error");
+      toast.error("Failed to load vehicles for this customer");
       setCustomerVehicles([]);
     } finally {
       setLoadingCustomerVehicles(false);
@@ -252,17 +234,14 @@ const CustomerRegistration = () => {
 
   const handleRegistrationSuccess = async () => {
     setShowForm(false);
-    showMessage("Customer registered successfully!", "success");
+    toast.success("Customer registered successfully!");
     setSearchTerm("");
     setSearchResults([]);
     await fetchCustomersSummary();
   };
 
   const handleEditError = (error) => {
-    showMessage(
-      error || "Failed to update customer. Please try again.",
-      "error"
-    );
+    toast.error(error || "Failed to update customer. Please try again.");
   };
 
   const handleCloseCreate = () => {
@@ -302,15 +281,6 @@ const CustomerRegistration = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Toast Message */}
-        {actionMessage && (
-          <ToastMessage
-            type={messageType}
-            message={actionMessage}
-            onClose={() => setActionMessage("")}
-          />
-        )}
-
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -476,7 +446,7 @@ const CustomerRegistration = () => {
             onClose={() => setShowAddVehicleForCustomer(null)}
             onSuccess={handleAddVehicleSuccess}
             onError={(error) => {
-              showMessage(error, "error");
+              toast.error(error);
               setShowAddVehicleForCustomer(null);
             }}
           />

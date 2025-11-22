@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   UserPlus,
   X,
@@ -7,31 +7,23 @@ import {
   FileText,
   Mail,
   MapPin,
-  ChevronDown,
-  Check,
   Save,
   Lock,
   Search,
-  Car,
   AlertCircle,
 } from "lucide-react";
 import {
   createCustomerApi,
   updateCustomerApi,
 } from "../../services/api.service";
-import ToastMessage from "../common/ToastMessage";
+import toast from "react-hot-toast";
 
 const CustomerCreate = ({
-  vehicles,
   onClose,
   onSuccess,
   onError,
   editCustomer = null,
 }) => {
-  // State cho toast
-  const [actionMessage, setActionMessage] = useState("");
-  const [messageType, setMessageType] = useState("");
-
   const [formData, setFormData] = useState({
     name: "",
     phoneNumber: "",
@@ -64,12 +56,6 @@ const CustomerCreate = ({
   const [selectedVin, setSelectedVin] = useState("");
   const [loading, setLoading] = useState(false);
   const vinDropdownRef = useRef(null);
-
-  // Hàm hiển thị toast
-  const showMessage = (message, type = "info") => {
-    setActionMessage(message);
-    setMessageType(type);
-  };
 
   // Hàm validate từng field
   const validateField = (name, value) => {
@@ -283,9 +269,8 @@ const CustomerCreate = ({
       .map(([field]) => field);
 
     if (missingFields.length > 0) {
-      showMessage(
-        `Please fill all required fields: ${missingFields.join(", ")}`,
-        "error"
+      toast.error(
+        `Please fill all required fields: ${missingFields.join(", ")}`
       );
       return false;
     }
@@ -293,10 +278,7 @@ const CustomerCreate = ({
     // Kiểm tra xem có lỗi validation nào không
     const hasErrors = Object.values(newErrors).some((error) => error !== "");
     if (hasErrors) {
-      showMessage(
-        "Please fix the validation errors before submitting",
-        "error"
-      );
+      toast.error("Please fix the validation errors before submitting");
       return false;
     }
 
@@ -326,10 +308,8 @@ const CustomerCreate = ({
 
       if (isEditMode) {
         await updateCustomerApi(editCustomer.id, submitData);
-        showMessage("Customer updated successfully!", "success");
       } else {
         await createCustomerApi(submitData);
-        showMessage("Customer registered successfully!", "success");
       }
 
       const updatedPayload = {
@@ -396,7 +376,6 @@ const CustomerCreate = ({
         errorMsg += "Unexpected error occurred.";
       }
 
-      showMessage(errorMsg, "error");
       if (onError) onError(errorMsg);
     } finally {
       setLoading(false);
@@ -434,15 +413,6 @@ const CustomerCreate = ({
 
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4">
-      {/* Toast Message */}
-      {actionMessage && (
-        <ToastMessage
-          type={messageType}
-          message={actionMessage}
-          onClose={() => setActionMessage("")}
-        />
-      )}
-
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">

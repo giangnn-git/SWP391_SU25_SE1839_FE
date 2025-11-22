@@ -1,31 +1,23 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   X,
-  Eye,
   Car,
   FileText,
-  Shield,
   User,
   Phone,
   Mail,
   MapPin,
   Calendar,
   CheckCircle,
-  AlertCircle,
-  Edit,
   History,
   Settings,
   ClipboardList,
-  UserCheck,
-  Package,
-  Clock,
-  Wrench,
   Cog,
   Users,
   ShieldCheck,
 } from "lucide-react";
 import CustomerCreate from "./CustomerCreateAndUpdate";
-import ToastMessage from "../common/ToastMessage";
+import toast from "react-hot-toast";
 import { getRepairHistoryByVinApi } from "../../services/api.service";
 
 const CustomerView = ({
@@ -41,22 +33,12 @@ const CustomerView = ({
   onEditError,
   vehicles,
 }) => {
-  // State cho toast
-  const [actionMessage, setActionMessage] = useState("");
-  const [messageType, setMessageType] = useState("");
-
   const [activeTab, setActiveTab] = useState("view");
   const [editingCustomer, setEditingCustomer] = useState(null);
 
   // State mới cho repair history
   const [repairHistory, setRepairHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
-
-  // Hàm hiển thị toast
-  const showMessage = (message, type = "info") => {
-    setActionMessage(message);
-    setMessageType(type);
-  };
 
   // HÀM FETCH REPAIR HISTORY
   const fetchRepairHistory = async (vin) => {
@@ -69,7 +51,7 @@ const CustomerView = ({
     } catch (err) {
       console.error("Error fetching repair history:", err);
       setRepairHistory([]);
-      showMessage("Failed to load repair history", "error");
+      toast.error("Failed to load repair history");
     } finally {
       setLoadingHistory(false);
     }
@@ -108,17 +90,14 @@ const CustomerView = ({
   const handleEditSuccess = (updated) => {
     setActiveTab("view");
     setEditingCustomer(null);
-    showMessage("Customer updated successfully!", "success");
+
     if (onEditSuccess) {
       onEditSuccess(updated);
     }
   };
 
   const handleEditErrorInView = (error) => {
-    showMessage(
-      error || "Failed to update customer. Please try again.",
-      "error"
-    );
+    toast.error(error || "Failed to update customer. Please try again.");
     if (onEditError) {
       onEditError(error);
     }
@@ -169,15 +148,6 @@ const CustomerView = ({
   if (activeTab === "edit" && editingCustomer) {
     return (
       <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4">
-        {/* Toast Message */}
-        {actionMessage && (
-          <ToastMessage
-            type={messageType}
-            message={actionMessage}
-            onClose={() => setActionMessage("")}
-          />
-        )}
-
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between p-6 border-b border-gray-100">
             <div className="flex items-center gap-3">
@@ -215,15 +185,6 @@ const CustomerView = ({
   // CHẾ ĐỘ VIEW BÌNH THƯỜNG
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4">
-      {/* Toast Message */}
-      {actionMessage && (
-        <ToastMessagá
-          type={messageType}
-          message={actionMessage}
-          onClose={() => setActionMessage("")}
-        />
-      )}
-
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">

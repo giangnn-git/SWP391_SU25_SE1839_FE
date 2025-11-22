@@ -12,6 +12,7 @@ import {
   createPartPolicyApi,
   getPartPolicyCodesApi,
 } from "../../../services/api.service";
+import toast from "react-hot-toast";
 
 const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -22,7 +23,7 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
     endDate: "",
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+
   const [availableCodes, setAvailableCodes] = useState({
     categories: {}, // { categoryName: { partMap: { partCode: partName } } }
     policyMap: {}, // { policyCode: policyName }
@@ -31,7 +32,7 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [submissionData, setSubmissionData] = useState(null);
 
-  // Fetch available part codes and policy codes
+  // Fetch available codes
   useEffect(() => {
     const fetchAvailableCodes = async () => {
       try {
@@ -44,7 +45,7 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
         });
       } catch (err) {
         console.error("Error fetching available codes:", err);
-        setError("Failed to load available codes. Please try again.");
+        toast.error("Failed to load available codes. Please try again.");
       } finally {
         setCodesLoading(false);
       }
@@ -52,7 +53,6 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
 
     if (showModal) {
       fetchAvailableCodes();
-      // Reset form when modal opens
       setFormData({
         category: "",
         partCode: "",
@@ -60,7 +60,6 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
         startDate: "",
         endDate: "",
       });
-      setError("");
     }
   }, [showModal]);
 
@@ -68,7 +67,6 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
     const { name, value } = e.target;
 
     if (name === "category") {
-      // Reset partCode when category changes
       setFormData((prev) => ({
         ...prev,
         category: value,
@@ -80,9 +78,6 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
         [name]: value,
       }));
     }
-
-    // Clear error when user starts typing
-    if (error) setError("");
   };
 
   const handleSubmit = async (e) => {
@@ -96,12 +91,12 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
       !formData.startDate ||
       !formData.endDate
     ) {
-      setError("Please fill in all fields!");
+      toast.error("Please fill in all fields!");
       return;
     }
 
     if (new Date(formData.startDate) >= new Date(formData.endDate)) {
-      setError("End date must be after start date!");
+      toast.error("End date must be after start date!");
       return;
     }
 
@@ -132,7 +127,6 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
 
   const handleConfirmSubmit = async () => {
     setLoading(true);
-    setError("");
 
     try {
       await createPartPolicyApi(submissionData);
@@ -158,7 +152,7 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
         err.response?.data?.errorCode || // Ưu tiên lấy errorCode
         err.response?.data?.message || // Fallback đến message
         "Failed to add part policy";
-      setError(errorMessage);
+      toast.error(errorMessage);
       setShowConfirmation(false);
     } finally {
       setLoading(false);
@@ -460,16 +454,6 @@ const CreatePartPolicy = ({ showModal, onClose, onSuccess }) => {
                 />
               </div>
             </div>
-
-            {/* Error Message */}
-            {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <div className="text-red-700 text-sm flex items-center gap-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                  {error}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Action Buttons */}
