@@ -6,7 +6,7 @@ import {
   toggleUserStatusApi,
 } from "../services/api.service";
 import UserTable from "../components/users/UserTable.jsx";
-import EditUserModal from "../components/users/editUserModal.jsx";
+import EditUserModal from "../components/users/EditUserModal.jsx";
 import CreateUserModal from "../components/users/CreateUserModal.jsx";
 import { Users } from "lucide-react";
 
