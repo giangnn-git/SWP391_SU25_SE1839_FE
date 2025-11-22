@@ -12,6 +12,8 @@ import EditCampaignModal from "../components/campaigns/EditCampaignModal";
 import CampaignTable from "../components/campaigns/CampaignTable";
 import CampaignOverviewCard from "../components/campaigns/CampaignOverviewCard";
 import { getAllCampaignsApi } from "../services/api.service";
+import { Link } from "react-router-dom";
+
 
 const CampaignManagement = () => {
   const [campaigns, setCampaigns] = useState([]);
@@ -137,6 +139,13 @@ const CampaignManagement = () => {
           <span>{toastMessage}</span>
         </div>
       )}
+
+      {/* Breadcrumb */}
+      <div className="text-sm text-gray-500 mb-2">
+        <Link to="/" className="hover:underline text-blue-600">Dashboard</Link>
+        <span className="mx-1">/</span>
+        <span className="text-gray-700 font-medium">Campaign Recall Vehicles</span>
+      </div>
 
       {/* Header */}
       <div className="flex justify-between items-center mb-6">

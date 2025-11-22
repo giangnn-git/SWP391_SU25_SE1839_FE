@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Search, Filter, CarFront } from "lucide-react";
 import { getVehiclesInCampaignsByScApi } from "../services/api.service";
+import { Link } from "react-router-dom";
 
 // format [yyyy, m, d] -> dd/mm/yyyy
 const formatDate = (arr) => {
@@ -105,6 +106,14 @@ const ScCampaignVehicles = () => {
 
   return (
     <div className="p-6 bg-gradient-to-b from-white via-blue-50/50 to-white min-h-screen">
+
+      {/* Breadcrumb */}
+      <div className="text-sm text-gray-500 mb-2">
+        <Link to="/" className="hover:underline text-blue-600">Dashboard</Link>
+        <span className="mx-1">/</span>
+        <span className="text-gray-700 font-medium">Campaign Recall Vehicles</span>
+      </div>
+
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-3">
         <div className="flex items-center gap-3">
@@ -216,13 +225,12 @@ const ScCampaignVehicles = () => {
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                        r.status === "NOTIFIED"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : r.status === "COMPLETED"
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${r.status === "NOTIFIED"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : r.status === "COMPLETED"
                           ? "bg-green-100 text-green-800"
                           : "bg-gray-100 text-gray-700"
-                      }`}
+                        }`}
                     >
                       {r.status}
                     </span>
@@ -252,11 +260,10 @@ const ScCampaignVehicles = () => {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className={`px-3 py-1.5 rounded-lg border ${
-              currentPage === 1
-                ? "text-gray-400 border-gray-200 cursor-not-allowed"
-                : "hover:bg-gray-50 border-gray-300"
-            }`}
+            className={`px-3 py-1.5 rounded-lg border ${currentPage === 1
+              ? "text-gray-400 border-gray-200 cursor-not-allowed"
+              : "hover:bg-gray-50 border-gray-300"
+              }`}
           >
             Prev
           </button>
@@ -265,11 +272,10 @@ const ScCampaignVehicles = () => {
             <button
               key={n}
               onClick={() => setPage(n)}
-              className={`px-3 py-1.5 rounded-lg border ${
-                n === currentPage
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "border-gray-300 hover:bg-gray-50"
-              }`}
+              className={`px-3 py-1.5 rounded-lg border ${n === currentPage
+                ? "bg-blue-600 text-white border-blue-600"
+                : "border-gray-300 hover:bg-gray-50"
+                }`}
             >
               {n}
             </button>
@@ -278,11 +284,10 @@ const ScCampaignVehicles = () => {
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            className={`px-3 py-1.5 rounded-lg border ${
-              currentPage === totalPages
-                ? "text-gray-400 border-gray-200 cursor-not-allowed"
-                : "hover:bg-gray-50 border-gray-300"
-            }`}
+            className={`px-3 py-1.5 rounded-lg border ${currentPage === totalPages
+              ? "text-gray-400 border-gray-200 cursor-not-allowed"
+              : "hover:bg-gray-50 border-gray-300"
+              }`}
           >
             Next
           </button>

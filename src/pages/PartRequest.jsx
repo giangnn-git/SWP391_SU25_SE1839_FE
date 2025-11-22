@@ -169,17 +169,15 @@ const PartRequestTable = ({
                   <div className="absolute left-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                     <button
                       onClick={() => onSortChange("date_asc")}
-                      className={`w-full text-left px-3 py-2 text-xs hover:bg-blue-50 first:rounded-t-lg last:rounded-b-lg ${
-                        sortBy === "date_asc" ? "bg-blue-50 text-blue-600" : ""
-                      }`}
+                      className={`w-full text-left px-3 py-2 text-xs hover:bg-blue-50 first:rounded-t-lg last:rounded-b-lg ${sortBy === "date_asc" ? "bg-blue-50 text-blue-600" : ""
+                        }`}
                     >
                       ↑ Date Ascending
                     </button>
                     <button
                       onClick={() => onSortChange("date_desc")}
-                      className={`w-full text-left px-3 py-2 text-xs hover:bg-blue-50 first:rounded-t-lg last:rounded-b-lg ${
-                        sortBy === "date_desc" ? "bg-blue-50 text-blue-600" : ""
-                      }`}
+                      className={`w-full text-left px-3 py-2 text-xs hover:bg-blue-50 first:rounded-t-lg last:rounded-b-lg ${sortBy === "date_desc" ? "bg-blue-50 text-blue-600" : ""
+                        }`}
                     >
                       ↓ Date Descending
                     </button>
@@ -263,11 +261,10 @@ const PartRequestTable = ({
                     )}
                     <button
                       onClick={() => onPageChange(page)}
-                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                        currentPage === page
+                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${currentPage === page
                           ? "bg-blue-600 text-white"
                           : "text-gray-600 hover:bg-gray-100"
-                      }`}
+                        }`}
                     >
                       {page}
                     </button>
@@ -296,8 +293,8 @@ const ViewPartRequestModal = ({ request, onClose }) => {
 
   const normalizedDetails = Array.isArray(request.details)
     ? request.details.map((detail) =>
-        normalizePartDetail(detail, request.status)
-      )
+      normalizePartDetail(detail, request.status)
+    )
     : [];
 
   return (
@@ -320,13 +317,12 @@ const ViewPartRequestModal = ({ request, onClose }) => {
           <p>
             <b>Status:</b>
             <span
-              className={`ml-2 px-2 py-1 text-xs rounded-full font-medium ${
-                request.status === "PENDING"
+              className={`ml-2 px-2 py-1 text-xs rounded-full font-medium ${request.status === "PENDING"
                   ? "bg-yellow-100 text-yellow-700"
                   : request.status === "APPROVED"
-                  ? "bg-green-100 text-green-700"
-                  : "bg-red-100 text-red-700"
-              }`}
+                    ? "bg-green-100 text-green-700"
+                    : "bg-red-100 text-red-700"
+                }`}
             >
               {request.status}
             </span>
@@ -512,6 +508,8 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center animate-fadeIn p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-gray-100 animate-slideUp">
+
+
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 rounded-t-2xl">
           <div className="flex items-center justify-between">
@@ -681,9 +679,8 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
                   Provide details about why these parts are needed
                 </span>
                 <span
-                  className={`text-xs ${
-                    note.length > 200 ? "text-red-500" : "text-gray-500"
-                  }`}
+                  className={`text-xs ${note.length > 200 ? "text-red-500" : "text-gray-500"
+                    }`}
                 >
                   {note.length}/500
                 </span>
@@ -748,11 +745,10 @@ const CreatePartRequestModal = ({ onClose, onCreated }) => {
               <button
                 type="submit"
                 disabled={loading}
-                className={`px-8 py-3 rounded-xl text-sm font-medium text-white transition min-w-[120px] ${
-                  loading
+                className={`px-8 py-3 rounded-xl text-sm font-medium text-white transition min-w-[120px] ${loading
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-blue-600 hover:bg-blue-700 shadow-sm"
-                }`}
+                  }`}
               >
                 {loading ? (
                   <div className="flex items-center gap-2 justify-center">
@@ -816,8 +812,8 @@ const PartRequestManagement = () => {
         ...rawData,
         details: Array.isArray(rawData.details)
           ? rawData.details.map((detail) =>
-              normalizePartDetail(detail, rawData.status)
-            )
+            normalizePartDetail(detail, rawData.status)
+          )
           : [],
       };
 
@@ -836,7 +832,7 @@ const PartRequestManagement = () => {
     const filtered = requests.filter((r) => {
       const matchSearch = searchTerm
         ? r.note?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          r.serviceCenterName?.toLowerCase().includes(searchTerm.toLowerCase())
+        r.serviceCenterName?.toLowerCase().includes(searchTerm.toLowerCase())
         : true;
 
       const matchStatus =

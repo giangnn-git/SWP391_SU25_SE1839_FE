@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Search, Filter, Car, Eye, Loader2, Shield } from "lucide-react";
 import ViewVehicleModal from "../components/vehicles/ViewVehicleModal";
 import { getAllModelsApi, getVehicleDetailApi } from "../services/api.service";
+import { Link } from "react-router-dom";
 
 const VehicleManagement = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -75,13 +76,21 @@ const VehicleManagement = () => {
       filterStatus === ""
         ? true
         : filterStatus === "in"
-        ? v.isInProduction
-        : !v.isInProduction;
+          ? v.isInProduction
+          : !v.isInProduction;
     return matchesSearch && matchesStatus;
   });
 
   return (
     <div className="p-6">
+
+      {/* Breadcrumb */}
+      <div className="text-sm text-gray-500 mb-2">
+        <Link to="/" className="hover:underline text-blue-600">Dashboard</Link>
+        <span className="mx-1">/</span>
+        <span className="text-gray-700 font-medium">Vehicle Management</span>
+      </div>
+
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
@@ -164,11 +173,10 @@ const VehicleManagement = () => {
 
                     <td className="py-3 px-4">
                       <span
-                        className={`px-2 py-1 text-xs font-medium rounded-md ${
-                          v.isInProduction
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-200 text-gray-600"
-                        }`}
+                        className={`px-2 py-1 text-xs font-medium rounded-md ${v.isInProduction
+                          ? "bg-green-100 text-green-700"
+                          : "bg-gray-200 text-gray-600"
+                          }`}
                       >
                         {v.isInProduction ? "In Production" : "Discontinued"}
                       </span>

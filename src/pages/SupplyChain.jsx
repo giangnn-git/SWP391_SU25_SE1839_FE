@@ -17,6 +17,7 @@ import { useCurrentUser } from "../hooks/useCurrentUser";
 import ViewPartModal from "../components/supply/ViewPartModal";
 import { getAllPartInventoriesApi } from "../services/api.service";
 import { AlertTriangle } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const SupplyChain = () => {
   const { currentUser, loading: userLoading } = useCurrentUser();
@@ -233,22 +234,20 @@ const SupplyChain = () => {
     return (
       <div className="flex border-b border-gray-200 mb-6">
         <button
-          className={`flex items-center gap-2 px-4 py-3 font-medium border-b-2 transition-all ${
-            activeTab === "main"
-              ? "border-blue-600 text-blue-700 bg-blue-50"
-              : "border-transparent text-gray-500 hover:text-gray-700"
-          }`}
+          className={`flex items-center gap-2 px-4 py-3 font-medium border-b-2 transition-all ${activeTab === "main"
+            ? "border-blue-600 text-blue-700 bg-blue-50"
+            : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
           onClick={() => setActiveTab("main")}
         >
           <Building size={18} />
           Central warehouse
         </button>
         <button
-          className={`flex items-center gap-2 px-4 py-3 font-medium border-b-2 transition-all ${
-            activeTab === "branches"
-              ? "border-green-600 text-green-700 bg-green-50"
-              : "border-transparent text-gray-500 hover:text-gray-700"
-          }`}
+          className={`flex items-center gap-2 px-4 py-3 font-medium border-b-2 transition-all ${activeTab === "branches"
+            ? "border-green-600 text-green-700 bg-green-50"
+            : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
           onClick={() => setActiveTab("branches")}
         >
           <Home size={18} />
@@ -298,11 +297,10 @@ const SupplyChain = () => {
       </div>
 
       <div
-        className={`group relative overflow-hidden bg-white rounded-2xl border ${
-          displayParts.filter((p) => p.quantity < 10).length > 0
-            ? "border-orange-200 shadow-lg animate-pulse"
-            : "border-gray-100"
-        } shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1`}
+        className={`group relative overflow-hidden bg-white rounded-2xl border ${displayParts.filter((p) => p.quantity < 10).length > 0
+          ? "border-orange-200 shadow-lg animate-pulse"
+          : "border-gray-100"
+          } shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1`}
       >
         <div className="absolute inset-0 bg-gradient-to-br from-orange-50/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
         <div className="relative flex items-center gap-4 p-5">
@@ -344,9 +342,8 @@ const SupplyChain = () => {
 
         {/* Search bar  */}
         <div
-          className={`relative ${
-            (isEVMStaff && activeTab === "main") || isSCStaff ? "mr-auto" : ""
-          }`}
+          className={`relative ${(isEVMStaff && activeTab === "main") || isSCStaff ? "mr-auto" : ""
+            }`}
         >
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search size={18} className="text-gray-400" />
@@ -363,21 +360,19 @@ const SupplyChain = () => {
         {/* View mode buttons  */}
         <div className="ml-auto flex items-center gap-2">
           <button
-            className={`p-2 rounded-lg transition ${
-              viewMode === "table"
-                ? "bg-blue-100 text-blue-700"
-                : "hover:bg-gray-100 text-gray-600"
-            }`}
+            className={`p-2 rounded-lg transition ${viewMode === "table"
+              ? "bg-blue-100 text-blue-700"
+              : "hover:bg-gray-100 text-gray-600"
+              }`}
             onClick={() => setViewMode("table")}
           >
             <Table size={18} />
           </button>
           <button
-            className={`p-2 rounded-lg transition ${
-              viewMode === "card"
-                ? "bg-blue-100 text-blue-700"
-                : "hover:bg-gray-100 text-gray-600"
-            }`}
+            className={`p-2 rounded-lg transition ${viewMode === "card"
+              ? "bg-blue-100 text-blue-700"
+              : "hover:bg-gray-100 text-gray-600"
+              }`}
             onClick={() => setViewMode("card")}
           >
             <LayoutGrid size={18} />
@@ -392,6 +387,14 @@ const SupplyChain = () => {
   // =========================
   return (
     <div className="p-6 bg-gradient-to-br from-gray-50 to-white min-h-screen animate-fadeInScale">
+
+      {/* Breadcrumb */}
+      <div className="text-sm text-gray-500 mb-2">
+        <Link to="/" className="hover:underline text-blue-600">Dashboard</Link>
+        <span className="mx-1">/</span>
+        <span className="text-gray-700 font-medium">Supply Chain</span>
+      </div>
+
       {/* Header */}
       <div className="flex justify-between items-center mb-6 animate-fadeIn">
         <div>
@@ -409,8 +412,7 @@ const SupplyChain = () => {
               activeTab === "branches" &&
               "Manage service center inventories"}
             {isSCStaff &&
-              `Manage inventory of ${
-                displayParts[0]?.warehouse || "your Service Center"
+              `Manage inventory of ${displayParts[0]?.warehouse || "your Service Center"
               }`}
             {isAdmin && "Manage all inventories across warehouses"}
           </p>
@@ -454,11 +456,10 @@ const SupplyChain = () => {
                 ].map((h) => (
                   <th
                     key={h}
-                    className={`py-4 px-4 whitespace-nowrap ${
-                      ["Quantity", "Unit", "Actions"].includes(h)
-                        ? "text-center"
-                        : "text-left"
-                    }`}
+                    className={`py-4 px-4 whitespace-nowrap ${["Quantity", "Unit", "Actions"].includes(h)
+                      ? "text-center"
+                      : "text-left"
+                      }`}
                   >
                     {h}
                   </th>
@@ -540,13 +541,12 @@ const SupplyChain = () => {
               <div className="flex justify-between items-center mb-3">
                 <h3 className="font-semibold text-gray-800">{part.name}</h3>
                 <span
-                  className={`text-xs px-2 py-1 rounded-full ${
-                    getQuantityColor(part.quantity) === "text-green-600"
-                      ? "bg-green-100 text-green-700"
-                      : getQuantityColor(part.quantity) === "text-yellow-600"
+                  className={`text-xs px-2 py-1 rounded-full ${getQuantityColor(part.quantity) === "text-green-600"
+                    ? "bg-green-100 text-green-700"
+                    : getQuantityColor(part.quantity) === "text-yellow-600"
                       ? "bg-yellow-100 text-yellow-700"
                       : "bg-red-100 text-red-700"
-                  }`}
+                    }`}
                 >
                   {part.quantity} pcs
                 </span>

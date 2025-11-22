@@ -13,6 +13,8 @@ import {
 } from "../services/api.service";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import toast from "react-hot-toast";
+import { Link } from "react-router-dom";
+
 
 const CustomerRegistration = () => {
   const { currentUser, loading: userLoading } = useCurrentUser();
@@ -281,6 +283,12 @@ const CustomerRegistration = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
+        {/* Breadcrumb */}
+        <div className="text-sm text-gray-500 mb-2">
+          <Link to="/" className="hover:underline text-blue-600">Dashboard</Link>
+          <span className="mx-1">/</span>
+          <span className="text-gray-700 font-medium">Customer Registration</span>
+        </div>
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -570,7 +578,7 @@ const CustomerRegistration = () => {
                                 </td>
                                 <td className="px-6 py-4">
                                   {Array.isArray(v?.campaignNames) &&
-                                  v.campaignNames.length > 0 ? (
+                                    v.campaignNames.length > 0 ? (
                                     <div className="flex flex-wrap gap-2">
                                       {v.campaignNames.map((name, i) => (
                                         <span

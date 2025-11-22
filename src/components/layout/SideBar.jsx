@@ -193,7 +193,7 @@ const Sidebar = () => {
     ...(isAdmin || isEvmStaff
       ? [
         {
-          name: "Policy",
+          name: "Policy Management",
           href: "/policy",
           icon: (
             <FileText size={18} className={iconStyle} strokeWidth={1.8} />

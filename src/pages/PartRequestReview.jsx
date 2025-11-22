@@ -20,6 +20,7 @@ import {
   getPartRequestDetailApi,
   reviewPartSupplyApi,
 } from "../services/api.service";
+import { Link } from "react-router-dom";
 
 // === Remark constants & helpers ===
 const REMARK_IN = "In stock";
@@ -179,8 +180,8 @@ const PartRequestReview = () => {
             item.status === "PENDING"
               ? "Pending"
               : item.status === "APPROVED"
-              ? "Approved"
-              : "Rejected",
+                ? "Approved"
+                : "Rejected",
           date: formatDate(item.createdDate),
           requester: item.serviceCenterName || "Unknown",
           createdBy: item.createdBy,
@@ -197,8 +198,8 @@ const PartRequestReview = () => {
       setRequests([]);
       showMessage(
         err.response?.data?.errorCode ||
-          err.response?.data?.message ||
-          "Failed to load part requests. Please try again.",
+        err.response?.data?.message ||
+        "Failed to load part requests. Please try again.",
         "error"
       );
     } finally {
@@ -335,8 +336,8 @@ const PartRequestReview = () => {
     } catch (err) {
       showMessage(
         err.response?.data?.errorCode ||
-          err.response?.data?.message ||
-          "Failed to update request. Please try again.",
+        err.response?.data?.message ||
+        "Failed to update request. Please try again.",
         "error"
       );
     } finally {
@@ -470,11 +471,10 @@ const PartRequestReview = () => {
                     handleSortChange("date_asc");
                     setIsSortOpen(false);
                   }}
-                  className={`w-full text-left px-3 py-2 text-xs hover:bg-emerald-50 first:rounded-t-lg last:rounded-b-lg ${
-                    sortBy === "date_asc"
-                      ? "bg-emerald-50 text-emerald-600"
-                      : ""
-                  }`}
+                  className={`w-full text-left px-3 py-2 text-xs hover:bg-emerald-50 first:rounded-t-lg last:rounded-b-lg ${sortBy === "date_asc"
+                    ? "bg-emerald-50 text-emerald-600"
+                    : ""
+                    }`}
                 >
                   ↑ Date Ascending
                 </button>
@@ -483,11 +483,10 @@ const PartRequestReview = () => {
                     handleSortChange("date_desc");
                     setIsSortOpen(false);
                   }}
-                  className={`w-full text-left px-3 py-2 text-xs hover:bg-emerald-50 first:rounded-t-lg last:rounded-b-lg ${
-                    sortBy === "date_desc"
-                      ? "bg-emerald-50 text-emerald-600"
-                      : ""
-                  }`}
+                  className={`w-full text-left px-3 py-2 text-xs hover:bg-emerald-50 first:rounded-t-lg last:rounded-b-lg ${sortBy === "date_desc"
+                    ? "bg-emerald-50 text-emerald-600"
+                    : ""
+                    }`}
                 >
                   ↓ Date Descending
                 </button>
@@ -501,6 +500,14 @@ const PartRequestReview = () => {
 
   return (
     <div className="p-8 animate-fadeIn bg-gradient-to-br from-gray-50 to-white min-h-screen">
+
+      {/* Breadcrumb */}
+      <div className="text-sm text-gray-500 mb-2">
+        <Link to="/" className="hover:underline text-blue-600">Dashboard</Link>
+        <span className="mx-1">/</span>
+        <span className="text-gray-700 font-medium">Part Request Review</span>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -705,11 +712,10 @@ const PartRequestReview = () => {
                           )}
                           <button
                             onClick={() => setCurrentPage(page)}
-                            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                              currentPage === page
-                                ? "bg-emerald-600 text-white"
-                                : "text-gray-600 hover:bg-gray-100"
-                            }`}
+                            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${currentPage === page
+                              ? "bg-emerald-600 text-white"
+                              : "text-gray-600 hover:bg-gray-100"
+                              }`}
                           >
                             {page}
                           </button>
@@ -869,9 +875,9 @@ const PartRequestReview = () => {
                                             approvedQuantity:
                                               newRemark === REMARK_IN
                                                 ? Math.max(
-                                                    1,
-                                                    d.approvedQuantity || 1
-                                                  )
+                                                  1,
+                                                  d.approvedQuantity || 1
+                                                )
                                                 : 0,
                                           };
                                           setSelectedRequest((prev) => ({
@@ -932,11 +938,10 @@ const PartRequestReview = () => {
                                       Remark:
                                     </span>
                                     <span
-                                      className={`font-semibold ${
-                                        d.remark === REMARK_IN
-                                          ? "text-emerald-600"
-                                          : "text-red-600"
-                                      }`}
+                                      className={`font-semibold ${d.remark === REMARK_IN
+                                        ? "text-emerald-600"
+                                        : "text-red-600"
+                                        }`}
                                     >
                                       {d.remark}
                                     </span>
@@ -1013,11 +1018,10 @@ const PartRequestReview = () => {
               <button
                 onClick={handleConfirmAction}
                 disabled={processing}
-                className={`px-5 py-2 rounded-lg text-white text-sm font-medium transition-all duration-200 ${
-                  confirmAction === "Approved"
-                    ? "bg-emerald-600 hover:bg-emerald-700"
-                    : "bg-red-600 hover:bg-red-700"
-                } disabled:opacity-50`}
+                className={`px-5 py-2 rounded-lg text-white text-sm font-medium transition-all duration-200 ${confirmAction === "Approved"
+                  ? "bg-emerald-600 hover:bg-emerald-700"
+                  : "bg-red-600 hover:bg-red-700"
+                  } disabled:opacity-50`}
               >
                 {processing ? "Processing..." : "Confirm"}
               </button>
