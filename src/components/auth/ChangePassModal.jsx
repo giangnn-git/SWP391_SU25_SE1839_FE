@@ -59,18 +59,11 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
 
     if (!validateForm()) return;
 
-    // Lấy id từ storage
-    const id = storage.get("id");
-    if (!id) {
-      setError("User ID not found. Please login again.");
-      return;
-    }
-
     setLoading(true);
 
     try {
-      await changePasswordApi(id, {
-        currentPassword: formData.currentPassword,
+      await changePasswordApi({
+        oldPassword: formData.currentPassword,
         newPassword: formData.newPassword,
       });
 

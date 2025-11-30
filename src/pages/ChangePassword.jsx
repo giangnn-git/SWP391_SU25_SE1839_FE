@@ -5,7 +5,7 @@ import { storage } from "../utils/storage";
 
 const ChangePasswordPage = () => {
   const [formData, setFormData] = useState({
-    currentPassword: "",
+    oldPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
@@ -42,7 +42,7 @@ const ChangePasswordPage = () => {
 
   const validateForm = () => {
     if (
-      !formData.currentPassword ||
+      !formData.oldPassword ||
       !formData.newPassword ||
       !formData.confirmPassword
     ) {
@@ -60,7 +60,7 @@ const ChangePasswordPage = () => {
       return false;
     }
 
-    if (formData.currentPassword === formData.newPassword) {
+    if (formData.oldPassword === formData.newPassword) {
       setError("New password must be different from current password");
       return false;
     }
@@ -75,22 +75,17 @@ const ChangePasswordPage = () => {
 
     if (!validateForm()) return;
 
-    const id = storage.get("id");
-    if (!id) {
-      setError("User ID not found. Please login again.");
-      return;
-    }
-
     setLoading(true);
 
     try {
-      await changePasswordApi(id, {
-        currentPassword: formData.currentPassword,
+      await changePasswordApi({
+        oldPassword: formData.oldPassword,
         newPassword: formData.newPassword,
       });
 
       setSuccess("Password changed successfully!");
 
+      // UPDATE LOCAL STORAGE
       storage.set("requiresPasswordChange", false);
 
       setTimeout(() => {
@@ -103,6 +98,7 @@ const ChangePasswordPage = () => {
         const errorMessage =
           err.response.data?.message ||
           err.response.data?.error ||
+          err.response.data?.errorCode || // Thêm errorCode từ BE response
           "Failed to change password";
         setError(errorMessage);
       } else if (err.request) {
@@ -146,19 +142,19 @@ const ChangePasswordPage = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Current Password */}
+            {/*  Old Password */}
             <div>
               <label
-                htmlFor="currentPassword"
+                htmlFor="oldPassword"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
                 Current Password
               </label>
               <input
-                id="currentPassword"
-                name="currentPassword"
+                id="oldPassword"
+                name="oldPassword"
                 type="password"
-                value={formData.currentPassword}
+                value={formData.oldPassword}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter current password"

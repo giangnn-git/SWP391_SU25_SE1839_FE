@@ -8,7 +8,7 @@ export default defineConfig({
     proxy: {
       "/api": {
         // target: "https://orthopterous-unwieldable-kristal.ngrok-free.dev", // tam
-        target: "https://junie-preaortic-sina.ngrok-free.dev/admin/user", // QA
+        target: "https://junie-preaortic-sina.ngrok-free.dev", // QA
 
         changeOrigin: true,
         secure: false,
