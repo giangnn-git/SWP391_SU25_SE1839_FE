@@ -1,195 +1,207 @@
+// src/pages/login.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { userLoginApi } from "../services/api.service";
 import { storage } from "../utils/storage";
-import ForgotPasswordModal from "../components/auth/ForgotPasswordModal";
 import { jwtDecode } from "jwt-decode";
 
-const LoginPage = () => {
-  const [user, setUser] = useState("");
-  const [password, setPassword] = useState("");
+export default function LoginPage() {
+  const navigate = useNavigate();
+
+  const [username, setUsername] = useState("admin1");
+  const [password, setPassword] = useState("123456");
+  const [loginType, setLoginType] = useState("ADMIN");
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-    localStorage.clear();
+
+    storage.remove("token");
+    storage.remove("isLoggedIn");
+    storage.remove("loginType");
+    storage.remove("requiresPasswordChange");
 
     try {
-      const res = await userLoginApi(user, password);
-      const data = res.data?.data;
-      const token = data?.token;
+      const res = await userLoginApi(username, password, loginType);
+
+      const payload = res?.data?.data ?? res?.data ?? {};
+      const token = payload?.token;
 
       if (!token || typeof token !== "string") {
         setError("Invalid token received from server!");
-        setLoading(false);
         return;
       }
 
-      let decoded;
+      let decoded = null;
       try {
         decoded = jwtDecode(token);
-      } catch (decodeError) {
-        console.error("Token decode error:", decodeError);
+      } catch (err) {
+        console.error("Token decode error:", err);
         setError("Invalid token format!");
-        setLoading(false);
         return;
       }
 
-      const requiresPasswordChange = data.requiresPasswordChange;
+      const requiresPasswordChange =
+        payload?.requiresPasswordChange ??
+        decoded?.requiresPasswordChange ??
+        false;
 
       storage.set("token", token);
-      storage.set("userEmail", decoded.sub);
       storage.set("isLoggedIn", true);
-      storage.set("id", decoded.id || decoded.userId || "");
-      storage.set("userName", decoded.name);
-      storage.set("userPhone", decoded.phone);
-      storage.set("serviceCenterId", decoded.serviceCenterId);
-      storage.set("requiresPasswordChange", decoded.requiresPasswordChange);
+      storage.set("loginType", loginType);
+      storage.set("requiresPasswordChange", !!requiresPasswordChange);
 
-      if (requiresPasswordChange === true) {
+      storage.set("userEmail", decoded?.sub || "");
+      storage.set("id", decoded?.id || decoded?.userId || "");
+      storage.set("userName", decoded?.name || "");
+      storage.set("userPhone", decoded?.phone || "");
+      storage.set("serviceCenterId", decoded?.serviceCenterId || "");
+
+      if (requiresPasswordChange) {
         navigate("/change-password", { replace: true });
-      } else {
-        navigate("/", { replace: true });
+        return;
       }
+
+      if (loginType === "ADMIN") navigate("/admin", { replace: true });
+      else navigate("/home", { replace: true });
     } catch (err) {
       console.error("Login error:", err);
 
-      if (err.response) {
+      if (err?.response) {
         const errorData = err.response.data;
-        const errorCode = errorData?.errorCode;
-
-        if (errorCode) {
-          setError(errorCode);
-        } else {
-          setError(err.response.data?.message || "Login failed!");
-        }
-      } else if (err.request) {
+        setError(errorData?.errorCode || errorData?.message || "Login failed!");
+      } else if (err?.request) {
         setError("Cannot connect to server. Please try again later!");
       } else {
-        setError("Unexpected error: " + err.message);
+        setError("Unexpected error: " + (err?.message || "Unknown error"));
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleForgotPassword = () => {
-    setShowForgotPassword(true);
-  };
-
-  const handleCloseForgotPassword = () => {
-    setShowForgotPassword(false);
-  };
-
-  const handleBackToLogin = () => {
-    setShowForgotPassword(false);
-  };
-
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex flex-col items-center justify-center p-4">
-      {/* Subtle Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        {/* Geometric shapes */}
-        <div className="absolute top-0 left-0 w-72 h-72 bg-blue-50 rounded-full mix-blend-multiply blur-xl opacity-70 animate-pulse"></div>
-        <div className="absolute top-0 right-0 w-72 h-72 bg-cyan-50 rounded-full mix-blend-multiply blur-xl opacity-70 animate-pulse delay-1000"></div>
-        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-indigo-50 rounded-full mix-blend-multiply blur-xl opacity-70 animate-pulse delay-2000"></div>
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 to-white flex items-center justify-center p-4">
+      {/* Background blobs */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute -top-24 -left-24 w-72 h-72 bg-indigo-200 rounded-full blur-3xl opacity-40" />
+        <div className="absolute -top-16 -right-24 w-72 h-72 bg-cyan-200 rounded-full blur-3xl opacity-40" />
+        <div className="absolute -bottom-24 left-10 w-72 h-72 bg-fuchsia-200 rounded-full blur-3xl opacity-30" />
       </div>
 
-      {/* Header / Logo */}
-      <div className="relative mb-8 flex flex-col items-center">
-        <div className="relative mb-6">
-          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+      <div className="relative w-full max-w-md">
+        {/* Brand header */}
+        <div className="mb-6 text-center">
+          <div className="mx-auto w-14 h-14 rounded-2xl bg-white shadow-sm border border-slate-200 flex items-center justify-center">
+            {/* simple icon */}
             <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="32"
-              height="32"
+              width="26"
+              height="26"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="lucide lucide-car mx-auto h-12 w-12 text-gray-700"
+              className="text-slate-700"
+              xmlns="http://www.w3.org/2000/svg"
             >
-              <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"></path>
-              <circle cx="7" cy="17" r="2"></circle>
-              <path d="M9 17h6"></path>
-              <circle cx="17" cy="17" r="2"></circle>
+              <path
+                d="M12 2L3 6.5V17.5L12 22L21 17.5V6.5L12 2Z"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M12 22V12.2"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+              <path
+                d="M21 6.5L12 12.2L3 6.5"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinejoin="round"
+              />
             </svg>
           </div>
+          <h1 className="mt-4 text-3xl font-bold text-slate-900">
+            SWP391 System
+          </h1>
+          <p className="mt-1 text-slate-600">
+            Sign in to continue
+          </p>
         </div>
 
-        <h2 className="text-center text-4xl font-bold text-gray-900 mb-3">
-          EV Warranty System
-        </h2>
-        <p className="text-center text-lg text-gray-600 font-light">
-          Welcome back! Please sign in to your account
-        </p>
-      </div>
+        {/* Card */}
+        <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl border border-slate-200 p-6">
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            {/* Error */}
+            {error && (
+              <div className="rounded-xl bg-red-50 border border-red-200 p-4">
+                <div className="flex gap-2">
+                  <svg
+                    className="mt-0.5 h-5 w-5 text-red-500"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <path
+                      d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <p className="text-sm text-red-700 font-medium">{error}</p>
+                </div>
+              </div>
+            )}
 
-      {/* Login Card */}
-      <div className="relative w-full max-w-md">
-        <div className="bg-white py-8 px-8 shadow-xl rounded-2xl border border-gray-200 relative">
-          {/* Subtle top accent */}
-          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-gray-300 to-gray-400 rounded-b-lg"></div>
-
-          <form className="space-y-6" onSubmit={handleSubmit}>
+            {/* Username */}
             <div className="space-y-2">
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Email Address
+              <label className="text-sm font-medium text-slate-700">
+                Username
               </label>
               <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder-slate-400
+                           focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter username"
                 required
-                value={user}
-                onChange={(e) => setUser(e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400 transition-all duration-200"
-                placeholder="Enter your email"
+                autoComplete="username"
               />
             </div>
 
+            {/* Password */}
             <div className="space-y-2">
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label className="text-sm font-medium text-slate-700">
                 Password
               </label>
+
               <div className="relative">
                 <input
-                  id="password"
-                  name="password"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-12 text-slate-900 placeholder-slate-400
+                             focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
                   type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
-                  required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400 transition-all duration-200 pr-12"
-                  placeholder="Enter your password"
+                  placeholder="Enter password"
+                  required
+                  autoComplete="current-password"
                 />
+
                 <button
                   type="button"
-                  onClick={togglePasswordVisibility}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-700 transition"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
-                    // Eye open icon (visible password)
+                    // eye open
                     <svg
                       className="h-5 w-5"
                       fill="none"
@@ -197,20 +209,20 @@ const LoginPage = () => {
                       stroke="currentColor"
                     >
                       <path
+                        strokeWidth="1.8"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
                       />
                       <path
+                        strokeWidth="1.8"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                       />
                     </svg>
                   ) : (
-                    // Eye closed icon (hidden password)
+                    // eye off
                     <svg
                       className="h-5 w-5"
                       fill="none"
@@ -218,10 +230,28 @@ const LoginPage = () => {
                       stroke="currentColor"
                     >
                       <path
+                        strokeWidth="1.8"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                        d="M3 3l18 18"
+                      />
+                      <path
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M10.477 10.48a3 3 0 104.243 4.243"
+                      />
+                      <path
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M6.228 6.23C4.28 7.7 2.93 9.7 2.458 12c1.274 4.057 5.064 7 9.542 7 1.26 0 2.47-.233 3.59-.66"
+                      />
+                      <path
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9.88 5.08A10.36 10.36 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.53 10.53 0 01-2.13 3.57"
                       />
                     </svg>
                   )}
@@ -229,91 +259,66 @@ const LoginPage = () => {
               </div>
             </div>
 
-            {error && (
-              <div className="rounded-lg bg-red-50 p-4 border border-red-200">
-                <div className="flex items-center">
+            {/* Login type */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">
+                Login Type
+              </label>
+              <select
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900
+                           focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
+                value={loginType}
+                onChange={(e) => setLoginType(e.target.value)}
+              >
+                <option value="ADMIN">ADMIN</option>
+                <option value="USER">USER</option>
+              </select>
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-xl bg-slate-900 text-white py-3 font-semibold
+                         hover:bg-slate-800 transition disabled:opacity-60 disabled:cursor-not-allowed
+                         shadow-sm hover:shadow"
+            >
+              {loading ? (
+                <span className="inline-flex items-center justify-center gap-2">
                   <svg
-                    className="h-5 w-5 text-red-400 mr-2"
-                    fill="none"
+                    className="h-5 w-5 animate-spin"
                     viewBox="0 0 24 24"
-                    stroke="currentColor"
+                    fill="none"
                   >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      className="opacity-25"
+                    />
                     <path
+                      d="M4 12a8 8 0 018-8"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      className="opacity-75"
                       strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  <div className="text-sm text-red-700 font-medium">
-                    {error}
-                  </div>
-                </div>
-              </div>
-            )}
+                  Signing in...
+                </span>
+              ) : (
+                "Sign in"
+              )}
+            </button>
 
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg text-base font-semibold text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
-              >
-                {loading ? (
-                  <>
-                    <svg
-                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Signing in...
-                  </>
-                ) : (
-                  "Sign in"
-                )}
-              </button>
-            </div>
-
-            {/* FORGOT PASSWORD LINK */}
-            <div className="text-center pt-2">
-              <button
-                type="button"
-                onClick={handleForgotPassword}
-                className="font-medium text-gray-600 hover:text-gray-800 focus:outline-none focus:underline transition-colors duration-200"
-              >
-                Forgot your password?
-              </button>
-            </div>
+            <p className="text-xs text-slate-500 text-center pt-1">
+              © {new Date().getFullYear()} SWP391. All rights reserved.
+            </p>
           </form>
         </div>
-
-        <p className="mt-6 text-center text-xs text-gray-500">
-          © {new Date().getFullYear()} EV Warranty. All rights reserved.
-        </p>
       </div>
-
-      {/* Forgot Password Modal */}
-      <ForgotPasswordModal
-        showModal={showForgotPassword}
-        onClose={handleCloseForgotPassword}
-        onBackToLogin={handleBackToLogin}
-      />
     </div>
   );
-};
-
-export default LoginPage;
+}

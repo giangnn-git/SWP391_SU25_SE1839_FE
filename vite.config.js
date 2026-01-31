@@ -7,12 +7,10 @@ export default defineConfig({
     port: 3000,
     proxy: {
       "/api": {
-        target: "https://orthopterous-unwieldable-kristal.ngrok-free.dev", // tam
-        // target: "https://junie-preaortic-sina.ngrok-free.dev", // QA
-
+        target: "http://localhost:8080",
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api/, ""),
+        // XÓA rewrite
       },
     },
   },
